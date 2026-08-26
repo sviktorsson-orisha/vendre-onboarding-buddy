@@ -73,6 +73,7 @@ export default function Index() {
   const active = Math.max(done.findIndex((value) => !value), 0);
   const completedCount = done.filter(Boolean).length;
   const states = done.map((value, index): GuideState => value ? "done" : index === active ? "current" : "pending");
+  const activeTitle = TITLES[active] ?? TITLES[0] ?? "Setup";
 
   const checkSecrets = async () => {
     setChecking(true);
@@ -108,7 +109,7 @@ export default function Index() {
               <span className="brand-eyebrow rounded-md bg-primary/10 px-2.5 py-1 text-primary">Steg {Math.min(active + 1, 5)} av 5</span>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">{result?.ok ? "Anslutningen är verifierad och klar." : `${completedCount} av 5 steg klara.`}</p>
-            {!result?.ok && <p className="mt-3 inline-flex rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-accent-foreground">Nästa: {active + 1}. {TITLES[active]}</p>}
+            {!result?.ok && <p className="mt-3 inline-flex rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-accent-foreground">Nästa: {active + 1}. {activeTitle}</p>}
           </div>
           <button type="button" onClick={runTest} disabled={testing || !secretStatus?.ok} className="brand-button">{testing && <Loader2 className="size-4 animate-spin" />}{testing ? "Testar" : "Testa igen"}</button>
         </div>
@@ -116,35 +117,35 @@ export default function Index() {
       </section>
 
       <ol className="mt-6 space-y-4">
-        <GuideStep index={1} title={TITLES[0]} state={states[0]} open={open === 0} onToggle={() => setOpen(open === 0 ? -1 : 0)} verdict={adminDone ? "OAuth-förberedelser bekräftade" : "Skapa en OAuth-klient i Vendre Admin"}>
+        <GuideStep index={1} title={TITLES[0] ?? "Skapa OAuth-nycklar"} state={states[0] ?? "current"} open={open === 0} onToggle={() => setOpen(open === 0 ? -1 : 0)} verdict={adminDone ? "OAuth-förberedelser bekräftade" : "Skapa en OAuth-klient i Vendre Admin"}>
           <p>Skapa klienten innan credentials läggs in. Din <code className="font-mono text-xs text-foreground">client_secret</code> visas bara en gång.</p>
           <div className="rounded-lg border border-border bg-muted/40 p-4"><p className="font-medium text-foreground">Appar & Integrationer → Headless → OAuth</p><AdminLink path="/Admin/headless/auth/oauth-clients">/Admin/headless/auth/oauth-clients</AdminLink></div>
           <label className="flex items-start gap-3 rounded-lg border border-border bg-card p-4 text-foreground"><input type="checkbox" checked={adminDone} onChange={(event) => { setAdminDone(event.target.checked); if (event.target.checked) setOpen(1); }} className="mt-0.5 size-4 accent-primary" />Jag har skapat OAuth-klienten och sparat nycklarna.</label>
         </GuideStep>
 
-        <GuideStep index={2} title={TITLES[1]} state={states[1]} open={open === 1} onToggle={() => setOpen(open === 1 ? -1 : 1)} verdict={secretStatus?.ok ? "Alla credentials är tillgängliga" : "Lägg in tre värden under Secrets"}>
+        <GuideStep index={2} title={TITLES[1] ?? "Lägg in credentials"} state={states[1] ?? "pending"} open={open === 1} onToggle={() => setOpen(open === 1 ? -1 : 1)} verdict={secretStatus?.ok ? "Alla credentials är tillgängliga" : "Lägg in tre värden under Secrets"}>
           <p>Credentials används endast på serversidan och ska aldrig skrivas i kod eller chatten.</p>
           <ul className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">{SECRET_NAMES.map((name) => { const missing = secretStatus?.missing.includes(name); return <li key={name} className="flex items-center gap-2"><span className={cn("size-2 rounded-full", !secretStatus ? "bg-muted-foreground/40" : missing ? "bg-destructive" : "bg-emerald-500")} /><code className="font-mono text-xs text-foreground">{name}</code></li>; })}</ul>
           <button type="button" className="brand-button" disabled={checking || !adminDone} onClick={checkSecrets}>{checking && <Loader2 className="size-4 animate-spin" />}{checking ? "Kontrollerar" : "Kontrollera credentials"}</button>
           {secretStatus && !secretStatus.ok && <p className="rounded-md bg-destructive/10 p-3 text-destructive">Saknas: {secretStatus.missing.join(", ")}</p>}
         </GuideStep>
 
-        <GuideStep index={3} title={TITLES[2]} state={states[2]} open={open === 2} onToggle={() => setOpen(open === 2 ? -1 : 2)} verdict={corsDone ? "Origins och policyer bekräftade" : "Allowlista storefrontens stabila adresser"}>
+        <GuideStep index={3} title={TITLES[2] ?? "Konfigurera CORS"} state={states[2] ?? "pending"} open={open === 2} onToggle={() => setOpen(open === 2 ? -1 : 2)} verdict={corsDone ? "Origins och policyer bekräftade" : "Allowlista storefrontens stabila adresser"}>
           <p>Klistra in adresserna under Appar & Integrationer → Headless → CORS. Använd inte den tillfälliga <code className="font-mono text-xs">id-preview--</code>-adressen.</p>
           <div className="rounded-lg border border-border bg-muted/40 p-4"><p className="font-medium text-foreground">CORS-inställningar</p><AdminLink path="/Admin/configuration?gID=232">/Admin/configuration?gID=232</AdminLink></div>
           {[preview, published].map((origin) => <code key={origin} className="block break-all rounded-md border border-border bg-card p-3 text-xs text-foreground">{origin}</code>)}
-          {[["Surface CORS Origins JSON", originsJson], ["Surface CORS Policies JSON", policiesJson]].map(([label, json]) => <div key={label}><div className="flex items-center justify-between gap-3"><span className="brand-eyebrow text-muted-foreground">{label}</span><CopyButton value={json} /></div><pre className="mt-2 max-h-64 overflow-auto rounded-md bg-muted p-3 text-xs text-foreground">{json}</pre></div>)}
+          {[["Surface CORS Origins JSON", originsJson], ["Surface CORS Policies JSON", policiesJson]].map(([label = "CORS JSON", json = ""]) => <div key={label}><div className="flex items-center justify-between gap-3"><span className="brand-eyebrow text-muted-foreground">{label}</span><CopyButton value={json} /></div><pre className="mt-2 max-h-64 overflow-auto rounded-md bg-muted p-3 text-xs text-foreground">{json}</pre></div>)}
           <label className="flex items-start gap-3 rounded-lg border border-border bg-card p-4 text-foreground"><input type="checkbox" checked={corsDone} onChange={(event) => { setCorsDone(event.target.checked); if (event.target.checked) setOpen(3); }} disabled={!secretStatus?.ok} className="mt-0.5 size-4 accent-primary" />Jag har lagt in origins och policyer i Vendre Admin.</label>
         </GuideStep>
 
-        <GuideStep index={4} title={TITLES[3]} state={states[3]} open={open === 3} onToggle={() => setOpen(open === 3 ? -1 : 3)} verdict={result?.ok ? "Token, CORS, session och läsrättigheter fungerar" : "Kör det tekniska anslutningstestet"}>
+        <GuideStep index={4} title={TITLES[3] ?? "Verifiera anslutningen"} state={states[3] ?? "pending"} open={open === 3} onToggle={() => setOpen(open === 3 ? -1 : 3)} verdict={result?.ok ? "Token, CORS, session och läsrättigheter fungerar" : "Kör det tekniska anslutningstestet"}>
           <p>Testet verifierar OAuth-token, CORS, session/bootstrap och läsning av navigation/menus.</p>
           <button type="button" className="brand-button" disabled={testing || !corsDone} onClick={runTest}>{testing && <Loader2 className="size-4 animate-spin" />}{testing ? "Testar anslutningen" : "Kör anslutningstest"}</button>
           {testError && <p className="rounded-md bg-destructive/10 p-3 text-destructive">{testError}</p>}
           {result && <div className="space-y-2">{result.steps.map((step) => <StepResult key={step.id} step={step} />)}</div>}
         </GuideStep>
 
-        <GuideStep index={5} title={TITLES[4]} state={states[4]} open={open === 4} onToggle={() => setOpen(open === 4 ? -1 : 4)} verdict={result?.ok ? "Butiksanslutningen är verifierad" : "Låst tills anslutningen är grön"}>
+        <GuideStep index={5} title={TITLES[4] ?? "Redo att börja bygga"} state={states[4] ?? "pending"} open={open === 4} onToggle={() => setOpen(open === 4 ? -1 : 4)} verdict={result?.ok ? "Butiksanslutningen är verifierad" : "Låst tills anslutningen är grön"}>
           {result?.ok ? <><p className="rounded-md bg-emerald-500/10 p-3 font-medium text-emerald-700">Setupen är klar. Projektet är redo för storefront-arbete.</p><dl className="space-y-2"><div className="rounded-lg border border-border bg-card p-3"><dt className="brand-eyebrow">Base URL</dt><dd className="mt-1 break-all font-mono text-xs text-foreground">{result.baseUrl}</dd></div><div className="rounded-lg border border-border bg-card p-3"><dt className="brand-eyebrow">Allowlistad origin</dt><dd className="mt-1 break-all font-mono text-xs text-foreground">{result.origin}</dd></div></dl></> : <p>Slutför föregående steg och kör anslutningstestet.</p>}
         </GuideStep>
       </ol>
