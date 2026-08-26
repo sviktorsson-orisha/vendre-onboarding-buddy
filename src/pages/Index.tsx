@@ -2,13 +2,22 @@ import { useMemo, useState, type ReactNode } from "react";
 import { Check, ChevronDown, Copy, ExternalLink, Loader2, Lock } from "lucide-react";
 
 import { BrandHero, BrandShell } from "@/components/vendre/brand-shell";
+import { PublishOriginField } from "@/components/vendre/publish-origin-field";
+import { usePublishedOrigin } from "@/lib/vendre/published-origin";
 import { testVendreConnection, type ConnectionResult, type ConnectionStep } from "@/lib/vendre";
 import { cn } from "@/lib/utils";
 
 const PROJECT_ID = "b680686f-4945-4ee5-a18e-4b6fffe4e625";
 const SECRET_NAMES = ["VENDRE_BASE_URL", "VENDRE_CLIENT_ID", "VENDRE_CLIENT_SECRET"];
 const POLICIES = ["oauth", "bootstrap", "session", "customer", "shopping_cart", "checkout", "vendre_query_language", "default"];
-const TITLES = ["Skapa OAuth-nycklar", "Lägg in credentials", "Konfigurera CORS", "Verifiera anslutningen", "Redo att börja bygga"];
+const TITLES = [
+  "Skapa OAuth-nycklar",
+  "Lägg in credentials",
+  "Publicera och välj ett enklare domännamn",
+  "Konfigurera CORS",
+  "Verifiera anslutningen",
+  "Redo att börja bygga",
+];
 
 type GuideState = "done" | "current" | "pending";
 
@@ -58,6 +67,7 @@ function AdminLink({ path, children }: { path: string; children: ReactNode }) {
 export default function Index() {
   const preview = `https://project--${PROJECT_ID}-dev.lovable.app`;
   const published = `https://project--${PROJECT_ID}.lovable.app`;
+  const { origin: publishedOrigin, setOrigin: setPublishedOrigin } = usePublishedOrigin();
   const [open, setOpen] = useState(0);
   const [adminDone, setAdminDone] = useState(false);
   const [corsDone, setCorsDone] = useState(false);
@@ -67,9 +77,16 @@ export default function Index() {
   const [result, setResult] = useState<ConnectionResult | null>(null);
   const [testError, setTestError] = useState<string | null>(null);
 
-  const originsJson = useMemo(() => JSON.stringify({ [preview]: POLICIES, [published]: POLICIES }, null, 2), [preview, published]);
-  const policiesJson = useMemo(() => JSON.stringify(Object.fromEntries(POLICIES.map((policy) => [policy, [preview, published]])), null, 2), [preview, published]);
-  const done = [adminDone, secretStatus?.ok === true, corsDone, result?.ok === true, result?.ok === true];
+  // The friendly published domain comes first, so pasted CORS config already
+  // contains the address the customer actually uses.
+  const origins = useMemo(
+    () => (publishedOrigin ? [publishedOrigin, preview, published] : [preview, published]),
+    [publishedOrigin, preview, published],
+  );
+  const originsJson = useMemo(() => JSON.stringify(Object.fromEntries(origins.map((origin) => [origin, POLICIES])), null, 2), [origins]);
+  const policiesJson = useMemo(() => JSON.stringify(Object.fromEntries(POLICIES.map((policy) => [policy, origins])), null, 2), [origins]);
+  const done = [adminDone, secretStatus?.ok === true, publishedOrigin !== "", corsDone, result?.ok === true, result?.ok === true];
+  const total = TITLES.length;
   const active = Math.max(done.findIndex((value) => !value), 0);
   const completedCount = done.filter(Boolean).length;
   const states = done.map((value, index): GuideState => value ? "done" : index === active ? "current" : "pending");
@@ -91,7 +108,7 @@ export default function Index() {
     try {
       const next = await testVendreConnection();
       setResult(next);
-      if (next.ok) setOpen(4);
+      if (next.ok) setOpen(5);
     } catch (error) { setTestError((error as Error).message); }
     finally { setTesting(false); }
   };
@@ -106,9 +123,9 @@ export default function Index() {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-xl font-bold text-foreground">Setup-guide</h2>
-              <span className="brand-eyebrow rounded-md bg-primary/10 px-2.5 py-1 text-primary">Steg {Math.min(active + 1, 5)} av 5</span>
+              <span className="brand-eyebrow rounded-md bg-primary/10 px-2.5 py-1 text-primary">Steg {Math.min(active + 1, total)} av {total}</span>
             </div>
-            <p className="mt-1 text-sm text-muted-foreground">{result?.ok ? "Anslutningen är verifierad och klar." : `${completedCount} av 5 steg klara.`}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{result?.ok ? "Anslutningen är verifierad och klar." : `${completedCount} av ${total} steg klara.`}</p>
             {!result?.ok && <p className="mt-3 inline-flex rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-accent-foreground">Nästa: {active + 1}. {activeTitle}</p>}
           </div>
           <button type="button" onClick={runTest} disabled={testing || !secretStatus?.ok} className="brand-button">{testing && <Loader2 className="size-4 animate-spin" />}{testing ? "Testar" : "Testa igen"}</button>
@@ -130,23 +147,30 @@ export default function Index() {
           {secretStatus && !secretStatus.ok && <p className="rounded-md bg-destructive/10 p-3 text-destructive">Saknas: {secretStatus.missing.join(", ")}</p>}
         </GuideStep>
 
-        <GuideStep index={3} title={TITLES[2] ?? "Konfigurera CORS"} state={states[2] ?? "pending"} open={open === 2} onToggle={() => setOpen(open === 2 ? -1 : 2)} verdict={corsDone ? "Origins och policyer bekräftade" : "Allowlista storefrontens stabila adresser"}>
-          <p>Klistra in adresserna under Appar & Integrationer → Headless → CORS. Använd inte den tillfälliga <code className="font-mono text-xs">id-preview--</code>-adressen.</p>
-          <div className="rounded-lg border border-border bg-muted/40 p-4"><p className="font-medium text-foreground">CORS-inställningar</p><AdminLink path="/Admin/configuration?gID=232">/Admin/configuration?gID=232</AdminLink></div>
-          {[preview, published].map((origin) => <code key={origin} className="block break-all rounded-md border border-border bg-card p-3 text-xs text-foreground">{origin}</code>)}
-          {[["Surface CORS Origins JSON", originsJson], ["Surface CORS Policies JSON", policiesJson]].map(([label = "CORS JSON", json = ""]) => <div key={label}><div className="flex items-center justify-between gap-3"><span className="brand-eyebrow text-muted-foreground">{label}</span><CopyButton value={json} /></div><pre className="mt-2 max-h-64 overflow-auto rounded-md bg-muted p-3 text-xs text-foreground">{json}</pre></div>)}
-          <label className="flex items-start gap-3 rounded-lg border border-border bg-card p-4 text-foreground"><input type="checkbox" checked={corsDone} onChange={(event) => { setCorsDone(event.target.checked); if (event.target.checked) setOpen(3); }} disabled={!secretStatus?.ok} className="mt-0.5 size-4 accent-primary" />Jag har lagt in origins och policyer i Vendre Admin.</label>
+        <GuideStep index={3} title={TITLES[2] ?? "Publicera och välj ett enklare domännamn"} state={states[2] ?? "pending"} open={open === 2} onToggle={() => setOpen(open === 2 ? -1 : 2)} verdict={publishedOrigin ? `Använder ${publishedOrigin}` : "Publicera och ange din valda adress"}>
+          <p>Publicera projektet i Lovable och välj ett läsbart domännamn, till exempel <code className="font-mono text-xs text-foreground">spring-board.lovable.app</code>, istället för den långa <code className="font-mono text-xs">project--&lt;uuid&gt;</code>-adressen.</p>
+          <p>Ange adressen här — den läggs automatiskt först i CORS-blocken i nästa steg, så att koden du kopierar redan innehåller din domän.</p>
+          <PublishOriginField origin={publishedOrigin} onSave={(value) => { setPublishedOrigin(value); if (value) setOpen(3); }} />
+          {!publishedOrigin && <p className="text-xs">Detta är ett manuellt steg — inget tekniskt test körs här.</p>}
         </GuideStep>
 
-        <GuideStep index={4} title={TITLES[3] ?? "Verifiera anslutningen"} state={states[3] ?? "pending"} open={open === 3} onToggle={() => setOpen(open === 3 ? -1 : 3)} verdict={result?.ok ? "Token, CORS, session och läsrättigheter fungerar" : "Kör det tekniska anslutningstestet"}>
+        <GuideStep index={4} title={TITLES[3] ?? "Konfigurera CORS"} state={states[3] ?? "pending"} open={open === 3} onToggle={() => setOpen(open === 3 ? -1 : 3)} verdict={corsDone ? "Origins och policyer bekräftade" : "Allowlista storefrontens adresser"}>
+          <p>Klistra in adresserna under Appar & Integrationer → Headless → CORS. Använd inte den tillfälliga <code className="font-mono text-xs">id-preview--</code>-adressen.</p>
+          <div className="rounded-lg border border-border bg-muted/40 p-4"><p className="font-medium text-foreground">CORS-inställningar</p><AdminLink path="/Admin/configuration?gID=232">/Admin/configuration?gID=232</AdminLink></div>
+          {origins.map((origin) => <code key={origin} className="block break-all rounded-md border border-border bg-card p-3 text-xs text-foreground">{origin}</code>)}
+          {[["Surface CORS Origins JSON", originsJson], ["Surface CORS Policies JSON", policiesJson]].map(([label = "CORS JSON", json = ""]) => <div key={label}><div className="flex items-center justify-between gap-3"><span className="brand-eyebrow text-muted-foreground">{label}</span><CopyButton value={json} /></div><pre className="mt-2 max-h-64 overflow-auto rounded-md bg-muted p-3 text-xs text-foreground">{json}</pre></div>)}
+          <label className="flex items-start gap-3 rounded-lg border border-border bg-card p-4 text-foreground"><input type="checkbox" checked={corsDone} onChange={(event) => { setCorsDone(event.target.checked); if (event.target.checked) setOpen(4); }} disabled={!publishedOrigin} className="mt-0.5 size-4 accent-primary" />Jag har lagt in origins och policyer i Vendre Admin.</label>
+        </GuideStep>
+
+        <GuideStep index={5} title={TITLES[4] ?? "Verifiera anslutningen"} state={states[4] ?? "pending"} open={open === 4} onToggle={() => setOpen(open === 4 ? -1 : 4)} verdict={result?.ok ? "Token, CORS, session och läsrättigheter fungerar" : "Kör det tekniska anslutningstestet"}>
           <p>Testet verifierar OAuth-token, CORS, session/bootstrap och läsning av navigation/menus.</p>
           <button type="button" className="brand-button" disabled={testing || !corsDone} onClick={runTest}>{testing && <Loader2 className="size-4 animate-spin" />}{testing ? "Testar anslutningen" : "Kör anslutningstest"}</button>
           {testError && <p className="rounded-md bg-destructive/10 p-3 text-destructive">{testError}</p>}
           {result && <div className="space-y-2">{result.steps.map((step) => <StepResult key={step.id} step={step} />)}</div>}
         </GuideStep>
 
-        <GuideStep index={5} title={TITLES[4] ?? "Redo att börja bygga"} state={states[4] ?? "pending"} open={open === 4} onToggle={() => setOpen(open === 4 ? -1 : 4)} verdict={result?.ok ? "Butiksanslutningen är verifierad" : "Låst tills anslutningen är grön"}>
-          {result?.ok ? <><p className="rounded-md bg-emerald-500/10 p-3 font-medium text-emerald-700">Setupen är klar. Projektet är redo för storefront-arbete.</p><dl className="space-y-2"><div className="rounded-lg border border-border bg-card p-3"><dt className="brand-eyebrow">Base URL</dt><dd className="mt-1 break-all font-mono text-xs text-foreground">{result.baseUrl}</dd></div><div className="rounded-lg border border-border bg-card p-3"><dt className="brand-eyebrow">Allowlistad origin</dt><dd className="mt-1 break-all font-mono text-xs text-foreground">{result.origin}</dd></div></dl></> : <p>Slutför föregående steg och kör anslutningstestet.</p>}
+        <GuideStep index={6} title={TITLES[5] ?? "Redo att börja bygga"} state={states[5] ?? "pending"} open={open === 5} onToggle={() => setOpen(open === 5 ? -1 : 5)} verdict={result?.ok ? "Butiksanslutningen är verifierad" : "Låst tills anslutningen är grön"}>
+          {result?.ok ? <><p className="rounded-md bg-emerald-500/10 p-3 font-medium text-emerald-700">Setupen är klar. Projektet är redo för storefront-arbete.</p><dl className="space-y-2"><div className="rounded-lg border border-border bg-card p-3"><dt className="brand-eyebrow">Base URL</dt><dd className="mt-1 break-all font-mono text-xs text-foreground">{result.baseUrl}</dd></div><div className="rounded-lg border border-border bg-card p-3"><dt className="brand-eyebrow">Allowlistad origin</dt><dd className="mt-1 break-all font-mono text-xs text-foreground">{publishedOrigin || result.origin}</dd></div></dl></> : <p>Slutför föregående steg och kör anslutningstestet.</p>}
         </GuideStep>
       </ol>
     </BrandShell>
