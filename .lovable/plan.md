@@ -1,49 +1,59 @@
 # Vendre Setup Wizard — steg-för-steg med progress bar
 
-Nej, jag har det jag behöver. En sak att veta: projektet har idag ingen Vendre-kod alls
-(ingen `src/lib/vendre/`, ingen server-route, inga sparade credentials). För att
-"Test & Verify" ska vara äkta och inte fejk bygger jag därför även den minimala
-anslutningslogiken som wizarden verifierar mot.
+## Källor
+
+Planen bygger **endast** på projektets egna filer:
+
+- `.vendre/skills/setup.md` (enda skillen i projektet) — stegordningen, CORS-JSON,
+  origin-regler, `testVendreConnection()`, gaten "bygg inget innan ok: true".
+- `.vendre/knowledge/general.md` — `/surface/2/*`, `client_secret` endast server-side,
+  form-urlencoded OAuth, `session/bootstrap`, mutation-token i app state (ej localStorage).
+
+Inget från workspace-skills eller tidigare Vendre-regler används.
+
+## Utgångsläge (verifierat)
+
+Projektet har idag ingen Vendre-kod: `src/lib/vendre/` saknas, det finns inga
+API-routes och inga sparade credentials. `setup.md` säger "skriv inte om
+`src/lib/vendre/` — de hjälparna finns redan", men de finns inte i repot. För att
+"Test & Verify" ska vara äkta måste minimal anslutningslogik därför skapas.
 
 ## Vad som byggs
 
-### 1. Anslutningslager (minimalt, bara för verifiering)
-- Server-route `/api/vendre/token`: hämtar OAuth-token mot `POST /surface/2/oauth/token`
-  (form-urlencoded, client credentials). `VENDRE_CLIENT_SECRET` lämnar aldrig servern.
-  Token cachas på `globalThis` ~1 h med de-duplicering och 429-backoff.
-- Server-route `/api/vendre/status`: svarar om `VENDRE_BASE_URL`, `VENDRE_CLIENT_ID`,
-  `VENDRE_CLIENT_SECRET` finns satta (bara ja/nej, aldrig värden).
-- `src/lib/vendre/`: browser-klient (direktanrop med `credentials: "include"`,
-  Bearer-token, mutation protection token i modulvariabel) plus
-  `testVendreConnection()` som kör stegen: `token` → `cors` → `session`
-  (`POST /surface/2/session/bootstrap`) → `read` (`GET /surface/2/navigation/menus`)
-  och returnerar `{ ok, steps[], missing[], origin, baseUrl }`.
+### 1. Minimal anslutningslogik (endast för verifiering)
+- `/api/vendre/token` (server): `POST /surface/2/oauth/token`, form-urlencoded,
+  `client_secret` läses i handlern och lämnar aldrig servern. Token cachas ~1 h.
+- `/api/vendre/status` (server): svarar bara ja/nej för `VENDRE_BASE_URL`,
+  `VENDRE_CLIENT_ID`, `VENDRE_CLIENT_SECRET` — aldrig värden.
+- `src/lib/vendre/`: browser-klient (Bearer + `credentials: "include"`,
+  mutation-token i modulvariabel) och `testVendreConnection()` som kör de fyra
+  delstegen ur setup.md: `token` → `cors` → `session` (`POST /surface/2/session/bootstrap`)
+  → `read` (`GET /surface/2/navigation/menus`) och returnerar
+  `{ ok, steps[], missing[], origin, baseUrl }`.
 
 ### 2. Wizard-UI (`src/pages/Index.tsx`)
-Header med Vendre-branding, progress bar ("Steg X av 4 · 25% klart") och en
-callout-banner med aktivt steg. Ett steg i taget, Föregående/Nästa längst ner.
-Gating: Nästa är låst tills steget är verifierat; man får gå bakåt fritt men inte
-hoppa framåt. Låsta steg visas tydligt som låsta i stepper-indikatorn.
+Header med Vendre-branding, progress bar ("Steg X av 4 · 25 % klart") och en
+callout med aktivt steg. Ett steg i taget, Föregående/Nästa längst ner.
+Nästa är låst tills steget verifierats; bakåt är fritt, framåt-hopp omöjligt.
+Tydlig visuell skillnad på låst/upplåst.
 
-- **Steg 1 — Vendre Admin prep (OAuth & CORS):** instruktioner + länkar till
+- **Steg 1 — Vendre Admin prep (OAuth & CORS):** instruktioner samt
   `/Admin/headless/auth/oauth-clients` och `/Admin/configuration?gID=232`.
-  Live-origins (`project--<id>-dev.lovable.app`, `project--<id>.lovable.app`) och
-  båda JSON-blocken (Origins + Policies) med Copy-knapp. Låses upp av kryssrutan
-  "Jag har konfigurerat CORS och skapat OAuth-nycklar".
-- **Steg 2 — Credentials:** förklarar att `VENDRE_BASE_URL`, `VENDRE_CLIENT_ID`,
-  `VENDRE_CLIENT_SECRET` läggs in under Secrets. Knapp "Kontrollera credentials"
-  anropar `/api/vendre/status`; saknade namn listas, alla tre satta låser upp steg 3.
+  Stabila origins `https://project--<id>-dev.lovable.app` och
+  `https://project--<id>.lovable.app` (aldrig `id-preview--`) plus båda
+  JSON-blocken (Surface CORS Origins och Surface CORS Policies) med Copy-knapp.
+  Kryssruta "Jag har konfigurerat CORS och skapat OAuth-nycklar" låser upp steg 2.
+- **Steg 2 — Credentials:** förklarar att de tre värdena läggs in under Secrets.
+  Knapp "Kontrollera credentials" → `/api/vendre/status`; saknade namn listas,
+  alla tre satta låser upp steg 3.
 - **Steg 3 — Anslutningstest:** knapp "Kör Vendre-anslutningstest" kör
   `testVendreConnection()`. Statusbadges för Token, Session och Läsrättigheter.
-  CORS-varning visas som degraderat proxy-läge med exakt origin och åtgärd.
-  `ok: true` låser upp steg 4.
-- **Steg 4 — Klar:** success-state, sammanfattning av base URL och allowlistad
-  origin, samt uppmaning att gå tillbaka till chatten för att bygga
+  CORS-varning visas som degraderat proxy-läge med exakt origin och åtgärd
+  (checkout startar tom session). `ok: true` låser upp steg 4.
+- **Steg 4 — Klar:** "Store connection verified!", sammanfattning av base URL och
+  allowlistad origin, och uppmaning att gå tillbaka till chatten för att bygga
   Home / PLP / PDP / Cart.
 
-Wizardens framsteg hålls i komponentens state (ingen localStorage för
-mutation-token; sidstatus kan sparas i sessionState men inga hemligheter).
-
 ## Utanför scope
-Inga storefront-sidor, produkter eller varukorg byggs — setup-gaten gäller tills
-testet är grönt.
+Inga storefront-sidor, produkter eller varukorg — gaten i setup.md gäller tills
+testet är grönt. Ingen mockdata.
