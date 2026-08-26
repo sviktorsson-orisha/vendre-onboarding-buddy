@@ -4,17 +4,17 @@ import Index from "@/pages/Index";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Vendre onboarding – kom igång i tre steg" },
+      { title: "Vendre Headless Storefront Setup" },
       {
         name: "description",
         content:
-          "Onboarding-guide för din Vendre-butik: lägg in API-nycklar, validera anslutningen och börja bygga.",
+          "Setup-guide för Vendre Surface API v2: OAuth i Admin, CORS-allowlist, credentials och anslutningstest innan storefronten byggs.",
       },
-      { property: "og:title", content: "Vendre onboarding – kom igång i tre steg" },
+      { property: "og:title", content: "Vendre Headless Storefront Setup" },
       {
         property: "og:description",
         content:
-          "Onboarding-guide för din Vendre-butik: lägg in API-nycklar, validera anslutningen och börja bygga.",
+          "Setup-guide för Vendre Surface API v2: OAuth i Admin, CORS-allowlist, credentials och anslutningstest innan storefronten byggs.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
