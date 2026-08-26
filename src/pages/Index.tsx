@@ -23,7 +23,7 @@ function useProjectOrigins() {
     const match =
       host.match(/^id-preview--([0-9a-f-]{36})\./i) ??
       host.match(/^project--([0-9a-f-]{36})(?:-dev)?\./i);
-    if (match) setProjectId(match[1]);
+    if (match?.[1]) setProjectId(match[1]);
   }, []);
 
   return useMemo(
