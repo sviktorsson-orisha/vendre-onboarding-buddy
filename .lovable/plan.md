@@ -1,59 +1,64 @@
-# Vendre Setup Wizard — steg-för-steg med progress bar
+# Vendre Setup Wizard — lyft in `src/lib/vendre/` från Vendre Kickstart
+
+Ja, det går. Jag har läst en skrivskyddad kopia av projektet **Vendre Kickstart**
+och det innehåller hela platform-lagret som saknas här.
 
 ## Källor
 
-Planen bygger **endast** på projektets egna filer:
+- Projektets egna filer: `.vendre/skills/setup.md` och `.vendre/knowledge/general.md`.
+- Kod som kopieras oförändrad från Vendre Kickstart (ingen fork, inga omskrivningar).
 
-- `.vendre/skills/setup.md` (enda skillen i projektet) — stegordningen, CORS-JSON,
-  origin-regler, `testVendreConnection()`, gaten "bygg inget innan ok: true".
-- `.vendre/knowledge/general.md` — `/surface/2/*`, `client_secret` endast server-side,
-  form-urlencoded OAuth, `session/bootstrap`, mutation-token i app state (ej localStorage).
+## Vad som finns i Kickstart och kopieras hit
 
-Inget från workspace-skills eller tidigare Vendre-regler används.
+Filerna nedan flyttas över exakt som de är:
 
-## Utgångsläge (verifierat)
+- `src/lib/vendre/` — `client.ts`, `errors.ts`, `index.ts`, `origins.ts`,
+  `published-origin.ts`, `query.ts`, `session.tsx`, `test-connection.ts`
+  (`testVendreConnection()`), `token.server.ts`.
+- `src/config/vendre.ts` och `src/config/vendre-admin.ts` — Surface-prefix,
+  cache-tider, CORS-policylista och Admin-länkar som lib:et importerar.
+- `src/routes/api/vendre/token.ts`, `cors-check.ts`, `$.ts` — server-routen för
+  OAuth (`client_secret` stannar på servern) och proxy-fallbacken.
+- `src/lib/i18n.tsx` — `test-connection.ts` bygger sina meddelanden via `msg()`
+  härifrån, så den följer med för att slippa ändra i lib-koden.
 
-Projektet har idag ingen Vendre-kod: `src/lib/vendre/` saknas, det finns inga
-API-routes och inga sparade credentials. `setup.md` säger "skriv inte om
-`src/lib/vendre/` — de hjälparna finns redan", men de finns inte i repot. För att
-"Test & Verify" ska vara äkta måste minimal anslutningslogik därför skapas.
+Dessutom: mounta `VendreSessionProvider` (och i18n-providern) i
+`src/routes/__root.tsx`, precis som i Kickstart. Saknade npm-paket installeras
+vid behov (t.ex. `@radix-ui/react-progress` för progress bar).
 
-## Vad som byggs
+Inget av Kickstarts storefront (`shop.*`-routes, `src/lib/storefront`,
+`src/components/storefront`) kopieras.
 
-### 1. Minimal anslutningslogik (endast för verifiering)
-- `/api/vendre/token` (server): `POST /surface/2/oauth/token`, form-urlencoded,
-  `client_secret` läses i handlern och lämnar aldrig servern. Token cachas ~1 h.
-- `/api/vendre/status` (server): svarar bara ja/nej för `VENDRE_BASE_URL`,
-  `VENDRE_CLIENT_ID`, `VENDRE_CLIENT_SECRET` — aldrig värden.
-- `src/lib/vendre/`: browser-klient (Bearer + `credentials: "include"`,
-  mutation-token i modulvariabel) och `testVendreConnection()` som kör de fyra
-  delstegen ur setup.md: `token` → `cors` → `session` (`POST /surface/2/session/bootstrap`)
-  → `read` (`GET /surface/2/navigation/menus`) och returnerar
-  `{ ok, steps[], missing[], origin, baseUrl }`.
+## Wizard-UI (nytt, enligt din spec)
 
-### 2. Wizard-UI (`src/pages/Index.tsx`)
-Header med Vendre-branding, progress bar ("Steg X av 4 · 25 % klart") och en
-callout med aktivt steg. Ett steg i taget, Föregående/Nästa längst ner.
-Nästa är låst tills steget verifierats; bakåt är fritt, framåt-hopp omöjligt.
-Tydlig visuell skillnad på låst/upplåst.
+Kickstarts egen setup-sida (`components/vendre/setup-guide.tsx`) kopieras **inte** —
+du vill ha en annan design. Ny wizard byggs i `src/pages/Index.tsx` ovanpå det
+inlyfta lib:et:
 
-- **Steg 1 — Vendre Admin prep (OAuth & CORS):** instruktioner samt
-  `/Admin/headless/auth/oauth-clients` och `/Admin/configuration?gID=232`.
-  Stabila origins `https://project--<id>-dev.lovable.app` och
-  `https://project--<id>.lovable.app` (aldrig `id-preview--`) plus båda
-  JSON-blocken (Surface CORS Origins och Surface CORS Policies) med Copy-knapp.
-  Kryssruta "Jag har konfigurerat CORS och skapat OAuth-nycklar" låser upp steg 2.
-- **Steg 2 — Credentials:** förklarar att de tre värdena läggs in under Secrets.
-  Knapp "Kontrollera credentials" → `/api/vendre/status`; saknade namn listas,
-  alla tre satta låser upp steg 3.
-- **Steg 3 — Anslutningstest:** knapp "Kör Vendre-anslutningstest" kör
-  `testVendreConnection()`. Statusbadges för Token, Session och Läsrättigheter.
-  CORS-varning visas som degraderat proxy-läge med exakt origin och åtgärd
-  (checkout startar tom session). `ok: true` låser upp steg 4.
-- **Steg 4 — Klar:** "Store connection verified!", sammanfattning av base URL och
-  allowlistad origin, och uppmaning att gå tillbaka till chatten för att bygga
-  Home / PLP / PDP / Cart.
+- Header med Vendre-branding, progress bar ("Steg X av 4 · 25 % klart") och en
+  callout med aktivt steg.
+- Ett steg i taget, Föregående/Nästa längst ner. Nästa låst tills steget
+  verifierats; bakåt fritt, framåthopp omöjligt; låst/upplåst tydligt markerat.
+- **Steg 1 — Admin prep (OAuth & CORS):** instruktioner, länkar till
+  `/Admin/headless/auth/oauth-clients` och `/Admin/configuration?gID=232`,
+  live-origins (`project--<id>-dev.lovable.app`, `project--<id>.lovable.app`,
+  aldrig `id-preview--`) samt båda JSON-blocken med Copy-knapp — genererade via
+  `origins.ts` / `vendre-admin.ts`. Kryssruta låser upp steg 2.
+- **Steg 2 — Credentials:** förklarar `VENDRE_BASE_URL`, `VENDRE_CLIENT_ID`,
+  `VENDRE_CLIENT_SECRET` under Secrets. "Kontrollera credentials" läser
+  `missing`-listan från anslutningstestet; alla tre satta låser upp steg 3.
+- **Steg 3 — Anslutningstest:** "Kör Vendre-anslutningstest" kör
+  `testVendreConnection()`. Badges för Token, Session och Läsrättigheter,
+  CORS-varning som degraderat proxy-läge med exakt origin och åtgärd.
+  `ok: true` låser upp steg 4.
+- **Steg 4 — Klar:** "Store connection verified!", base URL + allowlistad origin,
+  och uppmaning att gå tillbaka till chatten för Home / PLP / PDP / Cart.
+
+Sidan flyttas samtidigt till `src/routes/index.tsx` som komponent (TanStack
+använder `src/routes/`, inte `src/pages/`), och `/vendre-setup` läggs till som
+redirect till `/` så setup-skillens länk fungerar.
 
 ## Utanför scope
-Inga storefront-sidor, produkter eller varukorg — gaten i setup.md gäller tills
-testet är grönt. Ingen mockdata.
+
+Inga storefront-sidor byggs — gaten i `setup.md` gäller tills testet är grönt.
+Ingen mockdata.
