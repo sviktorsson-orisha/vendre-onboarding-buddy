@@ -24,45 +24,44 @@ Plus två block utanför stegen: "Vad vill du bygga först?" (visas när anslutn
 ### Nytt steg 3 — "Publicera och välj ett enklare domännamn"
 
 - Förklarar att kunden publicerar i Lovable och väljer ett läsbart domännamn
-  (t.ex. `spring-board.lovable.app`) istället för den långa `project--<uuid>`-adressen.
+(t.ex. `spring-board.lovable.app`) istället för den långa `project--<uuid>`-adressen.
 - Inmatningsfält som accepterar `spring-board`, `spring-board.lovable.app` eller
-  full https-adress, med Använd/Rensa-knappar och tydligt fel vid ogiltigt värde.
+full https-adress, med Använd/Rensa-knappar och tydligt fel vid ogiltigt värde.
 - Adressen sparas lokalt i webbläsaren och visas som bekräftelse i steget.
 - Steget markeras som klart när en adress är sparad (eller när anslutningen redan
-  är verifierad). Det är ett manuellt steg — inget tekniskt test.
+är verifierad). Det är ett manuellt steg — inget tekniskt test.
 
 ### CORS-steget uppdateras
 
 - Den sparade domänen läggs automatiskt först i listan över origins, och ingår i
-  båda kopierbara JSON-blocken (Origins JSON och Policies JSON) tillsammans med
-  de stabila preview- och publish-adresserna. Så är koden som kopieras redan
-  uppdaterad med kundens domän när hen når steget.
+båda kopierbara JSON-blocken (Origins JSON och Policies JSON) tillsammans med
+de stabila preview- och publish-adresserna. Så är koden som kopieras redan
+uppdaterad med kundens domän när hen når steget.
 
 ### Övriga saknade delar från Kickstart
 
-- Panelen "Vad vill du bygga först?" med förslagskort (Startsida, PLP, PDP,
-  Varukorg/checkout, Konto) och kopierbara prompts, visad när anslutningen är
-  grön; varning visas om anslutningen bara är i proxy-läge.
-- Go-live-noteringar längst ner på sidan (eget/anpassat domännamn, IS_HEADLESS m.m.).
-- Per-steg statuskontroll ("check") direkt i varje stegkort, som idag bara visas
-  i verifieringssteget.
-- Guiden minns var kunden var (öppet steg och högsta klara steg) mellan
-  omladdningar, med "börja om"-länk.
+- Panelen "Vad vill du bygga först?" med förslagskort (Startsida, PLP, PDP,  
+Varukorg/checkout, Konto) och kopierbara prompts, visad när anslutningen är  
+grön; varning visas om anslutningen bara är i proxy-läge. - denna vill vi inte lyfta över i detta projekt.
+- Go-live-noteringar längst ner på sidan (eget/anpassat domännamn, IS_HEADLESS m.m.). - denna vill vi inte lyfta över i detta projekt.
+- Per-steg statuskontroll ("check") direkt i varje stegkort, som idag bara visas  
+i verifieringssteget. - denna vill vi inte lyfta över i detta projekt.
+- Guiden minns var kunden var (öppet steg och högsta klara steg) mellan  
+omladdningar, med "börja om"-länk. - denna vill vi inte lyfta över i detta projekt.
 
-Guidens nuvarande "Redo att börja bygga"-steg tas bort som eget steg, eftersom
-Kickstart täcker det med panelen "Vad vill du bygga först?". Slutresultat: fem
+Guidens nuvarande "Redo att börja bygga"-steg tas inte bort som eget steg, ignorera att Kickstart täcker det med panelen "Vad vill du bygga först?". Slutresultat: fem  
 steg i Kickstarts ordning.
 
 ## Teknisk detalj
 
 - Nya presentationsfiler under `src/components/vendre/` (publiceringsfält,
-  nästa-steg-panel, go-live-block) och små hjälpmoduler under `src/lib/vendre/`
-  för origin-normalisering och sparad publicerad domän.
+nästa-steg-panel, go-live-block) och små hjälpmoduler under `src/lib/vendre/`
+för origin-normalisering och sparad publicerad domän.
 - `src/pages/Index.tsx` byggs om till fem steg i ovan ordning; befintlig
-  anslutningslogik (`/api/vendre/token`, `/api/vendre/status`,
-  `testVendreConnection()`) är oförändrad.
+anslutningslogik (`/api/vendre/token`, `/api/vendre/status`,
+`testVendreConnection()`) är oförändrad.
 - Texterna hålls på svenska direkt i komponenterna — Kickstarts i18n-lager
-  kopieras fortfarande inte.
+kopieras fortfarande inte.
 
 ## Verifiering
 
