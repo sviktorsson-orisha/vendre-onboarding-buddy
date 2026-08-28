@@ -64,7 +64,7 @@ The store is rate limiting; wait a minute and retry. Do not mint tokens in a loo
 
 cors warning
 
-Print the exact origin and the ready-to-paste JSON, and point at Menu → Apps & Integrations → Headless → CORS (/Admin/configuration?gID=232). Use the stable project--<project-id> hosts, never the ephemeral id-preview-- host.
+Print the exact origin and the ready-to-paste JSON, and point at Admin → Headless → CORS (/Admin/configuration?gID=232). Use the stable project--<project-id> hosts, never the ephemeral id-preview-- host.
 
 session failed
 
@@ -77,7 +77,7 @@ Check the navigation_menus policy and that a menu is published.
 For CORS, always print the origin verbatim and both Admin fields:
 Surface CORS Origins JSON and Surface CORS Policies JSON (the policies
 field wins on conflict), found under
-Menu → Apps & Integrations → Headless → CORS (/Admin/configuration?gID=232).
+Admin → Headless → CORS (/Admin/configuration?gID=232).
 
 {
 "https://your-project.lovable.app": [

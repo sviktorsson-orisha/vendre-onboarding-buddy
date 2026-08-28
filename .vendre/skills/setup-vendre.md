@@ -52,14 +52,14 @@ Tell the user to open `/vendre-setup` in the preview, or run
 | `token` failed, `missing` non-empty | Which env vars are missing; re-collect them. |
 | `token` failed HTTP 401/400 | Client id/secret rejected — verify them in Vendre Admin. |
 | `token` failed HTTP 429 | The store is rate limiting; wait a minute and retry. Do not mint tokens in a loop. |
-| `cors` warning | Print the exact origin and the ready-to-paste JSON, and point at **Menu → Apps & Integrations → Headless → CORS** (`/Admin/configuration?gID=232`). Use the stable `project--<project-id>` hosts, never the ephemeral `id-preview--` host. |
+| `cors` warning | Print the exact origin and the ready-to-paste JSON, and point at **Admin → Headless → CORS** (`/Admin/configuration?gID=232`). Use the stable `project--<project-id>` hosts, never the ephemeral `id-preview--` host. |
 | `session` failed | Check the `bootstrap` and `session` policies on the CORS page and that the credentials are enabled for this store. |
 | `read` failed | Check the `navigation_menus` policy and that a menu is published. |
 
 For CORS, always print the origin verbatim and both Admin fields:
 **Surface CORS Origins JSON** and **Surface CORS Policies JSON** (the policies
 field wins on conflict), found under
-**Menu → Apps & Integrations → Headless → CORS** (`/Admin/configuration?gID=232`).
+**Admin → Headless → CORS** (`/Admin/configuration?gID=232`).
 
 ```json
 {
