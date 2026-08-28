@@ -1,13 +1,5 @@
 /** Minimal language layer for the setup guide (Swedish default, English option). */
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { useEffect, useMemo, useSyncExternalStore } from "react";
 
 export type Language = "sv" | "en";
 
@@ -184,53 +176,63 @@ type I18nValue = {
   t: (key: TranslationKey, vars?: Record<string, string | number>) => string;
 };
 
-const I18nContext = createContext<I18nValue | null>(null);
+let currentLanguage: Language = "sv";
+const listeners = new Set<() => void>();
 
-export function I18nProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageState] = useState<Language>("sv");
+function emit() {
+  for (const listener of listeners) listener();
+}
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+export function setLanguage(next: Language) {
+  currentLanguage = next;
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem(STORAGE_KEY, next);
+    document.documentElement.lang = next;
+  }
+  emit();
+}
+
+function translate(
+  language: Language,
+  key: TranslationKey,
+  vars?: Record<string, string | number>,
+) {
+  const raw: string = dictionary[language][key] ?? dictionary.sv[key] ?? key;
+  if (!vars) return raw;
+  return Object.entries(vars).reduce(
+    (text, [name, value]) => text.replaceAll(`{${name}}`, String(value)),
+    raw,
+  );
+}
+
+/** Reads the current language without React context (SSR-safe, always "sv" on the server). */
+export function useI18n(): I18nValue {
+  const language = useSyncExternalStore(
+    subscribe,
+    () => currentLanguage,
+    () => "sv" as Language,
+  );
 
   useEffect(() => {
     const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (stored === "sv" || stored === "en") setLanguageState(stored);
+    if ((stored === "sv" || stored === "en") && stored !== currentLanguage) {
+      setLanguage(stored);
+    }
   }, []);
 
-  const setLanguage = useCallback((next: Language) => {
-    setLanguageState(next);
-    window.localStorage.setItem(STORAGE_KEY, next);
-    document.documentElement.lang = next;
-  }, []);
-
-  const t = useCallback<I18nValue["t"]>(
-    (key, vars) => {
-      const raw: string = dictionary[language][key] ?? dictionary.sv[key] ?? key;
-      if (!vars) return raw;
-      return Object.entries(vars).reduce(
-        (text, [name, value]) => text.replaceAll(`{${name}}`, String(value)),
-        raw,
-      );
-    },
+  return useMemo(
+    () => ({
+      language,
+      setLanguage,
+      t: (key, vars) => translate(language, key, vars),
+    }),
     [language],
   );
-
-  const value = useMemo(() => ({ language, setLanguage, t }), [language, setLanguage, t]);
-
-  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
-}
-
-/** Falls back to Swedish text if a component renders outside the provider. */
-const fallback: I18nValue = {
-  language: "sv",
-  setLanguage: () => {},
-  t: (key, vars) => {
-    const raw: string = dictionary.sv[key] ?? key;
-    if (!vars) return raw;
-    return Object.entries(vars).reduce(
-      (text, [name, value]) => text.replaceAll(`{${name}}`, String(value)),
-      raw,
-    );
-  },
-};
-
-export function useI18n(): I18nValue {
-  return useContext(I18nContext) ?? fallback;
 }
