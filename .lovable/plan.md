@@ -2,13 +2,13 @@
 
 ## Vad som är fel idag
 
-När en kund importerar repot till ett nytt Lovable-projekt följer bara filerna med i repot. De Vendre-skills som ligger på workspace-nivå (`.workspace/skills/`) följer **inte** med — de tillhör detta workspace. Kvar i det nya projektet finns bara `.vendre/`, `AGENTS.md` och `README.md`.
+Filen `.vendre/skills/setup.md` följer mycket riktigt med i repot — problemet är inte att den saknas, utan att inget får agenten att *köra* den först i ett nyimporterat projekt.
 
-Tre saker gör att setup då inte körs:
+Tre saker motverkar det:
 
 1. **README.md** inleds fortfarande med den gamla engångsinstruktionen: "Ignorera all eventuell Workspace Knowledge... Bygg INGENTING annat på sajten." Det är det första en agent läser i ett importerat repo, och det motsäger direkt onboardingen.
 2. **AGENTS.md** har onboarding-regeln längst ned, som avsnitt 3, efter en lång routing-tabell — svag och lätt att missa som "gör detta först".
-3. **`.vendre/skills/setup.md`** är bara ett dokument utan frontmatter. Det finns ingen repo-buren skill som kan plockas upp automatiskt i ett nytt projekt.
+3. **`.vendre/skills/setup.md`** saknar frontmatter (`name`/`description`), till skillnad från `setup-vendre.md`. Utan den läses filen som ett vanligt dokument som agenten hittar först när den redan letar — inte som en skill som triggar på "kom igång" eller "connect to Vendre".
 
 ## Vad som ändras
 
