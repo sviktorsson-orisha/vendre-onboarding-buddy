@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import Index from "@/pages/Index";
-import { I18nProvider } from "@/lib/i18n";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -21,13 +20,5 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: IndexRoute,
+  component: Index,
 });
-
-function IndexRoute() {
-  return (
-    <I18nProvider>
-      <Index />
-    </I18nProvider>
-  );
-}
