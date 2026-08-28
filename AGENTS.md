@@ -9,6 +9,8 @@ Before performing any architectural decisions or API calls, consult the correspo
 - **`general.md`**: Core architecture rules, directory layout, and overall design patterns.
 - **`api-reference.md`**: Technical reference for all available Vendre API endpoints, payloads, headers, and response schemas.
 
+**Source of truth:** `api-reference.md` is authoritative for endpoints, HTTP methods, CORS policies, required headers, mutation-token rules and the error format. `general.md` and the skills describe usage patterns and UX — if any of them contradicts the reference, follow the reference and correct the other file.
+
 ## 2. SKILLS ROUTING TABLE (`/.vendre/skills/`)
 
 Always read the matching skill file **before** starting work in that area.

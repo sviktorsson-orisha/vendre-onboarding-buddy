@@ -107,7 +107,7 @@ The most common source of silent failures in Vendre frontends.
 - **429** → respect `Retry-After` and `RateLimit-*`, back off, say the store is
   busy.
 
-## CORS allowlist (Admin → Configuration → Surface)
+## CORS allowlist (Admin → Headless → CORS, `/Admin/configuration?gID=232`)
 
 Add every frontend origin (scheme + host, no trailing slash: dev, preview and
 production) to the policies: `oauth`, `bootstrap`, `session`, `customer`,

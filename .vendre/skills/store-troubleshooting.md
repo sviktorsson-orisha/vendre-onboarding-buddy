@@ -41,4 +41,7 @@ and falls back to the proxy. That fallback must be silent.
 ## Store-side checks
 
 `IS_HEADLESS` and the Surface CORS policies live under
-Admin → Configuration → Surface. Origins are scheme + host, no trailing slash.
+Admin → Headless → CORS (`/Admin/configuration?gID=232`). Origins are scheme +
+host, no trailing slash. For which policy and token each endpoint needs, see the
+endpoint catalogue in `.vendre/knowledge/api-reference.md` §2–§3 — it is the
+source of truth.

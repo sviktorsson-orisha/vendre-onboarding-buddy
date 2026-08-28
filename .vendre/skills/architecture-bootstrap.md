@@ -55,7 +55,7 @@ browser ──GET /api/vendre/token──> server route (client_secret stays her
    `ready` promise.
 4. Feature routes: home, category (PLP), product (PDP), cart, account, CMS.
 
-## CORS allowlist (Admin → Configuration → Surface)
+## CORS allowlist (Admin → Headless → CORS, `/Admin/configuration?gID=232`)
 
 Add every frontend origin (scheme + host, no trailing slash: dev, preview and
 production) to the policies: `oauth`, `bootstrap`, `session`, `customer`,
