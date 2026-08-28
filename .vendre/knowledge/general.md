@@ -1,6 +1,7 @@
 ### General Context
 
-- This workspace is strictly dedicated to building e-commerce frontends connecting to Vendre stores via Surface API v2 (/surface/2/\*).
+- This workspace is strictly dedicated to building e-commerce frontends connecting to Vendre stores via Surface API v2 (/surface/2/\*). The platform also exposes v1, but storefronts built here call v2 only.
+- `.vendre/knowledge/api-reference.md` is the source of truth for endpoints, CORS policies, headers and error formats. Where this file or a skill disagrees with it, the reference wins.
 
 ### Architecture & Security Rules
 
@@ -10,7 +11,7 @@
 
 ### CORS & Admin Configuration Rules
 
-- **CORS Policies Allowlisting:** Direct browser requests to Vendre require the origin (scheme + host, no trailing slash, e.g. `https://my-store.com`) to be allowlisted under `Admin → Configuration → Surface` (`SURFACE_CORS_ORIGINS` or `SURFACE_CORS_POLICIES`).
+- **CORS Policies Allowlisting:** Direct browser requests to Vendre require the origin (scheme + host, no trailing slash, e.g. `https://my-store.com`) to be allowlisted under `Admin → Headless → CORS` (`/Admin/configuration?gID=232`, fields `SURFACE_CORS_ORIGINS` / `SURFACE_CORS_POLICIES`).
 - **CORS Gotchas:**
   - All `/surface/2/accounts*` endpoints resolve to the `default` CORS policy (NOT `customer`).
   - `POST /surface/2/twig/render` resolves to the `default` policy.
@@ -53,5 +54,5 @@ Recall and apply these dedicated skills based on the active task:
 ### Rate Limiting & Error Conventions
 
 - Respect HTTP 429 rate limits: inspect `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset`, and `Retry-After` headers.
-- Standard API errors follow `{ "errors": [{ "code": "...", "status": "...", "public": true, "title": "..." }] }`.
-- Handle HTTP 401 by triggering a session re-bootstrap.
+- Standard API errors follow `{ "errors": [{ "id", "status", "code", "title", "detail", "public", "source": { "pointer", "parameter", "header" } }] }`, where `status`, `code` and `title` are always present and the rest are optional (see api-reference.md §1.7).
+- Handle HTTP 401 by triggering a session re-bootstrap when the code is `SURFACE_SESSION_UNAUTHORIZED`; a bare 401 without a Surface code means the bearer must be renewed.

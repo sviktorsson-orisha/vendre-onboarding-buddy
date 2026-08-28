@@ -1,4 +1,9 @@
-Vendre connection setup
+---
+name: vendre-setup
+description: Run FIRST in any newly imported/created Vendre project, and whenever the user says "get started", "hur börjar jag", "kom igång", "connect to Vendre", or mentions API keys, OAuth client, CORS or store credentials. Collects VENDRE_BASE_URL / VENDRE_CLIENT_ID / VENDRE_CLIENT_SECRET, configures CORS and verifies the connection before any storefront work.
+---
+
+# Vendre connection setup
 
 Run this script exactly. Do not skip steps, do not build UI early, and do not
 rewrite anything in src/lib/vendre/ — those helpers already exist.
@@ -64,7 +69,7 @@ The store is rate limiting; wait a minute and retry. Do not mint tokens in a loo
 
 cors warning
 
-Print the exact origin and the ready-to-paste JSON, and point at Menu → Apps & Integrations → Headless → CORS (/Admin/configuration?gID=232). Use the stable project--<project-id> hosts, never the ephemeral id-preview-- host.
+Print the exact origin and the ready-to-paste JSON, and point at Admin → Headless → CORS (/Admin/configuration?gID=232). Use the stable project--<project-id> hosts, never the ephemeral id-preview-- host.
 
 session failed
 
@@ -77,7 +82,7 @@ Check the navigation_menus policy and that a menu is published.
 For CORS, always print the origin verbatim and both Admin fields:
 Surface CORS Origins JSON and Surface CORS Policies JSON (the policies
 field wins on conflict), found under
-Menu → Apps & Integrations → Headless → CORS (/Admin/configuration?gID=232).
+Admin → Headless → CORS (/Admin/configuration?gID=232).
 
 {
 "https://your-project.lovable.app": [
