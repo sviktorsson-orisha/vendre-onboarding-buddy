@@ -20,5 +20,13 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: Index,
+  component: IndexRoute,
 });
+
+function IndexRoute() {
+  return (
+    <I18nProvider>
+      <Index />
+    </I18nProvider>
+  );
+}
