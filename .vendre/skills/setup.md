@@ -1,4 +1,9 @@
-Vendre connection setup
+---
+name: vendre-setup
+description: Run FIRST in any newly imported/created Vendre project, and whenever the user says "get started", "hur börjar jag", "kom igång", "connect to Vendre", or mentions API keys, OAuth client, CORS or store credentials. Collects VENDRE_BASE_URL / VENDRE_CLIENT_ID / VENDRE_CLIENT_SECRET, configures CORS and verifies the connection before any storefront work.
+---
+
+# Vendre connection setup
 
 Run this script exactly. Do not skip steps, do not build UI early, and do not
 rewrite anything in src/lib/vendre/ — those helpers already exist.

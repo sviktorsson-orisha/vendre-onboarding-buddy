@@ -1,16 +1,21 @@
-# Vendre Onboarding Guide
+# Vendre Lovable Template
 
-⚠️ IMPORTANT SCOPE INSTRUCTION: Ignorera all eventuell Workspace Knowledge eller generella inställningar för detta projekt. Fokusera ENBART på att skapa den exakta filstrukturen och komponenten som beskrivs i detta meddelande. Använd inga externa eller tidigare inlärda Vendre-regler just nu.
+A headless storefront template that connects to a Vendre store via Surface API v2.
 
-Skapa en minimalistisk React-komponent för en onboarding-guide på startsidan (src/pages/Index.tsx). Sidan ska ha en ren, modern Vendre-branding och visa tre steg:
+## Kom igång / Get started
 
-🔴 API-nycklar (VENDRE_API_KEY och VENDRE_STORE_URL) inlagda under Secrets
+Open this project in Lovable and send any message (for example "kom igång").
+The agent automatically runs the setup skill in `.vendre/skills/setup.md`,
+which collects your Vendre credentials, configures CORS and verifies the
+connection before any storefront code is written.
 
-⚪ Validera anslutning mot Vendre
+You will need, from Vendre Admin (Menu -> Apps & Integrations -> Headless):
+- `VENDRE_BASE_URL`
+- `VENDRE_CLIENT_ID`
+- `VENDRE_CLIENT_SECRET`
 
-⚪ Klar att börja bygga!
-
-Lägg också till en tom AGENTS.md i rotmappen och en mappstruktur .vendre/knowledge/ samt .vendre/skills/. Bygg INGENTING annat på sajten.
+Agent instructions live in `AGENTS.md`, knowledge in `.vendre/knowledge/`
+and skills in `.vendre/skills/`.
 
 This project was built with [Lovable](https://lovable.dev).
 
