@@ -3,6 +3,7 @@ import { Check, ChevronDown, Copy, ExternalLink, Loader2, Lock } from "lucide-re
 
 import { BrandHero, BrandShell } from "@/components/vendre/brand-shell";
 import { PublishOriginField } from "@/components/vendre/publish-origin-field";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { usePublishedOrigin } from "@/lib/vendre/published-origin";
 import { testVendreConnection, type ConnectionResult, type ConnectionStep } from "@/lib/vendre";
 import { cn } from "@/lib/utils";
@@ -10,22 +11,23 @@ import { cn } from "@/lib/utils";
 const PROJECT_ID = "b680686f-4945-4ee5-a18e-4b6fffe4e625";
 const SECRET_NAMES = ["VENDRE_BASE_URL", "VENDRE_CLIENT_ID", "VENDRE_CLIENT_SECRET"];
 const POLICIES = ["oauth", "bootstrap", "session", "customer", "shopping_cart", "checkout", "vendre_query_language", "default"];
-const TITLES = [
-  "Skapa OAuth-nycklar",
-  "Lägg in credentials",
-  "Publicera och välj ett enklare domännamn",
-  "Konfigurera CORS",
-  "Verifiera anslutningen",
-  "Redo att börja bygga",
+const TITLE_KEYS: TranslationKey[] = [
+  "step1.title",
+  "step2.title",
+  "step3.title",
+  "step4.title",
+  "step5.title",
+  "step6.title",
 ];
 
 type GuideState = "done" | "current" | "pending";
 
 function CopyButton({ value }: { value: string }) {
+  const { t } = useI18n();
   const [copied, setCopied] = useState(false);
   return (
     <button type="button" className="brand-button-ghost" onClick={() => void navigator.clipboard.writeText(value).then(() => { setCopied(true); window.setTimeout(() => setCopied(false), 1500); })}>
-      <Copy className="size-3.5" aria-hidden /> {copied ? "Kopierat" : "Kopiera"}
+      <Copy className="size-3.5" aria-hidden /> {copied ? t("action.copied") : t("action.copy")}
     </button>
   );
 }
@@ -41,6 +43,7 @@ function StepResult({ step }: { step: ConnectionStep }) {
 }
 
 function GuideStep({ index, title, state, open, onToggle, verdict, children }: { index: number; title: string; state: GuideState; open: boolean; onToggle: () => void; verdict: string; children: ReactNode }) {
+  const { t } = useI18n();
   const done = state === "done";
   const current = state === "current";
   return (
@@ -51,7 +54,7 @@ function GuideStep({ index, title, state, open, onToggle, verdict, children }: {
       </span>
       <button type="button" onClick={onToggle} aria-expanded={open} className="flex w-full items-center gap-2 text-left">
         <h3 className="text-base font-bold text-foreground">{title}</h3>
-        <span className={cn("brand-eyebrow rounded-md px-2 py-0.5", done ? "bg-emerald-500/10 text-emerald-700" : current ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground")}>{done ? "Klar" : current ? "Aktuell" : "Väntar"}</span>
+        <span className={cn("brand-eyebrow rounded-md px-2 py-0.5", done ? "bg-emerald-500/10 text-emerald-700" : current ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground")}>{done ? t("state.done") : current ? t("state.current") : t("state.pending")}</span>
         <ChevronDown className={cn("ml-auto size-4 text-muted-foreground transition-transform", open && "rotate-180")} />
       </button>
       <p className={cn("mt-1 flex items-center gap-2 text-sm font-medium", done ? "text-emerald-700" : current ? "text-primary" : "text-muted-foreground")}><span className={cn("size-2 rounded-full", done ? "bg-emerald-500" : current ? "bg-primary" : "bg-muted-foreground/40")} />{verdict}</p>
@@ -65,6 +68,7 @@ function AdminLink({ path, children }: { path: string; children: ReactNode }) {
 }
 
 export default function Index() {
+  const { t } = useI18n();
   const preview = `https://project--${PROJECT_ID}-dev.lovable.app`;
   const published = `https://project--${PROJECT_ID}.lovable.app`;
   const { origin: publishedOrigin, setOrigin: setPublishedOrigin } = usePublishedOrigin();
@@ -86,11 +90,11 @@ export default function Index() {
   const originsJson = useMemo(() => JSON.stringify(Object.fromEntries(origins.map((origin) => [origin, POLICIES])), null, 2), [origins]);
   const policiesJson = useMemo(() => JSON.stringify(Object.fromEntries(POLICIES.map((policy) => [policy, origins])), null, 2), [origins]);
   const done = [adminDone, secretStatus?.ok === true, publishedOrigin !== "", corsDone, result?.ok === true, result?.ok === true];
-  const total = TITLES.length;
+  const total = TITLE_KEYS.length;
   const active = Math.max(done.findIndex((value) => !value), 0);
   const completedCount = done.filter(Boolean).length;
   const states = done.map((value, index): GuideState => value ? "done" : index === active ? "current" : "pending");
-  const activeTitle = TITLES[active] ?? TITLES[0] ?? "Setup";
+  const activeTitle = t(TITLE_KEYS[active] ?? "step1.title");
 
   const checkSecrets = async () => {
     setChecking(true);
@@ -122,55 +126,55 @@ export default function Index() {
         <div className="relative flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-xl font-bold text-foreground">Setup-guide</h2>
-              <span className="brand-eyebrow rounded-md bg-primary/10 px-2.5 py-1 text-primary">Steg {Math.min(active + 1, total)} av {total}</span>
+              <h2 className="text-xl font-bold text-foreground">{t("panel.title")}</h2>
+              <span className="brand-eyebrow rounded-md bg-primary/10 px-2.5 py-1 text-primary">{t("panel.step", { current: Math.min(active + 1, total), total })}</span>
             </div>
-            <p className="mt-1 text-sm text-muted-foreground">{result?.ok ? "Anslutningen är verifierad och klar." : `${completedCount} av ${total} steg klara.`}</p>
-            {!result?.ok && <p className="mt-3 inline-flex rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-accent-foreground">Nästa: {active + 1}. {activeTitle}</p>}
+            <p className="mt-1 text-sm text-muted-foreground">{result?.ok ? t("panel.verified") : t("panel.progress", { done: completedCount, total })}</p>
+            {!result?.ok && <p className="mt-3 inline-flex rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-accent-foreground">{t("panel.next")} {active + 1}. {activeTitle}</p>}
           </div>
-          <button type="button" onClick={runTest} disabled={testing || !secretStatus?.ok} className="brand-button">{testing && <Loader2 className="size-4 animate-spin" />}{testing ? "Testar" : "Testa igen"}</button>
+          <button type="button" onClick={runTest} disabled={testing || !secretStatus?.ok} className="brand-button">{testing && <Loader2 className="size-4 animate-spin" />}{testing ? t("panel.testing") : t("panel.retest")}</button>
         </div>
-        <div className="relative mt-5 flex gap-1.5">{states.map((state, index) => <span key={TITLES[index]} className={cn("h-1.5 flex-1 rounded-full transition-colors", state === "done" ? "bg-emerald-500" : state === "current" ? "bg-linear-to-r from-primary via-brand-pink to-brand-blue" : "bg-muted")} />)}</div>
+        <div className="relative mt-5 flex gap-1.5">{states.map((state, index) => <span key={TITLE_KEYS[index]} className={cn("h-1.5 flex-1 rounded-full transition-colors", state === "done" ? "bg-emerald-500" : state === "current" ? "bg-linear-to-r from-primary via-brand-pink to-brand-blue" : "bg-muted")} />)}</div>
       </section>
 
       <ol className="mt-6 space-y-4">
-        <GuideStep index={1} title={TITLES[0] ?? "Skapa OAuth-nycklar"} state={states[0] ?? "current"} open={open === 0} onToggle={() => setOpen(open === 0 ? -1 : 0)} verdict={adminDone ? "OAuth-förberedelser bekräftade" : "Skapa en OAuth-klient i Vendre Admin"}>
-          <p>Skapa klienten innan credentials läggs in. Din <code className="font-mono text-xs text-foreground">client_secret</code> visas bara en gång.</p>
-          <div className="rounded-lg border border-border bg-muted/40 p-4"><p className="font-medium text-foreground">Appar & Integrationer → Headless → OAuth</p><AdminLink path="/Admin/headless/auth/oauth-clients">/Admin/headless/auth/oauth-clients</AdminLink></div>
-          <label className="flex items-start gap-3 rounded-lg border border-border bg-card p-4 text-foreground"><input type="checkbox" checked={adminDone} onChange={(event) => { setAdminDone(event.target.checked); if (event.target.checked) setOpen(1); }} className="mt-0.5 size-4 accent-primary" />Jag har skapat OAuth-klienten och sparat nycklarna.</label>
+        <GuideStep index={1} title={t("step1.title")} state={states[0] ?? "current"} open={open === 0} onToggle={() => setOpen(open === 0 ? -1 : 0)} verdict={adminDone ? t("step1.verdictDone") : t("step1.verdict")}>
+          <p>{t("step1.body")} <code className="font-mono text-xs text-foreground">client_secret</code> {t("step1.bodyEnd")}</p>
+          <div className="rounded-lg border border-border bg-muted/40 p-4"><p className="font-medium text-foreground">{t("step1.adminPath")}</p><AdminLink path="/Admin/headless/auth/oauth-clients">/Admin/headless/auth/oauth-clients</AdminLink></div>
+          <label className="flex items-start gap-3 rounded-lg border border-border bg-card p-4 text-foreground"><input type="checkbox" checked={adminDone} onChange={(event) => { setAdminDone(event.target.checked); if (event.target.checked) setOpen(1); }} className="mt-0.5 size-4 accent-primary" />{t("step1.check")}</label>
         </GuideStep>
 
-        <GuideStep index={2} title={TITLES[1] ?? "Lägg in credentials"} state={states[1] ?? "pending"} open={open === 1} onToggle={() => setOpen(open === 1 ? -1 : 1)} verdict={secretStatus?.ok ? "Alla credentials är tillgängliga" : "Lägg in tre värden under Secrets"}>
-          <p>Credentials används endast på serversidan och ska aldrig skrivas i kod eller chatten.</p>
+        <GuideStep index={2} title={t("step2.title")} state={states[1] ?? "pending"} open={open === 1} onToggle={() => setOpen(open === 1 ? -1 : 1)} verdict={secretStatus?.ok ? t("step2.verdictDone") : t("step2.verdict")}>
+          <p>{t("step2.body")}</p>
           <ul className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">{SECRET_NAMES.map((name) => { const missing = secretStatus?.missing.includes(name); return <li key={name} className="flex items-center gap-2"><span className={cn("size-2 rounded-full", !secretStatus ? "bg-muted-foreground/40" : missing ? "bg-destructive" : "bg-emerald-500")} /><code className="font-mono text-xs text-foreground">{name}</code></li>; })}</ul>
-          <button type="button" className="brand-button" disabled={checking || !adminDone} onClick={checkSecrets}>{checking && <Loader2 className="size-4 animate-spin" />}{checking ? "Kontrollerar" : "Kontrollera credentials"}</button>
-          {secretStatus && !secretStatus.ok && <p className="rounded-md bg-destructive/10 p-3 text-destructive">Saknas: {secretStatus.missing.join(", ")}</p>}
+          <button type="button" className="brand-button" disabled={checking || !adminDone} onClick={checkSecrets}>{checking && <Loader2 className="size-4 animate-spin" />}{checking ? t("step2.checking") : t("step2.check")}</button>
+          {secretStatus && !secretStatus.ok && <p className="rounded-md bg-destructive/10 p-3 text-destructive">{t("step2.missing")} {secretStatus.missing.join(", ")}</p>}
         </GuideStep>
 
-        <GuideStep index={3} title={TITLES[2] ?? "Publicera och välj ett enklare domännamn"} state={states[2] ?? "pending"} open={open === 2} onToggle={() => setOpen(open === 2 ? -1 : 2)} verdict={publishedOrigin ? `Använder ${publishedOrigin}` : "Publicera och ange din valda adress"}>
-          <p>Publicera projektet i Lovable och välj ett läsbart domännamn, till exempel <code className="font-mono text-xs text-foreground">spring-board.lovable.app</code>, istället för den långa <code className="font-mono text-xs">project--&lt;uuid&gt;</code>-adressen.</p>
-          <p>Ange adressen här — den läggs automatiskt först i CORS-blocken i nästa steg, så att koden du kopierar redan innehåller din domän.</p>
+        <GuideStep index={3} title={t("step3.title")} state={states[2] ?? "pending"} open={open === 2} onToggle={() => setOpen(open === 2 ? -1 : 2)} verdict={publishedOrigin ? t("step3.verdictDone", { origin: publishedOrigin }) : t("step3.verdict")}>
+          <p>{t("step3.body1a")} <code className="font-mono text-xs text-foreground">spring-board.lovable.app</code>, {t("step3.body1b")} <code className="font-mono text-xs">project--&lt;uuid&gt;</code>{t("step3.body1c")}</p>
+          <p>{t("step3.body2")}</p>
           <PublishOriginField origin={publishedOrigin} onSave={(value) => { setPublishedOrigin(value); if (value) setOpen(3); }} />
-          {!publishedOrigin && <p className="text-xs">Detta är ett manuellt steg — inget tekniskt test körs här.</p>}
+          {!publishedOrigin && <p className="text-xs">{t("step3.manual")}</p>}
         </GuideStep>
 
-        <GuideStep index={4} title={TITLES[3] ?? "Konfigurera CORS"} state={states[3] ?? "pending"} open={open === 3} onToggle={() => setOpen(open === 3 ? -1 : 3)} verdict={corsDone ? "Origins och policyer bekräftade" : "Allowlista storefrontens adresser"}>
-          <p>Klistra in adresserna under Appar & Integrationer → Headless → CORS. Använd inte den tillfälliga <code className="font-mono text-xs">id-preview--</code>-adressen.</p>
-          <div className="rounded-lg border border-border bg-muted/40 p-4"><p className="font-medium text-foreground">CORS-inställningar</p><AdminLink path="/Admin/configuration?gID=232">/Admin/configuration?gID=232</AdminLink></div>
+        <GuideStep index={4} title={t("step4.title")} state={states[3] ?? "pending"} open={open === 3} onToggle={() => setOpen(open === 3 ? -1 : 3)} verdict={corsDone ? t("step4.verdictDone") : t("step4.verdict")}>
+          <p>{t("step4.body1")} <code className="font-mono text-xs">id-preview--</code>{t("step4.body1End")}</p>
+          <div className="rounded-lg border border-border bg-muted/40 p-4"><p className="font-medium text-foreground">{t("step4.settings")}</p><AdminLink path="/Admin/configuration?gID=232">/Admin/configuration?gID=232</AdminLink></div>
           {origins.map((origin) => <code key={origin} className="block break-all rounded-md border border-border bg-card p-3 text-xs text-foreground">{origin}</code>)}
-          {[["Surface CORS Origins JSON", originsJson], ["Surface CORS Policies JSON", policiesJson]].map(([label = "CORS JSON", json = ""]) => <div key={label}><div className="flex items-center justify-between gap-3"><span className="brand-eyebrow text-muted-foreground">{label}</span><CopyButton value={json} /></div><pre className="mt-2 max-h-64 overflow-auto rounded-md bg-muted p-3 text-xs text-foreground">{json}</pre></div>)}
-          <label className="flex items-start gap-3 rounded-lg border border-border bg-card p-4 text-foreground"><input type="checkbox" checked={corsDone} onChange={(event) => { setCorsDone(event.target.checked); if (event.target.checked) setOpen(4); }} disabled={!publishedOrigin} className="mt-0.5 size-4 accent-primary" />Jag har lagt in origins och policyer i Vendre Admin.</label>
+          {([["step4.originsJson", originsJson], ["step4.policiesJson", policiesJson]] as [TranslationKey, string][]).map(([labelKey, json]) => <div key={labelKey}><div className="flex items-center justify-between gap-3"><span className="brand-eyebrow text-muted-foreground">{t(labelKey)}</span><CopyButton value={json} /></div><pre className="mt-2 max-h-64 overflow-auto rounded-md bg-muted p-3 text-xs text-foreground">{json}</pre></div>)}
+          <label className="flex items-start gap-3 rounded-lg border border-border bg-card p-4 text-foreground"><input type="checkbox" checked={corsDone} onChange={(event) => { setCorsDone(event.target.checked); if (event.target.checked) setOpen(4); }} disabled={!publishedOrigin} className="mt-0.5 size-4 accent-primary" />{t("step4.check")}</label>
         </GuideStep>
 
-        <GuideStep index={5} title={TITLES[4] ?? "Verifiera anslutningen"} state={states[4] ?? "pending"} open={open === 4} onToggle={() => setOpen(open === 4 ? -1 : 4)} verdict={result?.ok ? "Token, CORS, session och läsrättigheter fungerar" : "Kör det tekniska anslutningstestet"}>
-          <p>Testet verifierar OAuth-token, CORS, session/bootstrap och läsning av navigation/menus.</p>
-          <button type="button" className="brand-button" disabled={testing || !corsDone} onClick={runTest}>{testing && <Loader2 className="size-4 animate-spin" />}{testing ? "Testar anslutningen" : "Kör anslutningstest"}</button>
+        <GuideStep index={5} title={t("step5.title")} state={states[4] ?? "pending"} open={open === 4} onToggle={() => setOpen(open === 4 ? -1 : 4)} verdict={result?.ok ? t("step5.verdictDone") : t("step5.verdict")}>
+          <p>{t("step5.body")}</p>
+          <button type="button" className="brand-button" disabled={testing || !corsDone} onClick={runTest}>{testing && <Loader2 className="size-4 animate-spin" />}{testing ? t("step5.running") : t("step5.run")}</button>
           {testError && <p className="rounded-md bg-destructive/10 p-3 text-destructive">{testError}</p>}
           {result && <div className="space-y-2">{result.steps.map((step) => <StepResult key={step.id} step={step} />)}</div>}
         </GuideStep>
 
-        <GuideStep index={6} title={TITLES[5] ?? "Redo att börja bygga"} state={states[5] ?? "pending"} open={open === 5} onToggle={() => setOpen(open === 5 ? -1 : 5)} verdict={result?.ok ? "Butiksanslutningen är verifierad" : "Låst tills anslutningen är grön"}>
-          {result?.ok ? <><p className="rounded-md bg-emerald-500/10 p-3 font-medium text-emerald-700">Setupen är klar. Projektet är redo för storefront-arbete.</p><dl className="space-y-2"><div className="rounded-lg border border-border bg-card p-3"><dt className="brand-eyebrow">Base URL</dt><dd className="mt-1 break-all font-mono text-xs text-foreground">{result.baseUrl}</dd></div><div className="rounded-lg border border-border bg-card p-3"><dt className="brand-eyebrow">Allowlistad origin</dt><dd className="mt-1 break-all font-mono text-xs text-foreground">{publishedOrigin || result.origin}</dd></div></dl></> : <p>Slutför föregående steg och kör anslutningstestet.</p>}
+        <GuideStep index={6} title={t("step6.title")} state={states[5] ?? "pending"} open={open === 5} onToggle={() => setOpen(open === 5 ? -1 : 5)} verdict={result?.ok ? t("step6.verdictDone") : t("step6.verdict")}>
+          {result?.ok ? <><p className="rounded-md bg-emerald-500/10 p-3 font-medium text-emerald-700">{t("step6.done")}</p><dl className="space-y-2"><div className="rounded-lg border border-border bg-card p-3"><dt className="brand-eyebrow">{t("step6.baseUrl")}</dt><dd className="mt-1 break-all font-mono text-xs text-foreground">{result.baseUrl}</dd></div><div className="rounded-lg border border-border bg-card p-3"><dt className="brand-eyebrow">{t("step6.origin")}</dt><dd className="mt-1 break-all font-mono text-xs text-foreground">{publishedOrigin || result.origin}</dd></div></dl></> : <p>{t("step6.pending")}</p>}
         </GuideStep>
       </ol>
     </BrandShell>
