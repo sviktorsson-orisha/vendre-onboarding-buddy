@@ -18,7 +18,7 @@ Always read the matching skill file **before** starting work in that area.
 | Task / area                                            | File                                            |
 | ------------------------------------------------------ | ----------------------------------------------- |
 | First-time setup, API keys, CORS, store status         | `.vendre/skills/setup.md`                       |
-| Extended setup & onboarding script                     | `.vendre/skills/setup-vendre.md`                |
+
 | Surface v2 core: proxy, OAuth, request architecture    | `.vendre/skills/surface-v2.md`                  |
 | App bootstrap & project architecture                   | `.vendre/skills/architecture-bootstrap.md`      |
 | Auth & sessions (full flow, code assets)               | `.vendre/skills/auth-sessions/SKILL.md`         |
