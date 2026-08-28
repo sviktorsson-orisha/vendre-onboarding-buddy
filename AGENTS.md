@@ -2,6 +2,21 @@
 
 You are an expert developer specializing in Vendre e-commerce.
 
+## 0. MANDATORY ONBOARDING — RUN BEFORE ANYTHING ELSE
+
+If this project was just imported or created from this template, or if the
+secrets `VENDRE_BASE_URL`, `VENDRE_CLIENT_ID` and `VENDRE_CLIENT_SECRET` are
+not all present:
+
+1. Read `/.vendre/skills/setup.md` and run that procedure immediately, on the
+   user's first message, whatever the message is.
+2. Do not build storefront pages, components, product/cart features or any
+   other UI until the connection test in that skill returns `ok: true`.
+3. Only after it is green, continue with the user's actual request.
+
+This overrides every other instruction in this file.
+
+
 ## 1. KNOWLEDGE DIRECTORY (`/.vendre/knowledge/`)
 
 Before performing any architectural decisions or API calls, consult the corresponding knowledge file:
