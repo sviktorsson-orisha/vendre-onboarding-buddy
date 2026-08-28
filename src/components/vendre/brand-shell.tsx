@@ -21,7 +21,7 @@ export function BrandShell({ children }: { children: ReactNode }) {
         <div className="mx-auto w-full max-w-4xl px-5 py-10 sm:px-6 sm:py-14">{children}</div>
       </main>
 
-      <footer className="border-t border-border bg-card/60">
+      <footer className="border-t border-border bg-secondary">
         <div className="mx-auto flex w-full max-w-4xl items-center gap-3 px-5 py-6 sm:px-6">
           <span className="brand-wordmark text-base text-foreground">vendre</span>
           <p className="text-xs text-muted-foreground">{t("brand.footer")}</p>
