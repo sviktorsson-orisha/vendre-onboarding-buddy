@@ -32,8 +32,8 @@ Vid konflikt gäller `api-reference.md` — övriga filer rättas efter den, int
 
 ## Små följdändringar i övriga filer
 
-- `general.md`: rätta CORS-sökvägen till samma formulering som setup.md, och lägg till `public`/`detail` i felformatet så det matchar referensen.
-- `store-troubleshooting.md`: lägg till en rad som pekar på §2-katalogen för policy/tokenkrav.
-- `AGENTS.md`: notera under knowledge-avsnittet att `api-reference.md` nu är facit för endpoints, policyer och tokenkrav, medan skills beskriver användningsmönster.
+- `general.md`: rätta CORS-sökvägen och felformatet så de följer api-reference.md.
+- `store-troubleshooting.md` och `setup*.md`: justera CORS-formuleringen till referensens, och peka på §2-katalogen för policy/tokenkrav.
+- `AGENTS.md`: slå fast att `api-reference.md` är source of truth för endpoints, policyer, headers och felformat — skills beskriver användningsmönster och viker sig vid konflikt.
 
 Inga ändringar i `src/` – detta rör enbart dokumentationen under `.vendre/` och `AGENTS.md`.
