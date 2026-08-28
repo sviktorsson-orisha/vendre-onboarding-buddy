@@ -25,8 +25,8 @@ Flytta upp "MANDATORY ONBOARDING" till avsnitt 1, före knowledge- och skills-ta
 **3. Ge `.vendre/skills/setup.md` frontmatter**
 Lägg till `name` + `description` överst (samma stil som `setup-vendre.md`), så filen är igenkännbar som en skill och inte bara ett dokument.
 
-**4. Lägg setup-skillen i repot som aktiverbar skill**
-Skapa `.agents/skills/vendre-setup/SKILL.md` som en tunn wrapper: frontmatter med en description som triggar på "kom igång", "connect to Vendre", "setup", API-nycklar och CORS/401-fel, och en kropp som pekar vidare till `.vendre/skills/setup.md` och `.vendre/knowledge/api-reference.md`. Den mappen ligger i repot och följer därmed med vid import.
+**4. Lägg setup som riktig skill i repot**
+Skapa `.agents/skills/vendre-setup/SKILL.md` — en tunn wrapper med frontmatter vars description triggar på "kom igång", "connect to Vendre", "setup", API-nycklar och CORS/401-fel, och en kropp som pekar vidare till `.vendre/skills/setup.md` och `.vendre/knowledge/api-reference.md`. Den mappen ligger i repot och följer med vid import, och gör setup aktiverbar som skill i det nya projektet i stället för att bara vara en fil att hitta.
 
 ## Att notera
 
