@@ -1,6 +1,7 @@
 ### General Context
 
-- This workspace is strictly dedicated to building e-commerce frontends connecting to Vendre stores via Surface API v2 (/surface/2/\*).
+- This workspace is strictly dedicated to building e-commerce frontends connecting to Vendre stores via Surface API v2 (/surface/2/\*). The platform also exposes v1, but storefronts built here call v2 only.
+- `.vendre/knowledge/api-reference.md` is the source of truth for endpoints, CORS policies, headers and error formats. Where this file or a skill disagrees with it, the reference wins.
 
 ### Architecture & Security Rules
 
