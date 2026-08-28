@@ -2,13 +2,13 @@
 
 ## Vad som är fel idag
 
-När en kund importerar repot till ett nytt Lovable-projekt följer bara filerna med i repot. De Vendre-skills som ligger på workspace-nivå (`.workspace/skills/`) följer **inte** med — de tillhör detta workspace. Kvar i det nya projektet finns bara `.vendre/`, `AGENTS.md` och `README.md`.
+Filen `.vendre/skills/setup.md` följer mycket riktigt med i repot — problemet är inte att den saknas, utan att inget får agenten att *köra* den först i ett nyimporterat projekt.
 
-Tre saker gör att setup då inte körs:
+Tre saker motverkar det:
 
 1. **README.md** inleds fortfarande med den gamla engångsinstruktionen: "Ignorera all eventuell Workspace Knowledge... Bygg INGENTING annat på sajten." Det är det första en agent läser i ett importerat repo, och det motsäger direkt onboardingen.
 2. **AGENTS.md** har onboarding-regeln längst ned, som avsnitt 3, efter en lång routing-tabell — svag och lätt att missa som "gör detta först".
-3. **`.vendre/skills/setup.md`** är bara ett dokument utan frontmatter. Det finns ingen repo-buren skill som kan plockas upp automatiskt i ett nytt projekt.
+3. **`.vendre/skills/setup.md`** saknar frontmatter (`name`/`description`), till skillnad från `setup-vendre.md`. Utan den läses filen som ett vanligt dokument som agenten hittar först när den redan letar — inte som en skill som triggar på "kom igång" eller "connect to Vendre".
 
 ## Vad som ändras
 
@@ -25,8 +25,8 @@ Flytta upp "MANDATORY ONBOARDING" till avsnitt 1, före knowledge- och skills-ta
 **3. Ge `.vendre/skills/setup.md` frontmatter**
 Lägg till `name` + `description` överst (samma stil som `setup-vendre.md`), så filen är igenkännbar som en skill och inte bara ett dokument.
 
-**4. Lägg setup-skillen i repot som aktiverbar skill**
-Skapa `.agents/skills/vendre-setup/SKILL.md` som en tunn wrapper: frontmatter med en description som triggar på "kom igång", "connect to Vendre", "setup", API-nycklar och CORS/401-fel, och en kropp som pekar vidare till `.vendre/skills/setup.md` och `.vendre/knowledge/api-reference.md`. Den mappen ligger i repot och följer därmed med vid import.
+**4. Lägg setup som riktig skill i repot**
+Skapa `.agents/skills/vendre-setup/SKILL.md` — en tunn wrapper med frontmatter vars description triggar på "kom igång", "connect to Vendre", "setup", API-nycklar och CORS/401-fel, och en kropp som pekar vidare till `.vendre/skills/setup.md` och `.vendre/knowledge/api-reference.md`. Den mappen ligger i repot och följer med vid import, och gör setup aktiverbar som skill i det nya projektet i stället för att bara vara en fil att hitta.
 
 ## Att notera
 
