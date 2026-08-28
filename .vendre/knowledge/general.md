@@ -54,5 +54,5 @@ Recall and apply these dedicated skills based on the active task:
 ### Rate Limiting & Error Conventions
 
 - Respect HTTP 429 rate limits: inspect `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset`, and `Retry-After` headers.
-- Standard API errors follow `{ "errors": [{ "code": "...", "status": "...", "public": true, "title": "..." }] }`.
-- Handle HTTP 401 by triggering a session re-bootstrap.
+- Standard API errors follow `{ "errors": [{ "id", "status", "code", "title", "detail", "public", "source": { "pointer", "parameter", "header" } }] }`, where `status`, `code` and `title` are always present and the rest are optional (see api-reference.md §1.7).
+- Handle HTTP 401 by triggering a session re-bootstrap when the code is `SURFACE_SESSION_UNAUTHORIZED`; a bare 401 without a Surface code means the bearer must be renewed.
