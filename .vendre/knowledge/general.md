@@ -10,7 +10,7 @@
 
 ### CORS & Admin Configuration Rules
 
-- **CORS Policies Allowlisting:** Direct browser requests to Vendre require the origin (scheme + host, no trailing slash, e.g. `https://my-store.com`) to be allowlisted under `Admin → Configuration → Surface` (`SURFACE_CORS_ORIGINS` or `SURFACE_CORS_POLICIES`).
+- **CORS Policies Allowlisting:** Direct browser requests to Vendre require the origin (scheme + host, no trailing slash, e.g. `https://my-store.com`) to be allowlisted under `Admin → Headless → CORS` (`/Admin/configuration?gID=232`, fields `SURFACE_CORS_ORIGINS` / `SURFACE_CORS_POLICIES`).
 - **CORS Gotchas:**
   - All `/surface/2/accounts*` endpoints resolve to the `default` CORS policy (NOT `customer`).
   - `POST /surface/2/twig/render` resolves to the `default` policy.
