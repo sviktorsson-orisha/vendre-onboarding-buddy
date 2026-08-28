@@ -4,13 +4,16 @@
 
 ## Motsägelser som behöver rättas
 
-| Punkt | api-reference.md | general.md / skills | Åtgärd |
+Vid konflikt gäller `api-reference.md` — övriga filer rättas efter den, inte tvärtom.
+
+| Punkt | api-reference.md (facit) | general.md / skills | Åtgärd |
 | --- | --- | --- | --- |
-| Var CORS konfigureras | "Admin → Headless → CORS" | general.md: "Admin → Configuration → Surface"; setup.md: "Meny → Apps & Integrations → Headless → CORS (`/Admin/configuration?gID=232`)" | Använd setup.md:s formulering som facit i alla tre filer |
-| Felformat | `id, status, code, title, detail, source` | `code, status, public, title, source.parameter` | Slå ihop till ett fält-schema där `public` och `detail` båda dokumenteras som valfria |
-| API-version | Dokumenterar både v1 och v2 | "uteslutande v2, aldrig v1" | Behåll v1-noteringen men markera tydligt att storefronten endast använder v2 |
-| Mutationstoken | Nämner bara att den valideras "om controllern anropar valideringen" | surface-v2/mutation-tokens: alla POST/PUT/DELETE + undantagen `shopping-cart/coupons/check` (behövs ej) och `GET accounts/me/forgot-password` (behövs) | Lägg in undantagslistan i §1.6 |
-| Bearer på bootstrap | Otydligt om `session/bootstrap` kräver bearer | Skills: bootstrap görs med bearer men utan cookie | Förtydliga i §1.2/§1.3 |
+| Var CORS konfigureras | "Admin → Headless → CORS" (`SURFACE_CORS_ORIGINS` / `SURFACE_CORS_POLICIES`) | general.md: "Admin → Configuration → Surface"; setup.md: "Meny → Apps & Integrations → Headless → CORS" | Rätta general.md och setup*.md till referensens formulering; behåll `/Admin/configuration?gID=232` som kompletterande direktlänk |
+| Felformat | `id, status, code, title, detail, source{pointer,parameter,header}` | `code, status, public, title, source.parameter` | Referensens schema gäller; `public` dokumenteras som valfritt tillägg och skills-texterna rättas till samma fältnamn |
+| API-version | Dokumenterar både v1 och v2 | "uteslutande v2, aldrig v1" | Referensen behåller v1-avsnittet; general.md förtydligas till att storefronten *använder* v2 (inte att v1 saknas) |
+| Mutationstoken | Valideras endast när controllern anropar valideringen; same-origin passerar utan token | surface-v2/mutation-tokens: alla POST/PUT/DELETE + undantagen `shopping-cart/coupons/check` (behövs ej) och `GET accounts/me/forgot-password` (behövs) | Referensregeln står kvar som normativ; undantagslistan läggs till i §1.6 som praktisk klientregel (skicka alltid) |
+| Bearer på bootstrap | §1.3: bearer krävs alltid utom `oauth/token` och `oauth/revoke` → bootstrap kräver bearer | Skills är otydliga | Referensen gäller; förtydliga i §1.2/§1.3 att bootstrap kräver bearer men inte cookie |
+
 
 ## Det som läggs till i api-reference.md
 
@@ -29,8 +32,8 @@
 
 ## Små följdändringar i övriga filer
 
-- `general.md`: rätta CORS-sökvägen till samma formulering som setup.md, och lägg till `public`/`detail` i felformatet så det matchar referensen.
-- `store-troubleshooting.md`: lägg till en rad som pekar på §2-katalogen för policy/tokenkrav.
-- `AGENTS.md`: notera under knowledge-avsnittet att `api-reference.md` nu är facit för endpoints, policyer och tokenkrav, medan skills beskriver användningsmönster.
+- `general.md`: rätta CORS-sökvägen och felformatet så de följer api-reference.md.
+- `store-troubleshooting.md` och `setup*.md`: justera CORS-formuleringen till referensens, och peka på §2-katalogen för policy/tokenkrav.
+- `AGENTS.md`: slå fast att `api-reference.md` är source of truth för endpoints, policyer, headers och felformat — skills beskriver användningsmönster och viker sig vid konflikt.
 
 Inga ändringar i `src/` – detta rör enbart dokumentationen under `.vendre/` och `AGENTS.md`.
