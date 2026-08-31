@@ -48,3 +48,33 @@ export function useIsConfigured() {
     () => false,
   );
 }
+
+/** Lets any part of the storefront (e.g. a live-data error card) open the wizard. */
+let wizardOpen = false;
+const wizardListeners = new Set<() => void>();
+
+function emitWizard() {
+  for (const listener of wizardListeners) listener();
+}
+
+export function openSetupWizard() {
+  wizardOpen = true;
+  emitWizard();
+}
+
+export function setSetupWizardOpen(value: boolean) {
+  if (wizardOpen === value) return;
+  wizardOpen = value;
+  emitWizard();
+}
+
+export function useSetupWizardOpen() {
+  return useSyncExternalStore(
+    (listener) => {
+      wizardListeners.add(listener);
+      return () => wizardListeners.delete(listener);
+    },
+    () => wizardOpen,
+    () => false,
+  );
+}
