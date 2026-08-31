@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as VendreSetupRouteImport } from './routes/vendre-setup'
 import { Route as KategoriSlugRouteImport } from './routes/kategori.$slug'
 import { Route as ProduktSlugRouteImport } from './routes/produkt.$slug'
 import { Route as ApiVendreStatusRouteImport } from './routes/api/vendre/status'
@@ -18,6 +19,11 @@ import { Route as ApiVendreTokenRouteImport } from './routes/api/vendre/token'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VendreSetupRoute = VendreSetupRouteImport.update({
+  id: '/vendre-setup',
+  path: '/vendre-setup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const KategoriSlugRoute = KategoriSlugRouteImport.update({
@@ -43,6 +49,7 @@ const ApiVendreTokenRoute = ApiVendreTokenRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/vendre-setup': typeof VendreSetupRoute
   '/kategori/$slug': typeof KategoriSlugRoute
   '/produkt/$slug': typeof ProduktSlugRoute
   '/api/vendre/status': typeof ApiVendreStatusRoute
@@ -50,6 +57,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/vendre-setup': typeof VendreSetupRoute
   '/kategori/$slug': typeof KategoriSlugRoute
   '/produkt/$slug': typeof ProduktSlugRoute
   '/api/vendre/status': typeof ApiVendreStatusRoute
@@ -58,6 +66,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/vendre-setup': typeof VendreSetupRoute
   '/kategori/$slug': typeof KategoriSlugRoute
   '/produkt/$slug': typeof ProduktSlugRoute
   '/api/vendre/status': typeof ApiVendreStatusRoute
@@ -67,6 +76,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/vendre-setup'
     | '/kategori/$slug'
     | '/produkt/$slug'
     | '/api/vendre/status'
@@ -74,6 +84,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/vendre-setup'
     | '/kategori/$slug'
     | '/produkt/$slug'
     | '/api/vendre/status'
@@ -81,6 +92,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/vendre-setup'
     | '/kategori/$slug'
     | '/produkt/$slug'
     | '/api/vendre/status'
@@ -89,6 +101,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  VendreSetupRoute: typeof VendreSetupRoute
   KategoriSlugRoute: typeof KategoriSlugRoute
   ProduktSlugRoute: typeof ProduktSlugRoute
   ApiVendreStatusRoute: typeof ApiVendreStatusRoute
@@ -102,6 +115,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vendre-setup': {
+      id: '/vendre-setup'
+      path: '/vendre-setup'
+      fullPath: '/vendre-setup'
+      preLoaderRoute: typeof VendreSetupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/kategori/$slug': {
@@ -137,6 +157,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  VendreSetupRoute: VendreSetupRoute,
   KategoriSlugRoute: KategoriSlugRoute,
   ProduktSlugRoute: ProduktSlugRoute,
   ApiVendreStatusRoute: ApiVendreStatusRoute,

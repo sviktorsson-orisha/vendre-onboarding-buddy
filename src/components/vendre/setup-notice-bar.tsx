@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Rocket } from "lucide-react";
 
 import { SetupWizard } from "@/components/vendre/setup-wizard";
