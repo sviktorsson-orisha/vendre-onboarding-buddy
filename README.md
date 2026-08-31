@@ -4,10 +4,14 @@ A headless storefront template that connects to a Vendre store via Surface API v
 
 ## Kom igång / Get started
 
-Open this project in Lovable and send any message (for example "kom igång").
-The agent automatically runs the setup skill in `.vendre/skills/setup.md`,
-which collects your Vendre credentials, configures CORS and verifies the
-connection before any storefront code is written.
+Import the repository into Lovable. Setup starts automatically on the first
+page load and the agent must also begin the procedure on the first message — no
+special prompt such as "kom igång" is required. This is a permanent template
+invariant guarded by `npm run verify:setup`.
+
+The setup procedure in `.vendre/skills/setup.md` collects your Vendre
+credentials, configures CORS and verifies the connection before storefront
+work continues.
 
 You will need, from Vendre Admin (Menu -> Apps & Integrations -> Headless):
 - `VENDRE_BASE_URL`
