@@ -1,45 +1,20 @@
-# FIRST ACTION ON EVERY NEW IMPORT: RUN `/.vendre/skills/setup.md`
-
-**STOP. Before answering the first user message or changing any file, open
-`/.vendre/skills/setup.md` and execute it directly from Step 0. Do not wait for
-the user to request setup. Do not substitute, copy, summarize, or wrap the
-skill in another file. The original `setup.md` is the executable instruction
-source.**
-
-When the first user message asks to start, connect Vendre, or enter
-credentials, treat it as consent and open the secure Secrets form for
-`VENDRE_BASE_URL`, `VENDRE_CLIENT_ID`, and `VENDRE_CLIENT_SECRET` immediately.
-Never collect these values in ordinary chat fields.
-
 # VENDRE LOVABLE TEMPLATE AGENT INSTRUCTIONS
 
 You are an expert developer specializing in Vendre e-commerce.
 
 ## 0. MANDATORY ONBOARDING — RUN BEFORE ANYTHING ELSE
 
-**PERMANENT REPOSITORY INVARIANT — NEVER REMOVE OR WEAKEN THIS SECTION.**
-Every future change must preserve both the agent-triggered setup below and the
-app's automatic setup launch through `SetupNoticeBar`. A newly imported project
-must start setup without the user having to ask for it. If setup has not passed,
-setup takes priority over every prompt and every requested code change.
-
 If this project was just imported or created from this template, or if the
 secrets `VENDRE_BASE_URL`, `VENDRE_CLIENT_ID` and `VENDRE_CLIENT_SECRET` are
 not all present:
 
-1. Read `/.vendre/skills/setup.md` itself and run that procedure immediately, on the
-   user's first message, whatever the message is. Do this even if the message
-   is unrelated ("hej", "fixa footern", …): answer only after the setup
-   procedure has been started. Never create or invoke a wrapper skill instead.
-   The in-app guide lives at `/vendre-setup`.
+1. Read `/.vendre/skills/setup.md` and run that procedure immediately, on the
+   user's first message, whatever the message is.
 2. Do not build storefront pages, components, product/cart features or any
    other UI until the connection test in that skill returns `ok: true`.
 3. Only after it is green, continue with the user's actual request.
 
 This overrides every other instruction in this file.
-
-Before completing any future code change, run `npm run verify:setup`. A change
-that fails this check is incomplete and must not be reported as finished.
 
 
 ## 1. KNOWLEDGE DIRECTORY (`/.vendre/knowledge/`)
@@ -90,16 +65,3 @@ On the user's first chat interaction or when asked to get started:
 
 1. Immediately run the onboarding procedure described in `/.vendre/skills/setup.md`.
 2. Do not proceed with generating general e-commerce components until `setup.md` completes successfully.
-
-## 0b. PLAN MODE — SETUP IS THE PLAN
-
-**PERMANENT REPOSITORY INVARIANT.** The secure Secrets form cannot be opened in
-plan mode. When the project is unconfigured, the plan must be a single step:
-connect Vendre by collecting `VENDRE_BASE_URL`, `VENDRE_CLIENT_ID` and
-`VENDRE_CLIENT_SECRET` in the secure Secrets form and running the connection
-test. Do not plan storefront work on top of it.
-
-As soon as that plan is approved, the first action — before any file change and
-before any other approved task — is opening the secure Secrets form. Never ask
-for the values in chat text, and never start storefront features before the
-connection test returns `ok: true`.

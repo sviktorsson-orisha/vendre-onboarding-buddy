@@ -30,7 +30,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-# Lovable plans (not synced to git)
-.lovable/plan.md
-.lovable/plan/

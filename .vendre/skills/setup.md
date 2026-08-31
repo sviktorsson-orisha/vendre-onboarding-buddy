@@ -26,30 +26,9 @@ any custom domain, added later
 They exist before the project is published, so CORS can be configured up front.
 The setup screen prints the exact list and the ready-to-paste JSON.
 
-Step 0b — Plan mode
-
-In plan mode the secure Secrets form cannot be opened. Do not write a long
-storefront plan: write a one-step plan whose only content is "connect Vendre
-(collect VENDRE_BASE_URL, VENDRE_CLIENT_ID, VENDRE_CLIENT_SECRET in the secure
-Secrets form and run the connection test)" and show it for approval.
-
-The moment the plan is approved, execution continues in build mode: open the
-secure Secrets form as the very first action, before any file change and before
-any other approved task. Never ask for the values in chat text, and never treat
-an approved plan as permission to build storefront features before the
-connection test returns ok: true.
-
 Step 1 — Collect credentials
 
-On the first chat message in a newly imported project, check the configured
-secret names immediately. If any of the three values below are missing, explain
-where they are created in Vendre Admin and ask the user to proceed with the
-secure credential form. If the user's message already asks to start setup,
-connect Vendre, or enter credentials, that is confirmation: open the secure
-Secrets form immediately in the same turn.
-
-Use the Secrets tool's secure form for all three values at once. Never use a
-normal chat question, free-text input, or the Questions tool to collect them:
+Ask the user for all three at once (use the questions tool if available):
 
 VENDRE_BASE_URL — store URL, scheme + host, no trailing slash
 
@@ -64,14 +43,6 @@ rotated, not read again.
 
 Save them with the secrets tool. Never write them into code, .env in the
 repo, or chat. If any value is missing, stop and ask again.
-
-The repository cannot initiate a chat tool before the customer sends their
-first message. Therefore the earliest supported behavior is:
-
-1. The in-app setup wizard opens automatically on the first page load.
-2. The agent opens the secure Secrets form on the first chat turn after the
-   customer has confirmed setup, including an explicit request to enter their
-   credentials.
 
 Step 2 — Run the connection test
 
