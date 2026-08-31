@@ -10,30 +10,12 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as VendreSetupRouteImport } from './routes/vendre-setup'
-import { Route as KategoriSlugRouteImport } from './routes/kategori.$slug'
-import { Route as ProduktSlugRouteImport } from './routes/produkt.$slug'
 import { Route as ApiVendreStatusRouteImport } from './routes/api/vendre/status'
 import { Route as ApiVendreTokenRouteImport } from './routes/api/vendre/token'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const VendreSetupRoute = VendreSetupRouteImport.update({
-  id: '/vendre-setup',
-  path: '/vendre-setup',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const KategoriSlugRoute = KategoriSlugRouteImport.update({
-  id: '/kategori/$slug',
-  path: '/kategori/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProduktSlugRoute = ProduktSlugRouteImport.update({
-  id: '/produkt/$slug',
-  path: '/produkt/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiVendreStatusRoute = ApiVendreStatusRouteImport.update({
@@ -49,61 +31,30 @@ const ApiVendreTokenRoute = ApiVendreTokenRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/vendre-setup': typeof VendreSetupRoute
-  '/kategori/$slug': typeof KategoriSlugRoute
-  '/produkt/$slug': typeof ProduktSlugRoute
   '/api/vendre/status': typeof ApiVendreStatusRoute
   '/api/vendre/token': typeof ApiVendreTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/vendre-setup': typeof VendreSetupRoute
-  '/kategori/$slug': typeof KategoriSlugRoute
-  '/produkt/$slug': typeof ProduktSlugRoute
   '/api/vendre/status': typeof ApiVendreStatusRoute
   '/api/vendre/token': typeof ApiVendreTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/vendre-setup': typeof VendreSetupRoute
-  '/kategori/$slug': typeof KategoriSlugRoute
-  '/produkt/$slug': typeof ProduktSlugRoute
   '/api/vendre/status': typeof ApiVendreStatusRoute
   '/api/vendre/token': typeof ApiVendreTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/vendre-setup'
-    | '/kategori/$slug'
-    | '/produkt/$slug'
-    | '/api/vendre/status'
-    | '/api/vendre/token'
+  fullPaths: '/' | '/api/vendre/status' | '/api/vendre/token'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/vendre-setup'
-    | '/kategori/$slug'
-    | '/produkt/$slug'
-    | '/api/vendre/status'
-    | '/api/vendre/token'
-  id:
-    | '__root__'
-    | '/'
-    | '/vendre-setup'
-    | '/kategori/$slug'
-    | '/produkt/$slug'
-    | '/api/vendre/status'
-    | '/api/vendre/token'
+  to: '/' | '/api/vendre/status' | '/api/vendre/token'
+  id: '__root__' | '/' | '/api/vendre/status' | '/api/vendre/token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  VendreSetupRoute: typeof VendreSetupRoute
-  KategoriSlugRoute: typeof KategoriSlugRoute
-  ProduktSlugRoute: typeof ProduktSlugRoute
   ApiVendreStatusRoute: typeof ApiVendreStatusRoute
   ApiVendreTokenRoute: typeof ApiVendreTokenRoute
 }
@@ -115,27 +66,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/vendre-setup': {
-      id: '/vendre-setup'
-      path: '/vendre-setup'
-      fullPath: '/vendre-setup'
-      preLoaderRoute: typeof VendreSetupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/kategori/$slug': {
-      id: '/kategori/$slug'
-      path: '/kategori/$slug'
-      fullPath: '/kategori/$slug'
-      preLoaderRoute: typeof KategoriSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/produkt/$slug': {
-      id: '/produkt/$slug'
-      path: '/produkt/$slug'
-      fullPath: '/produkt/$slug'
-      preLoaderRoute: typeof ProduktSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/vendre/status': {
@@ -157,9 +87,6 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  VendreSetupRoute: VendreSetupRoute,
-  KategoriSlugRoute: KategoriSlugRoute,
-  ProduktSlugRoute: ProduktSlugRoute,
   ApiVendreStatusRoute: ApiVendreStatusRoute,
   ApiVendreTokenRoute: ApiVendreTokenRoute,
 }
