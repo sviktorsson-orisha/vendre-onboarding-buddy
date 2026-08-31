@@ -1,17 +1,20 @@
 /**
- * Onboarding / demo mode state.
+ * Storefront mode.
  *
  * isConfigured === false  -> the storefront runs on dummy data (Demo Mode).
  * isConfigured === true   -> the storefront calls the connected Vendre store.
  *
- * Implemented as a module store read with useSyncExternalStore so the value is
- * available in every route module, also under route code splitting and SSR.
+ * IMPORTANT: the mode is decided by the SERVER (credentials present + the store
+ * accepting them), never by localStorage. Every visitor sees live data as soon
+ * as the store is connected. localStorage is only used to remember that the
+ * person configuring the store dismissed the guide banner.
  */
 import { useCallback, useEffect, useMemo, useSyncExternalStore, type ReactNode } from "react";
 
-const STORAGE_KEY = "vendre.setup-complete";
+const DISMISS_KEY = "vendre.guide-dismissed";
 
 let configured = false;
+let dismissed = false;
 let hydrated = false;
 const listeners = new Set<() => void>();
 
@@ -26,34 +29,57 @@ function subscribe(listener: () => void) {
   };
 }
 
-export function setConfigured(next: boolean) {
+/** Called with the server-resolved status during SSR and hydration. */
+export function setServerConfigured(next: boolean) {
+  if (configured === next) return;
   configured = next;
+  emit();
+}
+
+export function setGuideDismissed(next: boolean) {
+  dismissed = next;
   if (typeof window !== "undefined") {
-    if (next) window.localStorage.setItem(STORAGE_KEY, "1");
-    else window.localStorage.removeItem(STORAGE_KEY);
+    try {
+      if (next) window.localStorage.setItem(DISMISS_KEY, "1");
+      else window.localStorage.removeItem(DISMISS_KEY);
+    } catch {
+      /* storage unavailable — the choice is simply not remembered */
+    }
   }
   emit();
 }
 
+function snapshot() {
+  return configured ? (dismissed ? 3 : 2) : dismissed ? 1 : 0;
+}
+
 export function useOnboarding() {
-  const isConfigured = useSyncExternalStore(
-    subscribe,
-    () => configured,
-    () => false,
-  );
+  const state = useSyncExternalStore(subscribe, snapshot, () => (configured ? 2 : 0));
+  const isConfigured = state >= 2;
+  const guideDismissed = state === 1 || state === 3;
 
   useEffect(() => {
     if (hydrated) return;
     hydrated = true;
-    if (window.localStorage.getItem(STORAGE_KEY) === "1") setConfigured(true);
+    try {
+      if (window.localStorage.getItem(DISMISS_KEY) === "1") setGuideDismissed(true);
+    } catch {
+      /* ignore */
+    }
   }, []);
 
-  const markConfigured = useCallback(() => setConfigured(true), []);
-  const reset = useCallback(() => setConfigured(false), []);
+  const markConfigured = useCallback(() => setGuideDismissed(true), []);
+  const reset = useCallback(() => setGuideDismissed(false), []);
 
   return useMemo(
-    () => ({ isConfigured, mode: isConfigured ? ("live" as const) : ("demo" as const), markConfigured, reset }),
-    [isConfigured, markConfigured, reset],
+    () => ({
+      isConfigured,
+      guideDismissed,
+      mode: isConfigured ? ("live" as const) : ("demo" as const),
+      markConfigured,
+      reset,
+    }),
+    [isConfigured, guideDismissed, markConfigured, reset],
   );
 }
 

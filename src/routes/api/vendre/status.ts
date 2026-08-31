@@ -1,17 +1,27 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-const REQUIRED = ["VENDRE_BASE_URL", "VENDRE_CLIENT_ID", "VENDRE_CLIENT_SECRET"] as const;
-
 export const Route = createFileRoute("/api/vendre/status")({
   server: {
     handlers: {
-      GET: async () => {
-        const present: Record<string, boolean> = {};
-        for (const name of REQUIRED) present[name] = Boolean(process.env[name]);
-        const missing = REQUIRED.filter((name) => !present[name]);
+      GET: async ({ request }) => {
+        const { getVendreStatus, readVendreEnv } = await import("@/lib/vendre/token.server");
+        const force = new URL(request.url).searchParams.get("force") === "1";
+        const status = await getVendreStatus(force);
+        const { baseUrl, clientId, clientSecret } = readVendreEnv();
 
         return Response.json(
-          { ok: missing.length === 0, present, missing },
+          {
+            ok: status.ok,
+            secretsOk: status.secretsOk,
+            tokenOk: status.tokenOk,
+            missing: status.missing,
+            present: {
+              VENDRE_BASE_URL: Boolean(baseUrl),
+              VENDRE_CLIENT_ID: Boolean(clientId),
+              VENDRE_CLIENT_SECRET: Boolean(clientSecret),
+            },
+            message: status.message,
+          },
           { headers: { "cache-control": "no-store" } },
         );
       },

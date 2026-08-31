@@ -11,6 +11,9 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { setServerConfigured } from "@/context/onboarding-context";
+import { getStorefrontStatus } from "@/lib/vendre/status.functions";
+
 
 function NotFoundComponent() {
   return (
@@ -73,6 +76,13 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  loader: async () => {
+    try {
+      return await getStorefrontStatus();
+    } catch {
+      return { ok: false, secretsOk: false, tokenOk: false, missing: [] };
+    }
+  },
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -98,6 +108,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
+
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
@@ -114,6 +125,11 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const status = Route.useLoaderData();
+  // Server-decided storefront mode: same answer for every visitor, on SSR and client.
+  setServerConfigured(status?.ok === true);
+
+
 
   return (
     <QueryClientProvider client={queryClient}>

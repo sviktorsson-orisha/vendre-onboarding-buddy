@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Check, ChevronDown, Copy, ExternalLink, Loader2, Lock, PartyPopper } from "lucide-react";
 
 import { PublishOriginField } from "@/components/vendre/publish-origin-field";
@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useOnboarding } from "@/context/onboarding-context";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { usePublishedOrigin } from "@/lib/vendre/published-origin";
+import { useSetupProgress } from "@/lib/vendre/setup-progress";
 import { testVendreConnection, type ConnectionResult, type ConnectionStep } from "@/lib/vendre";
 import { cn } from "@/lib/utils";
 
@@ -172,14 +173,20 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
   const preview = `https://project--${PROJECT_ID}-dev.lovable.app`;
   const published = `https://project--${PROJECT_ID}.lovable.app`;
   const { origin: publishedOrigin, setOrigin: setPublishedOrigin } = usePublishedOrigin();
+  const { progress, loaded, update } = useSetupProgress();
   const [open, setOpen] = useState(0);
-  const [adminDone, setAdminDone] = useState(false);
-  const [corsDone, setCorsDone] = useState(false);
   const [checking, setChecking] = useState(false);
   const [secretStatus, setSecretStatus] = useState<{ ok: boolean; missing: string[] } | null>(null);
   const [testing, setTesting] = useState(false);
   const [result, setResult] = useState<ConnectionResult | null>(null);
   const [testError, setTestError] = useState<string | null>(null);
+
+  const adminDone = progress.adminDone;
+  const corsDone = progress.corsDone;
+  const setAdminDone = (value: boolean) => update({ adminDone: value });
+  const setCorsDone = (value: boolean) => update({ corsDone: value });
+  const secretsOk = secretStatus ? secretStatus.ok : progress.secretsOk;
+  const connectionOk = result ? result.ok : progress.connectionOk;
 
   const origins = useMemo(
     () => (publishedOrigin ? [publishedOrigin, preview, published] : [preview, published]),
@@ -193,26 +200,38 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
     () => JSON.stringify(Object.fromEntries(POLICIES.map((policy) => [policy, origins])), null, 2),
     [origins],
   );
-  const done = [adminDone, secretStatus?.ok === true, publishedOrigin !== "", corsDone, result?.ok === true, result?.ok === true];
+  const done = [adminDone, secretsOk, publishedOrigin !== "", corsDone, connectionOk, connectionOk];
   const total = TITLE_KEYS.length;
   const active = Math.max(done.findIndex((value) => !value), 0);
   const completedCount = done.filter(Boolean).length;
   const states = done.map((value, index): GuideState => (value ? "done" : index === active ? "current" : "pending"));
   const activeTitle = t(TITLE_KEYS[active] ?? "step1.title");
 
+  // Resume where the guide was left off after a refresh.
+  const [resumed, setResumed] = useState(false);
+  useEffect(() => {
+    if (!loaded || resumed) return;
+    setResumed(true);
+    setOpen(active);
+  }, [loaded, resumed, active]);
+
   const checkSecrets = async () => {
     setChecking(true);
     try {
       const response = await fetch("/api/vendre/status", { headers: { accept: "application/json" } });
-      const data = (await response.json()) as { ok: boolean; missing?: string[] };
-      setSecretStatus({ ok: data.ok, missing: data.missing ?? [] });
-      if (data.ok) setOpen(2);
+      const data = (await response.json()) as { secretsOk?: boolean; ok?: boolean; missing?: string[] };
+      const ok = data.secretsOk ?? data.ok ?? false;
+      setSecretStatus({ ok, missing: data.missing ?? [] });
+      update({ secretsOk: ok });
+      if (ok) setOpen(2);
     } catch {
       setSecretStatus({ ok: false, missing: SECRET_NAMES });
+      update({ secretsOk: false });
     } finally {
       setChecking(false);
     }
   };
+
 
   const runTest = async () => {
     setTesting(true);
@@ -220,7 +239,9 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
     try {
       const next = await testVendreConnection();
       setResult(next);
+      update({ connectionOk: next.ok });
       if (next.ok) setOpen(5);
+
     } catch (error) {
       setTestError((error as Error).message);
     } finally {
@@ -253,9 +274,9 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
               </span>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              {result?.ok ? t("panel.verified") : t("panel.progress", { done: completedCount, total })}
+              {connectionOk ? t("panel.verified") : t("panel.progress", { done: completedCount, total })}
             </p>
-            {!result?.ok && (
+            {!connectionOk && (
               <p className="mt-3 inline-flex rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-accent-foreground">
                 {t("panel.next")} {active + 1}. {activeTitle}
               </p>
@@ -283,7 +304,7 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
         </div>
       </section>
 
-      {result?.ok && (
+      {connectionOk && (
         <section className="brand-card mt-6 border-emerald-500/40 bg-emerald-500/5 p-5">
           <div className="flex items-start gap-3">
             <PartyPopper className="mt-0.5 size-5 text-emerald-600" aria-hidden />
@@ -444,7 +465,7 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
           state={states[4] ?? "pending"}
           open={open === 4}
           onToggle={() => setOpen(open === 4 ? -1 : 4)}
-          verdict={result?.ok ? t("step5.verdictDone") : t("step5.verdict")}
+          verdict={connectionOk ? t("step5.verdictDone") : t("step5.verdict")}
         >
           <p>{t("step5.body")}</p>
           <button type="button" className="brand-button" disabled={testing || !corsDone} onClick={runTest}>
@@ -467,19 +488,19 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
           state={states[5] ?? "pending"}
           open={open === 5}
           onToggle={() => setOpen(open === 5 ? -1 : 5)}
-          verdict={result?.ok ? t("step6.verdictDone") : t("step6.verdict")}
+          verdict={connectionOk ? t("step6.verdictDone") : t("step6.verdict")}
         >
-          {result?.ok ? (
+          {connectionOk ? (
             <>
               <p className="rounded-md bg-emerald-500/10 p-3 font-medium text-emerald-700">{t("step6.done")}</p>
               <dl className="space-y-2">
                 <div className="rounded-lg border border-border bg-card p-3">
                   <dt className="brand-eyebrow">{t("step6.baseUrl")}</dt>
-                  <dd className="mt-1 break-all font-mono text-xs text-foreground">{result.baseUrl}</dd>
+                  <dd className="mt-1 break-all font-mono text-xs text-foreground">{result?.baseUrl ?? "—"}</dd>
                 </div>
                 <div className="rounded-lg border border-border bg-card p-3">
                   <dt className="brand-eyebrow">{t("step6.origin")}</dt>
-                  <dd className="mt-1 break-all font-mono text-xs text-foreground">{publishedOrigin || result.origin}</dd>
+                  <dd className="mt-1 break-all font-mono text-xs text-foreground">{publishedOrigin || result?.origin || "—"}</dd>
                 </div>
               </dl>
               <button type="button" className="brand-button" onClick={startBuilding}>
