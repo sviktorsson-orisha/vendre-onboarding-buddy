@@ -204,7 +204,46 @@ const dictionary = {
     "step6.baseUrl": "Base URL",
     "step6.origin": "Allowlisted origin",
     "step6.pending": "Complete the previous steps and run the connection test.",
+
+    "complete.title": "Everything is ready!",
+    "complete.body":
+      "The Vendre connection is verified. The storefront now switches from demo data to your real catalogue.",
+    "complete.cta": "Start building the store",
+
+    "notice.title": "Demo mode",
+    "notice.body": "The storefront shows dummy data until the Vendre account is connected.",
+    "notice.cta": "Open the setup guide",
+
+    "store.search": "Search products",
+    "store.cart": "Cart",
+    "store.cartEmpty": "Your cart is empty.",
+    "store.checkout": "Go to checkout",
+    "store.checkoutDemo": "Checkout opens once the store is connected.",
+    "store.total": "Total",
+    "store.addToCart": "Add to cart",
+    "store.outOfStock": "Out of stock",
+    "store.inStock": "In stock",
+    "store.viewAll": "View all",
+    "store.heroTitle": "Your store, ready from day one",
+    "store.heroBody":
+      "Home, categories, product pages and cart already ship with the template. Connect Vendre and it fills up with your own catalogue.",
+    "store.heroCta": "Shop now",
+    "store.categories": "Categories",
+    "store.featured": "Featured products",
+    "store.products": "products",
+    "store.subcategories": "Subcategories",
+    "store.remove": "Remove",
+    "store.loading": "Loading",
+    "store.notFound": "The product could not be found.",
+    "store.backToStore": "Back to the store",
+    "store.description": "Description",
+    "store.footerNote": "Built with Vendre Surface API v2.",
+    "store.info": "Customer service",
+    "store.infoShipping": "Shipping and delivery",
+    "store.infoReturns": "Returns",
+    "store.infoContact": "Contact us",
   },
+
 } as const;
 
 export type TranslationKey = keyof (typeof dictionary)["sv"];
