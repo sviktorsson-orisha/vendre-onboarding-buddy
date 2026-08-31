@@ -22,6 +22,14 @@ function FieldError({ message }: { message?: string | undefined }) {
   return <p className="text-xs text-destructive">{message}</p>;
 }
 
+const COUNTRY_OPTIONS = [
+  { id: 203, label: "Sverige" },
+  { id: 161, label: "Norge" },
+  { id: 59, label: "Danmark" },
+  { id: 73, label: "Finland" },
+  { id: 81, label: "Tyskland" },
+];
+
 export default function LoginPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
