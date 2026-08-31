@@ -364,12 +364,28 @@ function liveApi(): VendreApi {
       return null;
     },
     getFeaturedProducts: async () => {
+      // Parent categories in Vendre often carry no products of their own, so we
+      // walk the category tree until a listing actually returns products.
       const menus = buildMenuTree((await live<RawMenusResponse>("navigation/menus")).menus ?? []);
-      const first = menus.find((node) => node.type === "category");
-      if (!first) return [];
-      const category = await live<RawCategoryResponse>(`categories/${first.id}?limit=8`);
-      return normaliseCategory(category).products.slice(0, 8);
+      const flat = (nodes: MenuNode[]): MenuNode[] =>
+        nodes.flatMap((node) => [node, ...flat(node.children)]);
+      const candidates = flat(menus)
+        .filter((node) => node.type === "category")
+        .slice(0, 12);
+
+      const collected: Product[] = [];
+      for (const node of candidates) {
+        const category = normaliseCategory(
+          await live<RawCategoryResponse>(`categories/${node.id}?limit=8`),
+        );
+        for (const product of category.products) {
+          if (!collected.some((entry) => entry.id === product.id)) collected.push(product);
+        }
+        if (collected.length >= 8) break;
+      }
+      return collected.slice(0, 8);
     },
+
     getCart: cart,
     addToCart: (productId, quantity = 1) =>
       mutateCart("shopping-cart/products", { products: [{ id: productId, quantity }] }),

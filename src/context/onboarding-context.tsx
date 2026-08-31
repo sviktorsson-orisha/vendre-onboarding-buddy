@@ -42,6 +42,26 @@ export function isStoreConfigured() {
   return configured;
 }
 
+let autoDetect: Promise<void> | null = null;
+
+/**
+ * Live mode should not depend on someone having clicked through the wizard in
+ * this exact browser: if the store answers, we run live. The probe runs once
+ * per page load and only when the flag is not already set.
+ */
+function detectLiveStore() {
+  autoDetect ??= (async () => {
+    try {
+      const { testVendreConnection } = await import("@/lib/vendre/test-connection");
+      const result = await testVendreConnection();
+      if (result.ok) setConfigured(true);
+    } catch {
+      /* stay in demo mode */
+    }
+  })();
+  return autoDetect;
+}
+
 export function useOnboarding() {
   const isConfigured = useSyncExternalStore(
     subscribe,
@@ -50,13 +70,19 @@ export function useOnboarding() {
   );
 
   useEffect(() => {
+    let stored = false;
     try {
-      const stored = window.localStorage.getItem(STORAGE_KEY) === "1";
-      if (stored !== configured) setConfigured(stored);
+      stored = window.localStorage.getItem(STORAGE_KEY) === "1";
     } catch {
       /* ignore */
     }
+    if (stored) {
+      if (!configured) setConfigured(true);
+      return;
+    }
+    void detectLiveStore();
   }, []);
+
 
   const markConfigured = useCallback(() => setConfigured(true), []);
   const reset = useCallback(() => setConfigured(false), []);
