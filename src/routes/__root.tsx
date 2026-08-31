@@ -73,6 +73,13 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  loader: async () => {
+    try {
+      return await getStorefrontStatus();
+    } catch {
+      return { ok: false, secretsOk: false, tokenOk: false, missing: [] };
+    }
+  },
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -97,6 +104,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
 });
+
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
