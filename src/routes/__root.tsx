@@ -125,6 +125,11 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const status = Route.useLoaderData();
+  // Server-decided storefront mode: same answer for every visitor, on SSR and client.
+  setServerConfigured(status?.ok === true);
+
+
 
   return (
     <QueryClientProvider client={queryClient}>
