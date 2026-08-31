@@ -2,11 +2,11 @@ import { Link } from "@tanstack/react-router";
 import { Search, ShoppingBag } from "lucide-react";
 
 import { cartCount, openCart, useCart } from "@/lib/store/cart-state";
-import { getNavigation, getStore } from "@/lib/storefront/data";
+import { useNavigation, useStoreInfo } from "@/lib/storefront/use-storefront";
 
 export function StoreHeader() {
-  const store = getStore();
-  const categories = getNavigation();
+  const store = useStoreInfo();
+  const categories = useNavigation().data ?? [];
   const { lines } = useCart();
   const count = cartCount(lines);
 

@@ -12,17 +12,20 @@ import {
 import {
   cartCount,
   cartTotal,
+  goToCheckout,
   removeLine,
   setCartOpen,
   setQuantity,
   useCart,
 } from "@/lib/store/cart-state";
 import { formatPrice } from "@/lib/storefront/data";
+import { useIsConfigured } from "@/lib/store/onboarding-state";
 
 export function CartDrawer() {
   const { lines, isOpen } = useCart();
   const count = cartCount(lines);
   const total = cartTotal(lines);
+  const isLive = useIsConfigured();
 
   return (
     <Sheet open={isOpen} onOpenChange={setCartOpen}>
