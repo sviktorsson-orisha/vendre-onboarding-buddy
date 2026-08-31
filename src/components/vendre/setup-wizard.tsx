@@ -496,11 +496,11 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
               <dl className="space-y-2">
                 <div className="rounded-lg border border-border bg-card p-3">
                   <dt className="brand-eyebrow">{t("step6.baseUrl")}</dt>
-                  <dd className="mt-1 break-all font-mono text-xs text-foreground">{result.baseUrl}</dd>
+                  <dd className="mt-1 break-all font-mono text-xs text-foreground">{result?.baseUrl ?? "—"}</dd>
                 </div>
                 <div className="rounded-lg border border-border bg-card p-3">
                   <dt className="brand-eyebrow">{t("step6.origin")}</dt>
-                  <dd className="mt-1 break-all font-mono text-xs text-foreground">{publishedOrigin || result.origin}</dd>
+                  <dd className="mt-1 break-all font-mono text-xs text-foreground">{publishedOrigin || result?.origin || "—"}</dd>
                 </div>
               </dl>
               <button type="button" className="brand-button" onClick={startBuilding}>
