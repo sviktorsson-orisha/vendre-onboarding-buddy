@@ -26,6 +26,14 @@ any custom domain, added later
 They exist before the project is published, so CORS can be configured up front.
 The setup screen prints the exact list and the ready-to-paste JSON.
 
+Step 0b — Plan mode
+
+The secure Secrets form only exists in Build mode. If you are in plan mode and
+the project is unconfigured, do not write a setup plan and do not ask for the
+values in chat. Answer in one short message that setup must run in Build mode,
+ask the customer to switch the composer from Plan to Build and send any
+message, and stop there.
+
 Step 1 — Collect credentials
 
 On the first chat message in a newly imported project, check the configured

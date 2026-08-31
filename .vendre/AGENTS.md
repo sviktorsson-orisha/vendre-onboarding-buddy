@@ -21,3 +21,10 @@ source code, or a committed environment file.
 The app-level `SetupNoticeBar` must also keep opening the setup wizard on every
 unconfigured page load. Before completing any change, run
 `npm run verify:setup` and fix any failed setup invariant.
+## Plan mode
+
+Setup is never a plan. In plan mode the secure Secrets form cannot be opened,
+so do not write a plan about connecting Vendre. Reply in one short message that
+setup must run in Build mode, ask the customer to switch the composer from Plan
+to Build and send any message, and stop there. Never collect credentials in a
+plan, a question field, or chat text.
