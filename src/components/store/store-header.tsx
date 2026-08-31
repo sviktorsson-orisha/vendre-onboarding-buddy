@@ -95,6 +95,7 @@ export function StoreHeader() {
 
         <div className="ml-auto flex items-center gap-2">
           <LanguagePicker />
+          <AccountMenu />
           <button
             type="button"
             className="brand-button-ghost relative"
