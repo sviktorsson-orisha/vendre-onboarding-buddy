@@ -86,7 +86,46 @@ const dictionary = {
     "step6.baseUrl": "Base URL",
     "step6.origin": "Allowlistad origin",
     "step6.pending": "Slutför föregående steg och kör anslutningstestet.",
+
+    "complete.title": "Allt är klart!",
+    "complete.body":
+      "Anslutningen mot Vendre är verifierad. Butiken byter nu från demodata till din riktiga katalog.",
+    "complete.cta": "Börja bygga butiken",
+
+    "notice.title": "Demoläge",
+    "notice.body": "Butiken visar dummy-data tills Vendre-kontot är kopplat.",
+    "notice.cta": "Öppna uppstartsguiden",
+
+    "store.search": "Sök produkter",
+    "store.cart": "Kundvagn",
+    "store.cartEmpty": "Kundvagnen är tom.",
+    "store.checkout": "Till kassan",
+    "store.checkoutDemo": "Kassan öppnas när butiken är kopplad.",
+    "store.total": "Summa",
+    "store.addToCart": "Lägg i kundvagn",
+    "store.outOfStock": "Slut i lager",
+    "store.inStock": "I lager",
+    "store.viewAll": "Visa alla",
+    "store.heroTitle": "Din butik, redo från dag ett",
+    "store.heroBody":
+      "Startsida, kategorier, produktsidor och kundvagn finns redan i templaten. Koppla Vendre så fylls allt med din egen katalog.",
+    "store.heroCta": "Handla nu",
+    "store.categories": "Kategorier",
+    "store.featured": "Utvalda produkter",
+    "store.products": "produkter",
+    "store.subcategories": "Underkategorier",
+    "store.remove": "Ta bort",
+    "store.loading": "Laddar",
+    "store.notFound": "Produkten kunde inte hittas.",
+    "store.backToStore": "Tillbaka till butiken",
+    "store.description": "Beskrivning",
+    "store.footerNote": "Byggd med Vendre Surface API v2.",
+    "store.info": "Kundservice",
+    "store.infoShipping": "Frakt och leverans",
+    "store.infoReturns": "Returer",
+    "store.infoContact": "Kontakta oss",
   },
+
   en: {
     "brand.tagline": "Storefront setup",
     "brand.footer": "Headless storefront setup",
@@ -165,7 +204,46 @@ const dictionary = {
     "step6.baseUrl": "Base URL",
     "step6.origin": "Allowlisted origin",
     "step6.pending": "Complete the previous steps and run the connection test.",
+
+    "complete.title": "Everything is ready!",
+    "complete.body":
+      "The Vendre connection is verified. The storefront now switches from demo data to your real catalogue.",
+    "complete.cta": "Start building the store",
+
+    "notice.title": "Demo mode",
+    "notice.body": "The storefront shows dummy data until the Vendre account is connected.",
+    "notice.cta": "Open the setup guide",
+
+    "store.search": "Search products",
+    "store.cart": "Cart",
+    "store.cartEmpty": "Your cart is empty.",
+    "store.checkout": "Go to checkout",
+    "store.checkoutDemo": "Checkout opens once the store is connected.",
+    "store.total": "Total",
+    "store.addToCart": "Add to cart",
+    "store.outOfStock": "Out of stock",
+    "store.inStock": "In stock",
+    "store.viewAll": "View all",
+    "store.heroTitle": "Your store, ready from day one",
+    "store.heroBody":
+      "Home, categories, product pages and cart already ship with the template. Connect Vendre and it fills up with your own catalogue.",
+    "store.heroCta": "Shop now",
+    "store.categories": "Categories",
+    "store.featured": "Featured products",
+    "store.products": "products",
+    "store.subcategories": "Subcategories",
+    "store.remove": "Remove",
+    "store.loading": "Loading",
+    "store.notFound": "The product could not be found.",
+    "store.backToStore": "Back to the store",
+    "store.description": "Description",
+    "store.footerNote": "Built with Vendre Surface API v2.",
+    "store.info": "Customer service",
+    "store.infoShipping": "Shipping and delivery",
+    "store.infoReturns": "Returns",
+    "store.infoContact": "Contact us",
   },
+
 } as const;
 
 export type TranslationKey = keyof (typeof dictionary)["sv"];
