@@ -1,32 +1,23 @@
 import { useState } from "react";
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
 import { addToCart } from "@/lib/store/cart-state";
-import { formatPrice, getCategoryBySlug, getProductBySlug, getCategories } from "@/lib/storefront/data";
+import { StorefrontError, StorefrontLoading } from "@/components/storefront/live-state";
+import { formatPrice } from "@/lib/storefront/data";
+import { useCategories, useProduct } from "@/lib/storefront/use-storefront";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/produkt/$slug")({
-  loader: ({ params }) => {
-    const product = getProductBySlug(params.slug);
-    if (!product) throw notFound();
-    const category = getCategories().find((item) => item.id === product.categoryId);
-    return { product, category };
-  },
-  head: ({ loaderData }) => {
-    if (!loaderData) {
-      return {
-        meta: [{ title: "Produkten hittades inte" }, { name: "robots", content: "noindex" }],
-      };
-    }
-    const { product } = loaderData;
-    const title = `${product.name} — Nordiska Hemmet`;
+  head: ({ params }) => {
+    const title = `${params.slug} — Nordiska Hemmet`;
+    const description = `Läs mer om ${params.slug} och handla direkt hos Nordiska Hemmet.`;
     return {
       meta: [
         { title },
-        { name: "description", content: product.description.slice(0, 155) },
+        { name: "description", content: description },
         { property: "og:title", content: title },
-        { property: "og:description", content: product.description.slice(0, 155) },
+        { property: "og:description", content: description },
         { property: "og:type", content: "product" },
         { name: "twitter:card", content: "summary_large_image" },
       ],
@@ -36,15 +27,34 @@ export const Route = createFileRoute("/produkt/$slug")({
 });
 
 function ProductPage() {
-  const { product, category } = Route.useLoaderData();
+  const { slug } = Route.useParams();
+  const { data: product, error } = useProduct(slug);
+  const categories = useCategories().data ?? [];
   const [activeImage, setActiveImage] = useState(0);
-  const [variantId, setVariantId] = useState(
-    product.variants.find((variant) => variant.inStock)?.id ?? product.variants[0]?.id,
-  );
+  const [variantId, setVariantId] = useState<string | undefined>(undefined);
 
-  const variant = product.variants.find((item) => item.id === variantId);
+  if (error) {
+    return (
+      <div className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-6">
+        <StorefrontError error={error} />
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-6">
+        <StorefrontLoading />
+      </div>
+    );
+  }
+
+  const category = categories.find((item) => item.id === product.categoryId);
+  const selectedId =
+    variantId ?? product.variants.find((item) => item.inStock)?.id ?? product.variants[0]?.id;
+  const variant = product.variants.find((item) => item.id === selectedId);
   const canBuy = variant?.inStock !== false;
-  const parentSlug = category?.slug ?? getCategoryBySlug("inredning")?.slug ?? "inredning";
+  const parentSlug = category?.slug ?? categories[0]?.slug ?? "";
 
   return (
     <div className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-6">
@@ -133,7 +143,7 @@ function ProductPage() {
                     onClick={() => setVariantId(item.id)}
                     className={cn(
                       "rounded-md border px-3 py-2 text-sm transition-colors",
-                      item.id === variantId
+                      item.id === selectedId
                         ? "border-primary bg-primary/10 text-primary"
                         : "border-border bg-card text-foreground hover:bg-muted",
                       !item.inStock && "opacity-60",
