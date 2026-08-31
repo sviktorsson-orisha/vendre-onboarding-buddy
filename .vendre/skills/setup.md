@@ -28,7 +28,15 @@ The setup screen prints the exact list and the ready-to-paste JSON.
 
 Step 1 — Collect credentials
 
-Ask the user for all three at once (use the questions tool if available):
+On the first chat message in a newly imported project, check the configured
+secret names immediately. If any of the three values below are missing, explain
+where they are created in Vendre Admin and ask the user to proceed with the
+secure credential form. If the user's message already asks to start setup,
+connect Vendre, or enter credentials, that is confirmation: open the secure
+Secrets form immediately in the same turn.
+
+Use the Secrets tool's secure form for all three values at once. Never use a
+normal chat question, free-text input, or the Questions tool to collect them:
 
 VENDRE_BASE_URL — store URL, scheme + host, no trailing slash
 
@@ -43,6 +51,14 @@ rotated, not read again.
 
 Save them with the secrets tool. Never write them into code, .env in the
 repo, or chat. If any value is missing, stop and ask again.
+
+The repository cannot initiate a chat tool before the customer sends their
+first message. Therefore the earliest supported behavior is:
+
+1. The in-app setup wizard opens automatically on the first page load.
+2. The agent opens the secure Secrets form on the first chat turn after the
+   customer has confirmed setup, including an explicit request to enter their
+   credentials.
 
 Step 2 — Run the connection test
 

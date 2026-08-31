@@ -6,6 +6,11 @@ the user to request setup. Do not substitute, copy, summarize, or wrap the
 skill in another file. The original `setup.md` is the executable instruction
 source.**
 
+When the first user message asks to start, connect Vendre, or enter
+credentials, treat it as consent and open the secure Secrets form for
+`VENDRE_BASE_URL`, `VENDRE_CLIENT_ID`, and `VENDRE_CLIENT_SECRET` immediately.
+Never collect these values in ordinary chat fields.
+
 # VENDRE LOVABLE TEMPLATE AGENT INSTRUCTIONS
 
 You are an expert developer specializing in Vendre e-commerce.
