@@ -290,13 +290,31 @@ export default function LoginPage() {
                   <FieldError message={registerFields["city"]} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="country">{t("account.country")}</Label>
+                  <Label htmlFor="state">{t("account.state")}</Label>
                   <Input
-                    id="country"
-                    value={form.country}
-                    onChange={(event) => set("country", event.target.value)}
+                    id="state"
+                    value={form.state}
+                    onChange={(event) => set("state", event.target.value)}
                   />
+                  <FieldError message={registerFields["state"]} />
                 </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="country">{t("account.country")}</Label>
+                <select
+                  id="country"
+                  className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm"
+                  value={form.country}
+                  onChange={(event) => set("country", Number(event.target.value))}
+                >
+                  {COUNTRY_OPTIONS.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <FieldError message={registerFields["country"]} />
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
