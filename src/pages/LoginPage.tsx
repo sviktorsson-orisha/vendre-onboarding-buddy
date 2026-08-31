@@ -238,6 +238,20 @@ export default function LoginPage() {
                 </select>
               </div>
 
+              <div className="space-y-1.5">
+                <Label htmlFor="gender">{t("account.gender")}</Label>
+                <select
+                  id="gender"
+                  className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm"
+                  value={form.gender}
+                  onChange={(event) => set("gender", event.target.value)}
+                >
+                  <option value="m">{t("account.genderMale")}</option>
+                  <option value="f">{t("account.genderFemale")}</option>
+                </select>
+                <FieldError message={registerFields["gender"]} />
+              </div>
+
               {form.type === "company" && (
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
