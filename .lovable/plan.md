@@ -1,52 +1,42 @@
-# Fixa registrering av konto
+# Fix: kontoregistrering skickar fel payload
 
-Felet "Unable to create account with provided payload" kommer från butiken, inte
-från appen. Vilket fält den klagar på är ännu inte bekräftat — därför börjar
-planen med att läsa butikens riktiga svar innan något skrivs om.
+Butiken förväntar sig ett exakt payload-format. Nuvarande kod skickar hela formuläret rakt av, inklusive fält butiken inte vill ha (`type`, tomma `company`, `mobile`, `vat_identification_number`) och `country` som landskod-sträng (`"SE"`) i stället för numeriskt land-ID (`203`). Det ger "Unable to create account with provided payload".
 
-## Steg 1 – Läs butikens exakta svar (diagnos)
+## Målformat
 
-Gör ett testanrop mot `POST /surface/2/accounts` med en avsiktligt ogiltig
-e-postadress, så att inget riktigt konto skapas, och logga hela svarskroppen:
-felkod, `title` och `source.parameter` för varje fel. Det talar om exakt vilket
-fält som avvisas.
+```text
+gender: "m"
+firstname, lastname
+email_address, password, confirmation
+street_address, postcode, city, state
+country: 203            (nummer, inte "SE")
+telephone
+personnummer
+newsletter: true
+consent_personal_data_policy: true
+```
 
-## Steg 2 – Rätta payloaden efter svaret
+## Vad som ändras
 
-Troliga orsaker, i den ordning de kontrolleras mot svaret i steg 1:
+1. **Payload-byggare i `src/lib/vendre/account.ts`**
+   - Ny funktion som mappar formulärdata till exakt fältuppsättningen ovan.
+   - `country` konverteras till nummer (SE = 203) via en liten kodtabell; redan numeriska värden skickas som de är.
+   - `newsletter` och `consent_personal_data_policy` skickas som riktiga booleans.
+   - Tomma valfria fält utelämnas i stället för att skickas som tomma strängar.
+   - Företagsfälten (`company`, `vat_identification_number`) tas bara med när kontotypen är företag; `type` skickas inte alls eftersom butiken inte förväntar sig det.
 
-- Tomma strängar skickas med för fält som kunden inte fyllt i (`gender`,
-  `company`, `mobile`, `personnummer`, `vat_identification_number`). Många
-  installationer avvisar tom sträng men accepterar att fältet utelämnas.
-- `type: "private"` – butiken kan förvänta sig ett annat värde (t.ex. `person`
-  eller ett numeriskt id) för privatkund.
-- `country: "SE"` – butiken kan vilja ha landsnamn i stället för landskod.
-- `newsletter` / `consent_personal_data_policy` som boolean där butiken vill ha
-  `1` / `0`.
+2. **Formuläret i `src/pages/LoginPage.tsx`**
+   - Lägg till fältet `state` (län/region) som saknas idag.
+   - `gender` blir en riktig väljare med värdena `m` / `f` i stället för fri text.
+   - `country` väljs i en lista som lagrar det numeriska ID:t.
+   - `type` behålls enbart som UI-växling mellan privat/företag, inte som API-fält.
 
-Payloaden byggs om i `src/lib/vendre/account.ts` (registreringsanropet) så att
-den matchar det butiken faktiskt accepterar, med hela det dokumenterade
-fältsetet kvar för de fält som är obligatoriska.
+3. **Fel från butiken**
+   - Behåll mappningen av `source.parameter` till rätt formulärfält och visa butikens `title` överst, så nästa avvikelse pekar ut fältet direkt.
 
-## Steg 3 – Bättre felvisning i formuläret
+4. **Typer i `src/types/vendre-account.ts`**
+   - `RegisterInput` uppdateras: `country: number`, nytt `state`, företagsfält blir valfria.
 
-I dag visas bara en generisk mening. Felhanteringen i `src/pages/LoginPage.tsx`
-uppdateras så att:
+## Verifiering
 
-- varje fel med `source.parameter` hamnar vid rätt fält,
-- fel utan `source.parameter` visas som en läsbar toppnivåtext med butikens
-  egen text i stället för en tom generisk rad.
-
-## Steg 4 – Verifiera
-
-Kör igenom registreringen som privatperson mot butiken och bekräfta att kontot
-skapas och att inloggning fungerar direkt efteråt.
-
-## Tekniska detaljer
-
-- Berörda filer: `src/lib/vendre/account.ts` (payload + felparsning),
-  `src/pages/LoginPage.tsx` (fältfel), ev. `src/types/vendre-account.ts` om
-  fälten behöver bli valfria.
-- Inget i demo-läget ändras; mockregistreringen fortsätter fungera som i dag.
-- Anropet behåller `Surface-Mutation-Protection-Token` och `default`-policyn
-  enligt `.vendre/knowledge/api-reference.md`.
+Skapa ett privatkonto i live-läge och bekräfta att registreringen går igenom och att inloggning fungerar direkt efteråt.
