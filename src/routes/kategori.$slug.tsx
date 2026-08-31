@@ -1,28 +1,19 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { ProductGrid } from "@/components/storefront/product-card";
-import { getCategoryBySlug, getProducts } from "@/lib/storefront/data";
+import { StorefrontError, StorefrontLoading } from "@/components/storefront/live-state";
+import { useCategoryPage } from "@/lib/storefront/use-storefront";
 
 export const Route = createFileRoute("/kategori/$slug")({
-  loader: ({ params }) => {
-    const category = getCategoryBySlug(params.slug);
-    if (!category) throw notFound();
-    return { category, products: getProducts(category.id) };
-  },
-  head: ({ loaderData }) => {
-    if (!loaderData) {
-      return {
-        meta: [{ title: "Kategorin hittades inte" }, { name: "robots", content: "noindex" }],
-      };
-    }
-    const { category } = loaderData;
-    const title = `${category.name} — Nordiska Hemmet`;
+  head: ({ params }) => {
+    const title = `${params.slug} — Nordiska Hemmet`;
+    const description = `Handla produkter i kategorin ${params.slug} hos Nordiska Hemmet.`;
     return {
       meta: [
         { title },
-        { name: "description", content: category.description },
+        { name: "description", content: description },
         { property: "og:title", content: title },
-        { property: "og:description", content: category.description },
+        { property: "og:description", content: description },
         { property: "og:type", content: "website" },
         { name: "twitter:card", content: "summary_large_image" },
       ],
@@ -32,7 +23,27 @@ export const Route = createFileRoute("/kategori/$slug")({
 });
 
 function CategoryPage() {
-  const { category, products } = Route.useLoaderData();
+  const { slug } = Route.useParams();
+  const { data, error, isLoading } = useCategoryPage(slug);
+
+  if (error) {
+    return (
+      <div className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-6">
+        <StorefrontError error={error} />
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-6">
+        <StorefrontLoading />
+      </div>
+    );
+  }
+
+  const { category, products } = data;
+  void isLoading;
 
   return (
     <div className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-6">
@@ -75,7 +86,7 @@ function CategoryPage() {
           <option value="price-desc">Pris: högt till lågt</option>
           <option value="name">Namn</option>
         </select>
-        <span className="ml-auto text-sm text-muted-foreground">{products.length} produkter</span>
+        <span className="ml-auto text-sm text-muted-foreground">{data.productCount} produkter</span>
       </div>
 
       <div className="mt-8">

@@ -12,17 +12,20 @@ import {
 import {
   cartCount,
   cartTotal,
+  goToCheckout,
   removeLine,
   setCartOpen,
   setQuantity,
   useCart,
 } from "@/lib/store/cart-state";
 import { formatPrice } from "@/lib/storefront/data";
+import { useIsConfigured } from "@/lib/store/onboarding-state";
 
 export function CartDrawer() {
   const { lines, isOpen } = useCart();
   const count = cartCount(lines);
   const total = cartTotal(lines);
+  const isLive = useIsConfigured();
 
   return (
     <Sheet open={isOpen} onOpenChange={setCartOpen}>
@@ -100,9 +103,20 @@ export function CartDrawer() {
               <span className="text-muted-foreground">Totalt (inkl. moms)</span>
               <span className="text-lg font-bold text-foreground">{formatPrice(total)}</span>
             </div>
-            <Button className="w-full" disabled={lines.length === 0}>
+            <Button
+              className="w-full"
+              disabled={lines.length === 0}
+              onClick={() => {
+                if (isLive) void goToCheckout();
+              }}
+            >
               Till kassan
             </Button>
+            {!isLive && lines.length > 0 && (
+              <p className="text-center text-xs text-muted-foreground">
+                Kassan aktiveras när butiken är kopplad till Vendre.
+              </p>
+            )}
           </div>
         </SheetFooter>
       </SheetContent>

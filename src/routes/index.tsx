@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { ProductGrid } from "@/components/storefront/product-card";
-import { getCategories, getFeaturedProducts, getStore } from "@/lib/storefront/data";
+import { StorefrontError, StorefrontLoading } from "@/components/storefront/live-state";
+import { useCategories, useFeaturedProducts, useStoreInfo } from "@/lib/storefront/use-storefront";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -25,9 +26,13 @@ export const Route = createFileRoute("/")({
 });
 
 function HomePage() {
-  const store = getStore();
-  const categories = getCategories();
-  const featured = getFeaturedProducts();
+  const store = useStoreInfo();
+  const categoriesState = useCategories();
+  const featuredState = useFeaturedProducts();
+  const categories = categoriesState.data ?? [];
+  const featured = featuredState.data ?? [];
+  const error = featuredState.error ?? categoriesState.error;
+  const isLoading = featuredState.isLoading || categoriesState.isLoading;
 
   return (
     <div className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-6">
@@ -64,7 +69,13 @@ function HomePage() {
         <h2 className="text-2xl font-bold text-foreground">Utvalda produkter</h2>
         <p className="mt-1 text-sm text-muted-foreground">Populärt just nu hos våra kunder.</p>
         <div className="mt-6">
-          <ProductGrid products={featured} />
+          {error ? (
+            <StorefrontError error={error} />
+          ) : isLoading ? (
+            <StorefrontLoading />
+          ) : (
+            <ProductGrid products={featured} />
+          )}
         </div>
       </section>
 
