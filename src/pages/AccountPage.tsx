@@ -358,11 +358,14 @@ export default function AccountPage({ view = "oversikt" }: { view?: AccountView 
   const { isAuthenticated, isLoading, name, mode } = useAuth();
   const { logout } = useAccountMutations();
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) void navigate({ to: "/logga-in", replace: true });
-  }, [isAuthenticated, isLoading, navigate]);
+  // In demo mode the account area is browsable with dummy data; live mode requires a session.
+  const allowed = isAuthenticated || mode === "demo";
 
-  if (!isAuthenticated) {
+  useEffect(() => {
+    if (!isLoading && !allowed) void navigate({ to: "/logga-in", replace: true });
+  }, [allowed, isLoading, navigate]);
+
+  if (!allowed) {
     return (
       <StoreShell>
         <div className="mx-auto w-full max-w-6xl px-5 py-16 sm:px-6">
