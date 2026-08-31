@@ -1,13 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Rocket } from "lucide-react";
 
 import { SetupWizard } from "@/components/vendre/setup-wizard";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { setConfigured, useIsConfigured } from "@/lib/store/onboarding-state";
+import {
+  setConfigured,
+  setSetupWizardOpen,
+  useIsConfigured,
+  useSetupWizardOpen,
+} from "@/lib/store/onboarding-state";
 
 export function SetupNoticeBar() {
   const isConfigured = useIsConfigured();
-  const [open, setOpen] = useState(false);
+  const open = useSetupWizardOpen();
+  const setOpen = setSetupWizardOpen;
 
   // Permanent template invariant: every unconfigured import must open setup
   // immediately. Do not add a "shown once" flag here; closing is only valid
@@ -41,7 +47,7 @@ export function SetupNoticeBar() {
     };
   }, [isConfigured]);
 
-  if (isConfigured) return null;
+  if (isConfigured) return open ? null : null;
 
   return (
     <>
