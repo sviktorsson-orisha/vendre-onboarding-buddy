@@ -9,7 +9,9 @@ secrets `VENDRE_BASE_URL`, `VENDRE_CLIENT_ID` and `VENDRE_CLIENT_SECRET` are
 not all present:
 
 1. Read `/.vendre/skills/setup.md` and run that procedure immediately, on the
-   user's first message, whatever the message is.
+   user's first message, whatever the message is. Do this even if the message
+   is unrelated ("hej", "fixa footern", …): answer only after the setup
+   procedure has been started. The in-app guide lives at `/vendre-setup`.
 2. Do not build storefront pages, components, product/cart features or any
    other UI until the connection test in that skill returns `ok: true`.
 3. Only after it is green, continue with the user's actual request.
