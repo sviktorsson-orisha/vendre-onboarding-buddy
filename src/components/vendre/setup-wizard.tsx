@@ -2,7 +2,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { Check, ChevronDown, Copy, ExternalLink, Loader2, Lock, PartyPopper } from "lucide-react";
 
 import { PublishOriginField } from "@/components/vendre/publish-origin-field";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useOnboarding } from "@/context/onboarding-context";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { usePublishedOrigin } from "@/lib/vendre/published-origin";
@@ -499,6 +499,9 @@ export function SetupWizardDialog({ open, onOpenChange }: { open: boolean; onOpe
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+        <DialogHeader className="sr-only">
+          <DialogTitle>Vendre setup</DialogTitle>
+        </DialogHeader>
         <SetupWizard onFinish={() => onOpenChange(false)} />
       </DialogContent>
     </Dialog>
