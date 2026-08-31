@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 
 const requiredFiles = [
   "AGENTS.md",
+  ".vendre/AGENTS.md",
   ".vendre/skills/setup.md",
   ".vendre/knowledge/api-reference.md",
   "src/components/vendre/setup-notice-bar.tsx",
@@ -16,6 +17,7 @@ if (missingFiles.length > 0) {
 }
 
 const agents = readFileSync("AGENTS.md", "utf8");
+const nestedAgents = readFileSync(".vendre/AGENTS.md", "utf8");
 const setup = readFileSync(".vendre/skills/setup.md", "utf8");
 const shell = readFileSync("src/components/storefront/store-shell.tsx", "utf8");
 const notice = readFileSync("src/components/vendre/setup-notice-bar.tsx", "utf8");
@@ -27,6 +29,14 @@ const checks = [
   ],
   [agents.includes("MANDATORY ONBOARDING"), "AGENTS.md must retain mandatory onboarding"],
   [
+    nestedAgents.startsWith("# FIRST ACTION ON EVERY NEW IMPORT: RUN `/.vendre/skills/setup.md`"),
+    ".vendre/AGENTS.md must trigger the repository setup procedure on import",
+  ],
+  [
+    nestedAgents.includes("secure Secrets form") && nestedAgents.includes("VENDRE_CLIENT_SECRET"),
+    ".vendre/AGENTS.md must require secure credential collection",
+  ],
+  [
     agents.includes("Never create or invoke a wrapper skill instead"),
     "AGENTS.md must require direct execution without a wrapper skill",
   ],
@@ -35,6 +45,10 @@ const checks = [
       setup.includes("Step 0 — Order of operations") &&
       setup.includes("Step 5 — Confirm"),
     ".vendre/skills/setup.md must retain the complete executable setup procedure",
+  ],
+  [
+    setup.includes("Use the Secrets tool's secure form") && setup.includes("normal chat question"),
+    ".vendre/skills/setup.md must collect credentials through the secure Secrets form",
   ],
   [shell.includes("<SetupNoticeBar />"), "StoreShell must render SetupNoticeBar globally"],
   [notice.includes("if (isConfigured) return;"), "SetupNoticeBar must open while unconfigured"],
