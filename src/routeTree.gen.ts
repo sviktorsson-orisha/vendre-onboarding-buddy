@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as LoggaInRouteImport } from './routes/logga-in'
 import { Route as MittKontoRouteImport } from './routes/mitt-konto'
 import { Route as KategoriIdRouteImport } from './routes/kategori.$id'
+import { Route as MittKontoIndexRouteImport } from './routes/mitt-konto.index'
 import { Route as ProduktIdRouteImport } from './routes/produkt.$id'
 import { Route as ApiVendreStatusRouteImport } from './routes/api/vendre/status'
 import { Route as ApiVendreTokenRouteImport } from './routes/api/vendre/token'
@@ -37,6 +38,11 @@ const KategoriIdRoute = KategoriIdRouteImport.update({
   path: '/kategori/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MittKontoIndexRoute = MittKontoIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => MittKontoRoute,
+} as any)
 const ProduktIdRoute = ProduktIdRouteImport.update({
   id: '/produkt/$id',
   path: '/produkt/$id',
@@ -56,18 +62,19 @@ const ApiVendreTokenRoute = ApiVendreTokenRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/logga-in': typeof LoggaInRoute
-  '/mitt-konto': typeof MittKontoRoute
+  '/mitt-konto': typeof MittKontoRouteWithChildren
   '/kategori/$id': typeof KategoriIdRoute
   '/produkt/$id': typeof ProduktIdRoute
+  '/mitt-konto/': typeof MittKontoIndexRoute
   '/api/vendre/status': typeof ApiVendreStatusRoute
   '/api/vendre/token': typeof ApiVendreTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/logga-in': typeof LoggaInRoute
-  '/mitt-konto': typeof MittKontoRoute
   '/kategori/$id': typeof KategoriIdRoute
   '/produkt/$id': typeof ProduktIdRoute
+  '/mitt-konto': typeof MittKontoIndexRoute
   '/api/vendre/status': typeof ApiVendreStatusRoute
   '/api/vendre/token': typeof ApiVendreTokenRoute
 }
@@ -75,9 +82,10 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/logga-in': typeof LoggaInRoute
-  '/mitt-konto': typeof MittKontoRoute
+  '/mitt-konto': typeof MittKontoRouteWithChildren
   '/kategori/$id': typeof KategoriIdRoute
   '/produkt/$id': typeof ProduktIdRoute
+  '/mitt-konto/': typeof MittKontoIndexRoute
   '/api/vendre/status': typeof ApiVendreStatusRoute
   '/api/vendre/token': typeof ApiVendreTokenRoute
 }
@@ -89,15 +97,16 @@ export interface FileRouteTypes {
     | '/mitt-konto'
     | '/kategori/$id'
     | '/produkt/$id'
+    | '/mitt-konto/'
     | '/api/vendre/status'
     | '/api/vendre/token'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/logga-in'
-    | '/mitt-konto'
     | '/kategori/$id'
     | '/produkt/$id'
+    | '/mitt-konto'
     | '/api/vendre/status'
     | '/api/vendre/token'
   id:
@@ -107,6 +116,7 @@ export interface FileRouteTypes {
     | '/mitt-konto'
     | '/kategori/$id'
     | '/produkt/$id'
+    | '/mitt-konto/'
     | '/api/vendre/status'
     | '/api/vendre/token'
   fileRoutesById: FileRoutesById
@@ -114,7 +124,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoggaInRoute: typeof LoggaInRoute
-  MittKontoRoute: typeof MittKontoRoute
+  MittKontoRoute: typeof MittKontoRouteWithChildren
   KategoriIdRoute: typeof KategoriIdRoute
   ProduktIdRoute: typeof ProduktIdRoute
   ApiVendreStatusRoute: typeof ApiVendreStatusRoute
@@ -151,6 +161,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KategoriIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mitt-konto/': {
+      id: '/mitt-konto/'
+      path: '/'
+      fullPath: '/mitt-konto/'
+      preLoaderRoute: typeof MittKontoIndexRouteImport
+      parentRoute: typeof MittKontoRoute
+    }
     '/produkt/$id': {
       id: '/produkt/$id'
       path: '/produkt/$id'
@@ -175,10 +192,22 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface MittKontoRouteChildren {
+  MittKontoIndexRoute: typeof MittKontoIndexRoute
+}
+
+const MittKontoRouteChildren: MittKontoRouteChildren = {
+  MittKontoIndexRoute: MittKontoIndexRoute,
+}
+
+const MittKontoRouteWithChildren = MittKontoRoute._addFileChildren(
+  MittKontoRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoggaInRoute: LoggaInRoute,
-  MittKontoRoute: MittKontoRoute,
+  MittKontoRoute: MittKontoRouteWithChildren,
   KategoriIdRoute: KategoriIdRoute,
   ProduktIdRoute: ProduktIdRoute,
   ApiVendreStatusRoute: ApiVendreStatusRoute,
