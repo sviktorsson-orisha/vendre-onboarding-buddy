@@ -252,7 +252,7 @@ const liveAccountApi: AccountApi = {
       call("accounts", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(input),
+        body: JSON.stringify(buildRegisterBody(input)),
       }),
     );
   },
