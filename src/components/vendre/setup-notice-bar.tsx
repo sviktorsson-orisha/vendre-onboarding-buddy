@@ -3,20 +3,42 @@ import { Rocket } from "lucide-react";
 
 import { SetupWizard } from "@/components/vendre/setup-wizard";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useIsConfigured } from "@/lib/store/onboarding-state";
-
-const AUTO_OPEN_KEY = "vendre.setup-autoopened";
+import { setConfigured, useIsConfigured } from "@/lib/store/onboarding-state";
 
 export function SetupNoticeBar() {
   const isConfigured = useIsConfigured();
   const [open, setOpen] = useState(false);
 
-  // Ett nyimporterat projekt ska mötas av uppstartsguiden direkt, en gång.
+  // Permanent template invariant: every unconfigured import must open setup
+  // immediately. Do not add a "shown once" flag here; closing is only valid
+  // for the current page load until the Vendre connection is verified.
   useEffect(() => {
     if (isConfigured) return;
-    if (window.localStorage.getItem(AUTO_OPEN_KEY) === "true") return;
-    window.localStorage.setItem(AUTO_OPEN_KEY, "true");
     setOpen(true);
+  }, [isConfigured]);
+
+  // A copied browser state must never bypass setup in a newly imported project
+  // where the required server-side credentials are absent.
+  useEffect(() => {
+    let active = true;
+
+    void fetch("/api/vendre/status", {
+      headers: { accept: "application/json" },
+      cache: "no-store",
+    })
+      .then((response) => response.json() as Promise<{ ok: boolean }>)
+      .then((status) => {
+        if (!active || status.ok) return;
+        setConfigured(false);
+        setOpen(true);
+      })
+      .catch(() => {
+        if (active && !isConfigured) setOpen(true);
+      });
+
+    return () => {
+      active = false;
+    };
   }, [isConfigured]);
 
   if (isConfigured) return null;
