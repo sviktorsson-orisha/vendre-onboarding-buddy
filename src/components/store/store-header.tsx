@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ChevronDown, Menu, Search, ShoppingBag } from "lucide-react";
 
+import { AccountMenu } from "@/components/store/account-menu";
 import { CartSheet } from "@/components/store/cart-sheet";
 import { LanguagePicker } from "@/components/vendre/language-picker";
 import { useI18n } from "@/lib/i18n";
@@ -95,6 +96,7 @@ export function StoreHeader() {
 
         <div className="ml-auto flex items-center gap-2">
           <LanguagePicker />
+          <AccountMenu />
           <button
             type="button"
             className="brand-button-ghost relative"

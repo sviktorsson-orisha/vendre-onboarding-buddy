@@ -82,7 +82,11 @@ function ensureSession() {
 }
 
 /** Runs a call behind the session gate and re-bootstraps once on a session 401. */
-async function guarded<T>(run: () => Promise<T>): Promise<T> {
+export function resetSessionGate() {
+  sessionReady = null;
+}
+
+export async function guarded<T>(run: () => Promise<T>): Promise<T> {
   await ensureSession();
   try {
     return await run();
