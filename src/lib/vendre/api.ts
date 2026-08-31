@@ -336,7 +336,19 @@ function demoApi(): VendreApi {
   };
 }
 
+/** Category menu nodes, deepest first — leaves are where products actually live. */
+async function leafCategories(): Promise<MenuNode[]> {
+  const menus = buildMenuTree((await liveCached<RawMenusResponse>("navigation/menus")).menus ?? []);
+  const walk = (nodes: MenuNode[], depth: number): { node: MenuNode; depth: number }[] =>
+    nodes.flatMap((node) => [{ node, depth }, ...walk(node.children, depth + 1)]);
+  return walk(menus, 0)
+    .filter((entry) => entry.node.type === "category")
+    .sort((a, b) => (b.node.children.length === 0 ? 1 : 0) - (a.node.children.length === 0 ? 1 : 0) || b.depth - a.depth)
+    .map((entry) => entry.node);
+}
+
 function liveApi(): VendreApi {
+
   const context = async () => {
     const raw = await live<RawSessionContext>("session/context");
     return normaliseContext(raw);
