@@ -359,7 +359,8 @@ function liveApi(): VendreApi {
   return {
     demo: false,
     getSessionContext: context,
-    getMenus: async () => buildMenuTree((await live<RawMenusResponse>("navigation/menus")).menus ?? []),
+    getMenus: async () =>
+      buildMenuTree((await liveCached<RawMenusResponse>("navigation/menus")).menus ?? []),
     getCategory: async (id, query) => {
       const params = new URLSearchParams();
       if (query?.page) params.set("page", String(query.page));
@@ -368,17 +369,14 @@ function liveApi(): VendreApi {
       if (query?.sortOrder) params.set("sort_order", query.sortOrder);
       for (const tag of query?.tags ?? []) params.append("tags[]", String(tag));
       const suffix = params.toString() ? `?${params}` : "";
-      return normaliseCategory(await live<RawCategoryResponse>(`categories/${id}${suffix}`));
+      return normaliseCategory(await liveCached<RawCategoryResponse>(`categories/${id}${suffix}`));
     },
     getProduct: async (id) => {
       // Surface v2 exposes products through their category listing; the PDP
       // resolves the product from the category it belongs to.
-      const menus = buildMenuTree((await live<RawMenusResponse>("navigation/menus")).menus ?? []);
-      const flat = (nodes: MenuNode[]): MenuNode[] =>
-        nodes.flatMap((node) => [node, ...flat(node.children)]);
-      for (const node of flat(menus).filter((item) => item.type === "category")) {
+      for (const node of await leafCategories()) {
         const category = normaliseCategory(
-          await live<RawCategoryResponse>(`categories/${node.id}?limit=100`),
+          await liveCached<RawCategoryResponse>(`categories/${node.id}?limit=48`),
         );
         const found = category.products.find((product) => product.id === id);
         if (found) return found;
@@ -387,18 +385,11 @@ function liveApi(): VendreApi {
     },
     getFeaturedProducts: async () => {
       // Parent categories in Vendre often carry no products of their own, so we
-      // walk the category tree until a listing actually returns products.
-      const menus = buildMenuTree((await live<RawMenusResponse>("navigation/menus")).menus ?? []);
-      const flat = (nodes: MenuNode[]): MenuNode[] =>
-        nodes.flatMap((node) => [node, ...flat(node.children)]);
-      const candidates = flat(menus)
-        .filter((node) => node.type === "category")
-        .slice(0, 12);
-
+      // walk the tree until a listing actually returns products.
       const collected: Product[] = [];
-      for (const node of candidates) {
+      for (const node of (await leafCategories()).slice(0, 5)) {
         const category = normaliseCategory(
-          await live<RawCategoryResponse>(`categories/${node.id}?limit=8`),
+          await liveCached<RawCategoryResponse>(`categories/${node.id}?limit=8`),
         );
         for (const product of category.products) {
           if (!collected.some((entry) => entry.id === product.id)) collected.push(product);
@@ -407,6 +398,7 @@ function liveApi(): VendreApi {
       }
       return collected.slice(0, 8);
     },
+
 
     getCart: cart,
     addToCart: (productId, quantity = 1) =>
