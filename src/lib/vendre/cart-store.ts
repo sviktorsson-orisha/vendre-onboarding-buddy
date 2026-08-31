@@ -102,8 +102,11 @@ async function pushPending(): Promise<void> {
     const fresh = await surfaceJson<VendreCart>("shopping-cart");
     emit({ cart: fresh, error: null });
   } catch (error) {
-    emit({ error: (error as Error).message });
-    await refreshCart();
+    // Nätverks-/CORS-fel betyder att butiken ännu inte är allowlistad — då
+    // behåller vi den lokala vyn i stället för att skrämma besökaren.
+    const networkFailure = error instanceof TypeError;
+    emit({ error: networkFailure ? null : (error as Error).message });
+    if (!networkFailure) await refreshCart();
   }
 }
 
