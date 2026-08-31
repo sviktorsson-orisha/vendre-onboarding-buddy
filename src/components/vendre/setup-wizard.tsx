@@ -172,14 +172,20 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
   const preview = `https://project--${PROJECT_ID}-dev.lovable.app`;
   const published = `https://project--${PROJECT_ID}.lovable.app`;
   const { origin: publishedOrigin, setOrigin: setPublishedOrigin } = usePublishedOrigin();
+  const { progress, loaded, update } = useSetupProgress();
   const [open, setOpen] = useState(0);
-  const [adminDone, setAdminDone] = useState(false);
-  const [corsDone, setCorsDone] = useState(false);
   const [checking, setChecking] = useState(false);
   const [secretStatus, setSecretStatus] = useState<{ ok: boolean; missing: string[] } | null>(null);
   const [testing, setTesting] = useState(false);
   const [result, setResult] = useState<ConnectionResult | null>(null);
   const [testError, setTestError] = useState<string | null>(null);
+
+  const adminDone = progress.adminDone;
+  const corsDone = progress.corsDone;
+  const setAdminDone = (value: boolean) => update({ adminDone: value });
+  const setCorsDone = (value: boolean) => update({ corsDone: value });
+  const secretsOk = secretStatus ? secretStatus.ok : progress.secretsOk;
+  const connectionOk = result ? result.ok : progress.connectionOk;
 
   const origins = useMemo(
     () => (publishedOrigin ? [publishedOrigin, preview, published] : [preview, published]),
@@ -193,26 +199,38 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
     () => JSON.stringify(Object.fromEntries(POLICIES.map((policy) => [policy, origins])), null, 2),
     [origins],
   );
-  const done = [adminDone, secretStatus?.ok === true, publishedOrigin !== "", corsDone, result?.ok === true, result?.ok === true];
+  const done = [adminDone, secretsOk, publishedOrigin !== "", corsDone, connectionOk, connectionOk];
   const total = TITLE_KEYS.length;
   const active = Math.max(done.findIndex((value) => !value), 0);
   const completedCount = done.filter(Boolean).length;
   const states = done.map((value, index): GuideState => (value ? "done" : index === active ? "current" : "pending"));
   const activeTitle = t(TITLE_KEYS[active] ?? "step1.title");
 
+  // Resume where the guide was left off after a refresh.
+  const [resumed, setResumed] = useState(false);
+  useEffect(() => {
+    if (!loaded || resumed) return;
+    setResumed(true);
+    setOpen(active);
+  }, [loaded, resumed, active]);
+
   const checkSecrets = async () => {
     setChecking(true);
     try {
       const response = await fetch("/api/vendre/status", { headers: { accept: "application/json" } });
-      const data = (await response.json()) as { ok: boolean; missing?: string[] };
-      setSecretStatus({ ok: data.ok, missing: data.missing ?? [] });
-      if (data.ok) setOpen(2);
+      const data = (await response.json()) as { secretsOk?: boolean; ok?: boolean; missing?: string[] };
+      const ok = data.secretsOk ?? data.ok ?? false;
+      setSecretStatus({ ok, missing: data.missing ?? [] });
+      update({ secretsOk: ok });
+      if (ok) setOpen(2);
     } catch {
       setSecretStatus({ ok: false, missing: SECRET_NAMES });
+      update({ secretsOk: false });
     } finally {
       setChecking(false);
     }
   };
+
 
   const runTest = async () => {
     setTesting(true);
