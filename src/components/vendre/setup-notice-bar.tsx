@@ -1,13 +1,23 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Rocket } from "lucide-react";
 
 import { SetupWizard } from "@/components/vendre/setup-wizard";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useIsConfigured } from "@/lib/store/onboarding-state";
 
+const AUTO_OPEN_KEY = "vendre.setup-autoopened";
+
 export function SetupNoticeBar() {
   const isConfigured = useIsConfigured();
   const [open, setOpen] = useState(false);
+
+  // Ett nyimporterat projekt ska mötas av uppstartsguiden direkt, en gång.
+  useEffect(() => {
+    if (isConfigured) return;
+    if (window.localStorage.getItem(AUTO_OPEN_KEY) === "true") return;
+    window.localStorage.setItem(AUTO_OPEN_KEY, "true");
+    setOpen(true);
+  }, [isConfigured]);
 
   if (isConfigured) return null;
 
