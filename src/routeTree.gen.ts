@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CategoryIdRouteImport } from './routes/category.$id'
 import { Route as ApiVendreStatusRouteImport } from './routes/api/vendre/status'
 import { Route as ApiVendreTokenRouteImport } from './routes/api/vendre/token'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CategoryIdRoute = CategoryIdRouteImport.update({
+  id: '/category/$id',
+  path: '/category/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiVendreStatusRoute = ApiVendreStatusRouteImport.update({
@@ -31,30 +37,39 @@ const ApiVendreTokenRoute = ApiVendreTokenRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/category/$id': typeof CategoryIdRoute
   '/api/vendre/status': typeof ApiVendreStatusRoute
   '/api/vendre/token': typeof ApiVendreTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/category/$id': typeof CategoryIdRoute
   '/api/vendre/status': typeof ApiVendreStatusRoute
   '/api/vendre/token': typeof ApiVendreTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/category/$id': typeof CategoryIdRoute
   '/api/vendre/status': typeof ApiVendreStatusRoute
   '/api/vendre/token': typeof ApiVendreTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/vendre/status' | '/api/vendre/token'
+  fullPaths: '/' | '/category/$id' | '/api/vendre/status' | '/api/vendre/token'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/vendre/status' | '/api/vendre/token'
-  id: '__root__' | '/' | '/api/vendre/status' | '/api/vendre/token'
+  to: '/' | '/category/$id' | '/api/vendre/status' | '/api/vendre/token'
+  id:
+    | '__root__'
+    | '/'
+    | '/category/$id'
+    | '/api/vendre/status'
+    | '/api/vendre/token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CategoryIdRoute: typeof CategoryIdRoute
   ApiVendreStatusRoute: typeof ApiVendreStatusRoute
   ApiVendreTokenRoute: typeof ApiVendreTokenRoute
 }
@@ -66,6 +81,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/category/$id': {
+      id: '/category/$id'
+      path: '/category/$id'
+      fullPath: '/category/$id'
+      preLoaderRoute: typeof CategoryIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/vendre/status': {
@@ -87,6 +109,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CategoryIdRoute: CategoryIdRoute,
   ApiVendreStatusRoute: ApiVendreStatusRoute,
   ApiVendreTokenRoute: ApiVendreTokenRoute,
 }
