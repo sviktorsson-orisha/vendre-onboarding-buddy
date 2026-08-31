@@ -60,9 +60,14 @@ function useAsyncData<T>(
     let cancelled = false;
 
     if (!isConfigured) {
-      setState({ data: demoRef.current(), error: undefined, isLoading: false });
+      try {
+        setState({ data: demoRef.current(), error: undefined, isLoading: false });
+      } catch (error) {
+        setState({ data: undefined, error: toError(error), isLoading: false });
+      }
       return;
     }
+
 
     setState((prev) => ({ ...prev, isLoading: true, error: undefined }));
     ensureSession()
