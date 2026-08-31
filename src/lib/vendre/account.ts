@@ -203,6 +203,63 @@ function normalizeSubUser(payload: unknown, index: number): SubUser {
   };
 }
 
+/* ------------------------------------------------------- register body --- */
+
+/** Numeric country ids used by the store (ISO 3166-1 numeric). */
+export const COUNTRY_IDS: Record<string, number> = {
+  SE: 203,
+  NO: 161,
+  DK: 59,
+  FI: 73,
+  DE: 81,
+};
+
+function countryId(value: RegisterInput["country"]): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  const raw = String(value ?? "").trim();
+  if (/^\d+$/.test(raw)) return Number(raw);
+  return COUNTRY_IDS[raw.toUpperCase()] ?? COUNTRY_IDS["SE"]!;
+}
+
+/**
+ * Maps the registration form to the exact payload the store accepts.
+ * Empty optional strings are omitted; `type` is UI-only and never sent.
+ */
+export function buildRegisterBody(input: RegisterInput): Record<string, unknown> {
+  const body: Record<string, unknown> = {
+    gender: input.gender || "m",
+    firstname: input.firstname,
+    lastname: input.lastname,
+    email_address: input.email_address,
+    password: input.password,
+    confirmation: input.confirmation,
+    street_address: input.street_address,
+    postcode: input.postcode,
+    city: input.city,
+    state: input.state,
+    country: countryId(input.country),
+    telephone: input.telephone,
+    newsletter: Boolean(input.newsletter),
+    consent_personal_data_policy: Boolean(input.consent_personal_data_policy),
+  };
+
+  const optional: [string, string | undefined][] = [
+    ["personnummer", input.personnummer],
+    ["mobile", input.mobile],
+  ];
+  if (input.type === "company") {
+    optional.push(["company", input.company], [
+      "vat_identification_number",
+      input.vat_identification_number,
+    ]);
+  }
+  for (const [key, value] of optional) {
+    if (value && value.trim()) body[key] = value.trim();
+  }
+
+  return body;
+}
+
 /* ------------------------------------------------------------- adapter --- */
 
 export type AccountApi = {
@@ -252,7 +309,7 @@ const liveAccountApi: AccountApi = {
       call("accounts", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(input),
+        body: JSON.stringify(buildRegisterBody(input)),
       }),
     );
   },
@@ -371,13 +428,13 @@ const demoAccountApi: AccountApi = {
       firstname: input.firstname,
       lastname: input.lastname,
       email: input.email_address,
-      company: input.company,
+      company: input.company ?? "",
       street_address: input.street_address,
       postcode: input.postcode,
       city: input.city,
-      country: input.country,
+      country: String(input.country),
       telephone: input.telephone,
-      mobile: input.mobile,
+      mobile: input.mobile ?? "",
       newsletter: input.newsletter,
       type: input.type,
     };

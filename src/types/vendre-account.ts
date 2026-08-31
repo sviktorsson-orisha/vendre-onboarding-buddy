@@ -79,17 +79,20 @@ export type RegisterInput = {
   email_address: string;
   password: string;
   confirmation: string;
+  /** UI-only toggle between private/company — not sent to the store. */
   type: string;
   gender: string;
-  company: string;
+  company?: string;
   street_address: string;
   postcode: string;
   city: string;
-  country: string;
+  state: string;
+  /** Numeric country id expected by the store (SE = 203). */
+  country: number;
   telephone: string;
-  mobile: string;
+  mobile?: string;
   personnummer: string;
-  vat_identification_number: string;
+  vat_identification_number?: string;
   newsletter: boolean;
   consent_personal_data_policy: boolean;
 };

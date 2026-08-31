@@ -22,6 +22,14 @@ function FieldError({ message }: { message?: string | undefined }) {
   return <p className="text-xs text-destructive">{message}</p>;
 }
 
+const COUNTRY_OPTIONS = [
+  { id: 203, label: "Sverige" },
+  { id: 161, label: "Norge" },
+  { id: 59, label: "Danmark" },
+  { id: 73, label: "Finland" },
+  { id: 81, label: "Tyskland" },
+];
+
 export default function LoginPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -40,12 +48,13 @@ export default function LoginPage() {
     password: "",
     confirmation: "",
     type: "private",
-    gender: "",
+    gender: "m",
     company: "",
     street_address: "",
     postcode: "",
     city: "",
-    country: "SE",
+    state: "",
+    country: 203,
     telephone: "",
     mobile: "",
     personnummer: "",
@@ -237,6 +246,20 @@ export default function LoginPage() {
                 </select>
               </div>
 
+              <div className="space-y-1.5">
+                <Label htmlFor="gender">{t("account.gender")}</Label>
+                <select
+                  id="gender"
+                  className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm"
+                  value={form.gender}
+                  onChange={(event) => set("gender", event.target.value)}
+                >
+                  <option value="m">{t("account.genderMale")}</option>
+                  <option value="f">{t("account.genderFemale")}</option>
+                </select>
+                <FieldError message={registerFields["gender"]} />
+              </div>
+
               {form.type === "company" && (
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
@@ -289,13 +312,31 @@ export default function LoginPage() {
                   <FieldError message={registerFields["city"]} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="country">{t("account.country")}</Label>
+                  <Label htmlFor="state">{t("account.state")}</Label>
                   <Input
-                    id="country"
-                    value={form.country}
-                    onChange={(event) => set("country", event.target.value)}
+                    id="state"
+                    value={form.state}
+                    onChange={(event) => set("state", event.target.value)}
                   />
+                  <FieldError message={registerFields["state"]} />
                 </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="country">{t("account.country")}</Label>
+                <select
+                  id="country"
+                  className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm"
+                  value={form.country}
+                  onChange={(event) => set("country", Number(event.target.value))}
+                >
+                  {COUNTRY_OPTIONS.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <FieldError message={registerFields["country"]} />
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
