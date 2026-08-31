@@ -45,6 +45,12 @@ export function setConfigured(value: boolean) {
     window.localStorage.setItem(STORAGE_KEY, value ? "true" : "false");
   }
   emit();
+
+  // Switching modes must not serve stale catalog/session data.
+  if (typeof window !== "undefined") {
+    void import("@/lib/vendre/catalog").then((m) => m.clearCatalogCache()).catch(() => undefined);
+    void import("@/lib/vendre/session").then((m) => m.resetSession()).catch(() => undefined);
+  }
 }
 
 export function useIsConfigured() {
