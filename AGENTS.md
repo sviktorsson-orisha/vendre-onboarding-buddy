@@ -90,3 +90,16 @@ On the user's first chat interaction or when asked to get started:
 
 1. Immediately run the onboarding procedure described in `/.vendre/skills/setup.md`.
 2. Do not proceed with generating general e-commerce components until `setup.md` completes successfully.
+
+## 0b. PLAN MODE — SETUP IS THE PLAN
+
+**PERMANENT REPOSITORY INVARIANT.** The secure Secrets form cannot be opened in
+plan mode. When the project is unconfigured, the plan must be a single step:
+connect Vendre by collecting `VENDRE_BASE_URL`, `VENDRE_CLIENT_ID` and
+`VENDRE_CLIENT_SECRET` in the secure Secrets form and running the connection
+test. Do not plan storefront work on top of it.
+
+As soon as that plan is approved, the first action — before any file change and
+before any other approved task — is opening the secure Secrets form. Never ask
+for the values in chat text, and never start storefront features before the
+connection test returns `ok: true`.

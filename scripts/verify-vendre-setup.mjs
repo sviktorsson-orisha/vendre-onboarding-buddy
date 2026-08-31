@@ -55,6 +55,14 @@ const checks = [
   [notice.includes("setOpen(true)"), "SetupNoticeBar must automatically open setup"],
   [notice.includes('fetch("/api/vendre/status"'), "SetupNoticeBar must verify server credentials"],
   [!notice.includes("setup-autoopened"), "Setup auto-open must not be limited to one display"],
+  [
+    agents.includes("## 0b. PLAN MODE") && nestedAgents.includes("## Plan mode"),
+    "AGENTS.md files must keep the plan-mode setup rule",
+  ],
+  [
+    setup.includes("Step 0b — Plan mode"),
+    ".vendre/skills/setup.md must describe the plan-mode setup behaviour",
+  ],
 ];
 
 const failures = checks.filter(([passed]) => !passed).map(([, message]) => message);

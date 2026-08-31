@@ -26,6 +26,19 @@ any custom domain, added later
 They exist before the project is published, so CORS can be configured up front.
 The setup screen prints the exact list and the ready-to-paste JSON.
 
+Step 0b — Plan mode
+
+In plan mode the secure Secrets form cannot be opened. Do not write a long
+storefront plan: write a one-step plan whose only content is "connect Vendre
+(collect VENDRE_BASE_URL, VENDRE_CLIENT_ID, VENDRE_CLIENT_SECRET in the secure
+Secrets form and run the connection test)" and show it for approval.
+
+The moment the plan is approved, execution continues in build mode: open the
+secure Secrets form as the very first action, before any file change and before
+any other approved task. Never ask for the values in chat text, and never treat
+an approved plan as permission to build storefront features before the
+connection test returns ok: true.
+
 Step 1 — Collect credentials
 
 On the first chat message in a newly imported project, check the configured
