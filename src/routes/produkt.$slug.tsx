@@ -156,7 +156,7 @@ function ProductPage() {
                 slug: product.slug,
                 name: product.name,
                 variantName: variant?.name,
-                image: product.images[0],
+                image: product.images[0] ?? "",
                 unitPrice: product.priceIncVat,
                 currency: product.currency,
               })
