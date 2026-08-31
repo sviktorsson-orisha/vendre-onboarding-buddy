@@ -1,9 +1,10 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Check, ChevronDown, Copy, ExternalLink, Loader2, Lock } from "lucide-react";
 
-import { BrandHero, BrandShell } from "@/components/vendre/brand-shell";
+import { BrandHero } from "@/components/vendre/brand-shell";
 import { PublishOriginField } from "@/components/vendre/publish-origin-field";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
+import { setConfigured } from "@/lib/store/onboarding-state";
 import { usePublishedOrigin } from "@/lib/vendre/published-origin";
 import { testVendreConnection, type ConnectionResult, type ConnectionStep } from "@/lib/vendre";
 import { cn } from "@/lib/utils";
@@ -67,7 +68,7 @@ function AdminLink({ path, children }: { path: string; children: ReactNode }) {
   return <a href={path} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-mono text-xs text-primary underline underline-offset-4">{children}<ExternalLink className="size-3" /></a>;
 }
 
-export default function Index() {
+export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
   const { t } = useI18n();
   const preview = `https://project--${PROJECT_ID}-dev.lovable.app`;
   const published = `https://project--${PROJECT_ID}.lovable.app`;
@@ -96,6 +97,11 @@ export default function Index() {
   const states = done.map((value, index): GuideState => value ? "done" : index === active ? "current" : "pending");
   const activeTitle = t(TITLE_KEYS[active] ?? "step1.title");
 
+  // A green connection test flips the storefront from Demo Mode to Live Mode.
+  useEffect(() => {
+    if (result?.ok) setConfigured(true);
+  }, [result?.ok]);
+
   const checkSecrets = async () => {
     setChecking(true);
     try {
@@ -118,10 +124,10 @@ export default function Index() {
   };
 
   return (
-    <BrandShell>
+    <div>
       <BrandHero />
 
-      <section className="brand-card sticky top-20 z-20 mt-10 overflow-hidden bg-card/95 p-5 backdrop-blur sm:p-6">
+      <section className="brand-card mt-8 overflow-hidden bg-card/95 p-5 sm:p-6">
         <div className="brand-canvas pointer-events-none absolute inset-0 opacity-70" aria-hidden />
         <div className="relative flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -174,9 +180,20 @@ export default function Index() {
         </GuideStep>
 
         <GuideStep index={6} title={t("step6.title")} state={states[5] ?? "pending"} open={open === 5} onToggle={() => setOpen(open === 5 ? -1 : 5)} verdict={result?.ok ? t("step6.verdictDone") : t("step6.verdict")}>
-          {result?.ok ? <><p className="rounded-md bg-emerald-500/10 p-3 font-medium text-emerald-700">{t("step6.done")}</p><dl className="space-y-2"><div className="rounded-lg border border-border bg-card p-3"><dt className="brand-eyebrow">{t("step6.baseUrl")}</dt><dd className="mt-1 break-all font-mono text-xs text-foreground">{result.baseUrl}</dd></div><div className="rounded-lg border border-border bg-card p-3"><dt className="brand-eyebrow">{t("step6.origin")}</dt><dd className="mt-1 break-all font-mono text-xs text-foreground">{publishedOrigin || result.origin}</dd></div></dl></> : <p>{t("step6.pending")}</p>}
+          {result?.ok ? (
+            <>
+              <p className="rounded-md bg-emerald-500/10 p-3 font-medium text-emerald-700">{t("step6.done")}</p>
+              <dl className="space-y-2">
+                <div className="rounded-lg border border-border bg-card p-3"><dt className="brand-eyebrow">{t("step6.baseUrl")}</dt><dd className="mt-1 break-all font-mono text-xs text-foreground">{result.baseUrl}</dd></div>
+                <div className="rounded-lg border border-border bg-card p-3"><dt className="brand-eyebrow">{t("step6.origin")}</dt><dd className="mt-1 break-all font-mono text-xs text-foreground">{publishedOrigin || result.origin}</dd></div>
+              </dl>
+              <button type="button" className="brand-button" onClick={() => onFinish?.()}>Börja bygga butiken</button>
+            </>
+          ) : (
+            <p>{t("step6.pending")}</p>
+          )}
         </GuideStep>
       </ol>
-    </BrandShell>
+    </div>
   );
 }
