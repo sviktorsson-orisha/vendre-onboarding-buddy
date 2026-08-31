@@ -84,25 +84,13 @@ export async function getVendreToken(force = false): Promise<VendreToken> {
 
 const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
-/**
- * Direct-to-store first; if the browser blocks the call (origin not allowlisted
- * in Vendre Admin) we flip to the same-origin proxy for the rest of the session
- * instead of showing the visitor a CORS error.
- */
-let proxyMode = false;
-
-export function isProxyMode() {
-  return proxyMode;
-}
-
-/** Calls a Surface v2 endpoint. `path` is relative to /surface/2/. */
+/** Calls a Surface v2 endpoint directly from the browser. `path` is relative to /surface/2/. */
 export async function surfaceFetch(
   path: string,
   init: RequestInit & { method?: string } = {},
 ): Promise<Response> {
   const { accessToken, baseUrl } = await getVendreToken();
   const method = (init.method ?? "GET").toUpperCase();
-  const clean = path.replace(/^\/+/, "");
 
   const headers = new Headers(init.headers);
   headers.set("Authorization", `Bearer ${accessToken}`);
@@ -114,25 +102,14 @@ export async function surfaceFetch(
     headers.set("Surface-Mutation-Protection-Token", mutationProtectionToken);
   }
 
-  const viaProxy = () =>
-    fetch(`/api/vendre/proxy/${clean}`, { ...init, method, headers, credentials: "same-origin" });
-
-  if (proxyMode) return viaProxy();
-
-  try {
-    return await fetch(`${baseUrl}/surface/2/${clean}`, {
-      ...init,
-      method,
-      headers,
-      mode: "cors",
-      credentials: "include",
-    });
-  } catch {
-    proxyMode = true;
-    return viaProxy();
-  }
+  return fetch(`${baseUrl}/surface/2/${path.replace(/^\/+/, "")}`, {
+    ...init,
+    method,
+    headers,
+    mode: "cors",
+    credentials: "include",
+  });
 }
-
 
 export async function surfaceJson<T = unknown>(
   path: string,

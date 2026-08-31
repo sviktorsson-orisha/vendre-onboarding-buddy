@@ -1,9 +1,9 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { Check, ChevronDown, Copy, ExternalLink, Loader2, Lock } from "lucide-react";
 
+import { BrandHero, BrandShell } from "@/components/vendre/brand-shell";
 import { PublishOriginField } from "@/components/vendre/publish-origin-field";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
-import { useOnboarding } from "@/context/onboarding-context";
 import { usePublishedOrigin } from "@/lib/vendre/published-origin";
 import { testVendreConnection, type ConnectionResult, type ConnectionStep } from "@/lib/vendre";
 import { cn } from "@/lib/utils";
@@ -67,9 +67,8 @@ function AdminLink({ path, children }: { path: string; children: ReactNode }) {
   return <a href={path} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-mono text-xs text-primary underline underline-offset-4">{children}<ExternalLink className="size-3" /></a>;
 }
 
-export function SetupWizard({ onComplete }: { onComplete?: () => void } = {}) {
+export default function Index() {
   const { t } = useI18n();
-  const { markConfigured } = useOnboarding();
   const preview = `https://project--${PROJECT_ID}-dev.lovable.app`;
   const published = `https://project--${PROJECT_ID}.lovable.app`;
   const { origin: publishedOrigin, setOrigin: setPublishedOrigin } = usePublishedOrigin();
@@ -113,17 +112,15 @@ export function SetupWizard({ onComplete }: { onComplete?: () => void } = {}) {
     try {
       const next = await testVendreConnection();
       setResult(next);
-      if (next.ok) {
-        setOpen(5);
-        markConfigured();
-        onComplete?.();
-      }
+      if (next.ok) setOpen(5);
     } catch (error) { setTestError((error as Error).message); }
     finally { setTesting(false); }
   };
 
   return (
-    <div className="space-y-0">
+    <BrandShell>
+      <BrandHero />
+
       <section className="brand-card sticky top-20 z-20 mt-10 overflow-hidden bg-card/95 p-5 backdrop-blur sm:p-6">
         <div className="brand-canvas pointer-events-none absolute inset-0 opacity-70" aria-hidden />
         <div className="relative flex flex-wrap items-start justify-between gap-4">
@@ -180,6 +177,6 @@ export function SetupWizard({ onComplete }: { onComplete?: () => void } = {}) {
           {result?.ok ? <><p className="rounded-md bg-emerald-500/10 p-3 font-medium text-emerald-700">{t("step6.done")}</p><dl className="space-y-2"><div className="rounded-lg border border-border bg-card p-3"><dt className="brand-eyebrow">{t("step6.baseUrl")}</dt><dd className="mt-1 break-all font-mono text-xs text-foreground">{result.baseUrl}</dd></div><div className="rounded-lg border border-border bg-card p-3"><dt className="brand-eyebrow">{t("step6.origin")}</dt><dd className="mt-1 break-all font-mono text-xs text-foreground">{publishedOrigin || result.origin}</dd></div></dl></> : <p>{t("step6.pending")}</p>}
         </GuideStep>
       </ol>
-    </div>
+    </BrandShell>
   );
 }

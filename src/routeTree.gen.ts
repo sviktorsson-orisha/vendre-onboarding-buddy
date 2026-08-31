@@ -10,25 +10,12 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as CategoryIdRouteImport } from './routes/category.$id'
-import { Route as ProductIdRouteImport } from './routes/product.$id'
 import { Route as ApiVendreStatusRouteImport } from './routes/api/vendre/status'
 import { Route as ApiVendreTokenRouteImport } from './routes/api/vendre/token'
-import { Route as ApiVendreProxySplatRouteImport } from './routes/api/vendre/proxy.$'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CategoryIdRoute = CategoryIdRouteImport.update({
-  id: '/category/$id',
-  path: '/category/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProductIdRoute = ProductIdRouteImport.update({
-  id: '/product/$id',
-  path: '/product/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiVendreStatusRoute = ApiVendreStatusRouteImport.update({
@@ -41,71 +28,35 @@ const ApiVendreTokenRoute = ApiVendreTokenRouteImport.update({
   path: '/api/vendre/token',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiVendreProxySplatRoute = ApiVendreProxySplatRouteImport.update({
-  id: '/api/vendre/proxy/$',
-  path: '/api/vendre/proxy/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/category/$id': typeof CategoryIdRoute
-  '/product/$id': typeof ProductIdRoute
   '/api/vendre/status': typeof ApiVendreStatusRoute
   '/api/vendre/token': typeof ApiVendreTokenRoute
-  '/api/vendre/proxy/$': typeof ApiVendreProxySplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/category/$id': typeof CategoryIdRoute
-  '/product/$id': typeof ProductIdRoute
   '/api/vendre/status': typeof ApiVendreStatusRoute
   '/api/vendre/token': typeof ApiVendreTokenRoute
-  '/api/vendre/proxy/$': typeof ApiVendreProxySplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/category/$id': typeof CategoryIdRoute
-  '/product/$id': typeof ProductIdRoute
   '/api/vendre/status': typeof ApiVendreStatusRoute
   '/api/vendre/token': typeof ApiVendreTokenRoute
-  '/api/vendre/proxy/$': typeof ApiVendreProxySplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/category/$id'
-    | '/product/$id'
-    | '/api/vendre/status'
-    | '/api/vendre/token'
-    | '/api/vendre/proxy/$'
+  fullPaths: '/' | '/api/vendre/status' | '/api/vendre/token'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/category/$id'
-    | '/product/$id'
-    | '/api/vendre/status'
-    | '/api/vendre/token'
-    | '/api/vendre/proxy/$'
-  id:
-    | '__root__'
-    | '/'
-    | '/category/$id'
-    | '/product/$id'
-    | '/api/vendre/status'
-    | '/api/vendre/token'
-    | '/api/vendre/proxy/$'
+  to: '/' | '/api/vendre/status' | '/api/vendre/token'
+  id: '__root__' | '/' | '/api/vendre/status' | '/api/vendre/token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  CategoryIdRoute: typeof CategoryIdRoute
-  ProductIdRoute: typeof ProductIdRoute
   ApiVendreStatusRoute: typeof ApiVendreStatusRoute
   ApiVendreTokenRoute: typeof ApiVendreTokenRoute
-  ApiVendreProxySplatRoute: typeof ApiVendreProxySplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -115,20 +66,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/category/$id': {
-      id: '/category/$id'
-      path: '/category/$id'
-      fullPath: '/category/$id'
-      preLoaderRoute: typeof CategoryIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/product/$id': {
-      id: '/product/$id'
-      path: '/product/$id'
-      fullPath: '/product/$id'
-      preLoaderRoute: typeof ProductIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/vendre/status': {
@@ -145,23 +82,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiVendreTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/vendre/proxy/$': {
-      id: '/api/vendre/proxy/$'
-      path: '/api/vendre/proxy/$'
-      fullPath: '/api/vendre/proxy/$'
-      preLoaderRoute: typeof ApiVendreProxySplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  CategoryIdRoute: CategoryIdRoute,
-  ProductIdRoute: ProductIdRoute,
   ApiVendreStatusRoute: ApiVendreStatusRoute,
   ApiVendreTokenRoute: ApiVendreTokenRoute,
-  ApiVendreProxySplatRoute: ApiVendreProxySplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
