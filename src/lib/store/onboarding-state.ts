@@ -32,6 +32,12 @@ function subscribe(listener: () => void) {
   return () => listeners.delete(listener);
 }
 
+/** Non-reactive read for modules outside React (cart sync, data layer). */
+export function isConfigured() {
+  hydrate();
+  return configured;
+}
+
 export function setConfigured(value: boolean) {
   if (configured === value) return;
   configured = value;
