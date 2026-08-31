@@ -238,7 +238,9 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
     try {
       const next = await testVendreConnection();
       setResult(next);
+      update({ connectionOk: next.ok });
       if (next.ok) setOpen(5);
+
     } catch (error) {
       setTestError((error as Error).message);
     } finally {
