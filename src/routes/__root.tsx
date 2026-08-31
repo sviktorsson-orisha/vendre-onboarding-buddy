@@ -11,6 +11,9 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { setServerConfigured } from "@/context/onboarding-context";
+import { getStorefrontStatus } from "@/lib/vendre/status.functions";
+
 
 function NotFoundComponent() {
   return (
