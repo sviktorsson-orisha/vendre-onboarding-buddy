@@ -228,9 +228,31 @@ async function live<T>(path: string, init?: RequestInit & { method?: string }): 
       await bootstrapSession(true);
       return call();
     }
+    // The store rate-limits bursts; one short backoff keeps the page from
+    // falling back to an empty listing.
+    if (err.status === 429) {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      return call();
+    }
     throw error;
   }
 }
+
+/**
+ * Read-through cache for cacheable GETs (menus, categories). Cart and session
+ * context are never cached — see .vendre/skills/caching.md.
+ */
+const readCache = new Map<string, { at: number; value: unknown }>();
+const CACHE_TTL = 5 * 60_000;
+
+async function liveCached<T>(path: string): Promise<T> {
+  const hit = readCache.get(path);
+  if (hit && Date.now() - hit.at < CACHE_TTL) return hit.value as T;
+  const value = await live<T>(path);
+  readCache.set(path, { at: Date.now(), value });
+  return value;
+}
+
 
 /* ------------------------------------------------------------- demo cart */
 
