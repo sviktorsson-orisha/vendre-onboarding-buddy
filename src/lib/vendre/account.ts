@@ -331,7 +331,7 @@ const liveAccountApi: AccountApi = {
 
 /* ---------------------------------------------------------------- demo --- */
 
-let demoAuthenticated = true;
+let demoAuthenticated = false;
 let demoAccount: Account = { ...mockAccount };
 let demoAddresses: Address[] = mockAddresses.map((address) => ({ ...address }));
 const demoListeners = new Set<() => void>();
