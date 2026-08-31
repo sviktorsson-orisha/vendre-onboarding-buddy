@@ -1,24 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
-import Index from "@/pages/Index";
+import Home from "@/pages/Home";
+
+const description =
+  "Skandinavisk inredning i begränsade serier – möbler, belysning och textil. Butiksmall byggd på Vendre Surface API v2.";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Vendre Headless Storefront Setup" },
-      {
-        name: "description",
-        content:
-          "Setup-guide för Vendre Surface API v2: OAuth i Admin, CORS-allowlist, credentials och anslutningstest innan storefronten byggs.",
-      },
-      { property: "og:title", content: "Vendre Headless Storefront Setup" },
-      {
-        property: "og:description",
-        content:
-          "Setup-guide för Vendre Surface API v2: OAuth i Admin, CORS-allowlist, credentials och anslutningstest innan storefronten byggs.",
-      },
+      { title: "Nordsken – inredning som håller i decennier" },
+      { name: "description", content: description },
+      { property: "og:title", content: "Nordsken – inredning som håller i decennier" },
+      { property: "og:description", content: description },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: Index,
+  component: Home,
 });
