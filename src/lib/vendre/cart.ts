@@ -171,17 +171,8 @@ export async function flushCartSync(): Promise<CartLine[]> {
 }
 
 /** Checkout must be a real browser navigation so the session cookie travels. */
-export function checkoutUrl(): string | null {
-  const base = getCheckoutBase();
-  return base ? `${base}/checkout` : null;
-}
-
-let checkoutBase: string | null = null;
-
-export function setCheckoutBase(baseUrl: string) {
-  checkoutBase = baseUrl.replace(/\/+$/, "");
-}
-
-function getCheckoutBase() {
-  return checkoutBase;
+export async function getCheckoutUrl(): Promise<string> {
+  const { getVendreToken } = await import("./client");
+  const { baseUrl } = await getVendreToken();
+  return `${baseUrl}/checkout`;
 }
