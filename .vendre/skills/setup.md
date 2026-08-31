@@ -28,11 +28,16 @@ The setup screen prints the exact list and the ready-to-paste JSON.
 
 Step 0b — Plan mode
 
-The secure Secrets form only exists in Build mode. If you are in plan mode and
-the project is unconfigured, do not write a setup plan and do not ask for the
-values in chat. Answer in one short message that setup must run in Build mode,
-ask the customer to switch the composer from Plan to Build and send any
-message, and stop there.
+In plan mode the secure Secrets form cannot be opened. Do not write a long
+storefront plan: write a one-step plan whose only content is "connect Vendre
+(collect VENDRE_BASE_URL, VENDRE_CLIENT_ID, VENDRE_CLIENT_SECRET in the secure
+Secrets form and run the connection test)" and show it for approval.
+
+The moment the plan is approved, execution continues in build mode: open the
+secure Secrets form as the very first action, before any file change and before
+any other approved task. Never ask for the values in chat text, and never treat
+an approved plan as permission to build storefront features before the
+connection test returns ok: true.
 
 Step 1 — Collect credentials
 

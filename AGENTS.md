@@ -91,11 +91,15 @@ On the user's first chat interaction or when asked to get started:
 1. Immediately run the onboarding procedure described in `/.vendre/skills/setup.md`.
 2. Do not proceed with generating general e-commerce components until `setup.md` completes successfully.
 
-## 0b. PLAN MODE — SETUP IS NEVER A PLAN
+## 0b. PLAN MODE — SETUP IS THE PLAN
 
 **PERMANENT REPOSITORY INVARIANT.** The secure Secrets form cannot be opened in
-plan mode. If the project is unconfigured and the agent is in plan mode, it must
-NOT produce a setup plan, a credential checklist, or ask for the values in chat.
-Instead, answer in one short message: setup must run in Build mode — switch the
-composer from Plan to Build and send any message, and the credential form opens
-immediately. Do nothing else until the mode is switched.
+plan mode. When the project is unconfigured, the plan must be a single step:
+connect Vendre by collecting `VENDRE_BASE_URL`, `VENDRE_CLIENT_ID` and
+`VENDRE_CLIENT_SECRET` in the secure Secrets form and running the connection
+test. Do not plan storefront work on top of it.
+
+As soon as that plan is approved, the first action — before any file change and
+before any other approved task — is opening the secure Secrets form. Never ask
+for the values in chat text, and never start storefront features before the
+connection test returns `ok: true`.
