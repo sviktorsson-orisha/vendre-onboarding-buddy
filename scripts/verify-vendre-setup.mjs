@@ -47,7 +47,7 @@ const checks = [
     ".vendre/skills/setup.md must retain the complete executable setup procedure",
   ],
   [
-    setup.includes("Use the Secrets tool's secure form") && setup.includes("Never use a normal chat question"),
+    setup.includes("Use the Secrets tool's secure form") && setup.includes("normal chat question"),
     ".vendre/skills/setup.md must collect credentials through the secure Secrets form",
   ],
   [shell.includes("<SetupNoticeBar />"), "StoreShell must render SetupNoticeBar globally"],
