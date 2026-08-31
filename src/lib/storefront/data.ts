@@ -1,58 +1,78 @@
 /**
  * Storefront data layer.
  *
- * Today every read returns local dummy data (Demo Mode). When the Vendre
- * connection is verified these functions are the single place to swap in
- * Surface v2 calls (categories, VQL, shopping-cart) — the UI does not change.
+ * Demo Mode (isConfigured === false) reads local dummy data.
+ * Live Mode  (isConfigured === true)  reads Vendre Surface v2.
+ *
+ * The UI always consumes the shared view models in ./types.
  */
 import {
   demoCategories,
   demoFooterColumns,
   demoProducts,
   demoStore,
-  type DemoCategory,
-  type DemoProduct,
 } from "@/mock/dummyData";
+import { getSessionContext } from "@/lib/vendre/session";
 
-export type { DemoCategory, DemoProduct };
+import type { FooterColumn, StoreCategory, StoreInfo, StoreProduct } from "./types";
 
-export function getStore() {
+export type { StoreCategory, StoreInfo, StoreProduct, StoreVariant, FooterColumn } from "./types";
+/** @deprecated kept for existing imports — use StoreProduct / StoreCategory. */
+export type DemoProduct = StoreProduct;
+export type DemoCategory = StoreCategory;
+
+export function getStore(): StoreInfo {
+  const session = getSessionContext();
+  if (!session) return demoStore;
+  return {
+    name: session.storeName,
+    currency: session.currency,
+    locale: session.locale,
+    pricesIncludeVat: session.pricesIncludeVat,
+    heroImage: demoStore.heroImage,
+  };
+}
+
+export function getDemoStore(): StoreInfo {
   return demoStore;
 }
 
-export function getCategories(): DemoCategory[] {
+export function getCategories(): StoreCategory[] {
   return demoCategories;
 }
 
-export function getNavigation(): DemoCategory[] {
+export function getNavigation(): StoreCategory[] {
   return demoCategories;
 }
 
-export function getFooterColumns() {
+export function getFooterColumns(): FooterColumn[] {
   return demoFooterColumns;
 }
 
-export function getCategoryBySlug(slug: string): DemoCategory | undefined {
+export function getCategoryBySlug(slug: string): StoreCategory | undefined {
   return demoCategories.find((category) => category.slug === slug);
 }
 
-export function getProducts(categoryId?: string): DemoProduct[] {
+export function getProducts(categoryId?: string): StoreProduct[] {
   if (!categoryId) return demoProducts;
   return demoProducts.filter((product) => product.categoryId === categoryId);
 }
 
-export function getFeaturedProducts(): DemoProduct[] {
+export function getFeaturedProducts(): StoreProduct[] {
   return demoProducts.filter((product) => product.featured);
 }
 
-export function getProductBySlug(slug: string): DemoProduct | undefined {
+export function getProductBySlug(slug: string): StoreProduct | undefined {
   return demoProducts.find((product) => product.slug === slug);
 }
 
-export function formatPrice(amount: number, currency = demoStore.currency) {
-  return new Intl.NumberFormat(demoStore.locale, {
+export function formatPrice(amount: number, currency?: string) {
+  const session = getSessionContext();
+  const locale = session?.locale ?? demoStore.locale;
+  const code = currency ?? session?.currency ?? demoStore.currency;
+  return new Intl.NumberFormat(locale, {
     style: "currency",
-    currency,
+    currency: code,
     maximumFractionDigits: 0,
   }).format(amount);
 }
