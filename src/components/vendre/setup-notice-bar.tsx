@@ -47,11 +47,11 @@ export function SetupNoticeBar() {
     };
   }, [isConfigured]);
 
-  if (isConfigured) return open ? null : null;
-
   return (
     <>
+      {!isConfigured && (
       <div className="sticky top-0 z-40 border-b border-accent-foreground/15 bg-accent text-accent-foreground">
+
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-3 px-5 py-2.5 sm:px-6">
           <span className="brand-eyebrow rounded-md bg-accent-foreground/10 px-2.5 py-1">
             Demo Mode (Dummy Data)
