@@ -103,9 +103,20 @@ export function CartDrawer() {
               <span className="text-muted-foreground">Totalt (inkl. moms)</span>
               <span className="text-lg font-bold text-foreground">{formatPrice(total)}</span>
             </div>
-            <Button className="w-full" disabled={lines.length === 0}>
+            <Button
+              className="w-full"
+              disabled={lines.length === 0}
+              onClick={() => {
+                if (isLive) void goToCheckout();
+              }}
+            >
               Till kassan
             </Button>
+            {!isLive && lines.length > 0 && (
+              <p className="text-center text-xs text-muted-foreground">
+                Kassan aktiveras när butiken är kopplad till Vendre.
+              </p>
+            )}
           </div>
         </SheetFooter>
       </SheetContent>
