@@ -155,7 +155,7 @@ function ProductPage() {
                 productId: product.id,
                 slug: product.slug,
                 name: product.name,
-                variantName: variant?.name,
+                ...(variant?.name ? { variantName: variant.name } : {}),
                 image: product.images[0] ?? "",
                 unitPrice: product.priceIncVat,
                 currency: product.currency,
