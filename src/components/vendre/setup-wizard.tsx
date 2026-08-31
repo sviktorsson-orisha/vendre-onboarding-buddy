@@ -274,9 +274,9 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
               </span>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              {result?.ok ? t("panel.verified") : t("panel.progress", { done: completedCount, total })}
+              {connectionOk ? t("panel.verified") : t("panel.progress", { done: completedCount, total })}
             </p>
-            {!result?.ok && (
+            {!connectionOk && (
               <p className="mt-3 inline-flex rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-accent-foreground">
                 {t("panel.next")} {active + 1}. {activeTitle}
               </p>
@@ -304,7 +304,7 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
         </div>
       </section>
 
-      {result?.ok && (
+      {connectionOk && (
         <section className="brand-card mt-6 border-emerald-500/40 bg-emerald-500/5 p-5">
           <div className="flex items-start gap-3">
             <PartyPopper className="mt-0.5 size-5 text-emerald-600" aria-hidden />
@@ -465,7 +465,7 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
           state={states[4] ?? "pending"}
           open={open === 4}
           onToggle={() => setOpen(open === 4 ? -1 : 4)}
-          verdict={result?.ok ? t("step5.verdictDone") : t("step5.verdict")}
+          verdict={connectionOk ? t("step5.verdictDone") : t("step5.verdict")}
         >
           <p>{t("step5.body")}</p>
           <button type="button" className="brand-button" disabled={testing || !corsDone} onClick={runTest}>
@@ -488,9 +488,9 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
           state={states[5] ?? "pending"}
           open={open === 5}
           onToggle={() => setOpen(open === 5 ? -1 : 5)}
-          verdict={result?.ok ? t("step6.verdictDone") : t("step6.verdict")}
+          verdict={connectionOk ? t("step6.verdictDone") : t("step6.verdict")}
         >
-          {result?.ok ? (
+          {connectionOk ? (
             <>
               <p className="rounded-md bg-emerald-500/10 p-3 font-medium text-emerald-700">{t("step6.done")}</p>
               <dl className="space-y-2">
