@@ -228,9 +228,31 @@ async function live<T>(path: string, init?: RequestInit & { method?: string }): 
       await bootstrapSession(true);
       return call();
     }
+    // The store rate-limits bursts; one short backoff keeps the page from
+    // falling back to an empty listing.
+    if (err.status === 429) {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      return call();
+    }
     throw error;
   }
 }
+
+/**
+ * Read-through cache for cacheable GETs (menus, categories). Cart and session
+ * context are never cached — see .vendre/skills/caching.md.
+ */
+const readCache = new Map<string, { at: number; value: unknown }>();
+const CACHE_TTL = 5 * 60_000;
+
+async function liveCached<T>(path: string): Promise<T> {
+  const hit = readCache.get(path);
+  if (hit && Date.now() - hit.at < CACHE_TTL) return hit.value as T;
+  const value = await live<T>(path);
+  readCache.set(path, { at: Date.now(), value });
+  return value;
+}
+
 
 /* ------------------------------------------------------------- demo cart */
 
@@ -314,7 +336,19 @@ function demoApi(): VendreApi {
   };
 }
 
+/** Category menu nodes, deepest first — leaves are where products actually live. */
+async function leafCategories(): Promise<MenuNode[]> {
+  const menus = buildMenuTree((await liveCached<RawMenusResponse>("navigation/menus")).menus ?? []);
+  const walk = (nodes: MenuNode[], depth: number): { node: MenuNode; depth: number }[] =>
+    nodes.flatMap((node) => [{ node, depth }, ...walk(node.children, depth + 1)]);
+  return walk(menus, 0)
+    .filter((entry) => entry.node.type === "category")
+    .sort((a, b) => (b.node.children.length === 0 ? 1 : 0) - (a.node.children.length === 0 ? 1 : 0) || b.depth - a.depth)
+    .map((entry) => entry.node);
+}
+
 function liveApi(): VendreApi {
+
   const context = async () => {
     const raw = await live<RawSessionContext>("session/context");
     return normaliseContext(raw);
@@ -337,7 +371,8 @@ function liveApi(): VendreApi {
   return {
     demo: false,
     getSessionContext: context,
-    getMenus: async () => buildMenuTree((await live<RawMenusResponse>("navigation/menus")).menus ?? []),
+    getMenus: async () =>
+      buildMenuTree((await liveCached<RawMenusResponse>("navigation/menus")).menus ?? []),
     getCategory: async (id, query) => {
       const params = new URLSearchParams();
       if (query?.page) params.set("page", String(query.page));
@@ -346,17 +381,14 @@ function liveApi(): VendreApi {
       if (query?.sortOrder) params.set("sort_order", query.sortOrder);
       for (const tag of query?.tags ?? []) params.append("tags[]", String(tag));
       const suffix = params.toString() ? `?${params}` : "";
-      return normaliseCategory(await live<RawCategoryResponse>(`categories/${id}${suffix}`));
+      return normaliseCategory(await liveCached<RawCategoryResponse>(`categories/${id}${suffix}`));
     },
     getProduct: async (id) => {
       // Surface v2 exposes products through their category listing; the PDP
       // resolves the product from the category it belongs to.
-      const menus = buildMenuTree((await live<RawMenusResponse>("navigation/menus")).menus ?? []);
-      const flat = (nodes: MenuNode[]): MenuNode[] =>
-        nodes.flatMap((node) => [node, ...flat(node.children)]);
-      for (const node of flat(menus).filter((item) => item.type === "category")) {
+      for (const node of await leafCategories()) {
         const category = normaliseCategory(
-          await live<RawCategoryResponse>(`categories/${node.id}?limit=100`),
+          await liveCached<RawCategoryResponse>(`categories/${node.id}?limit=48`),
         );
         const found = category.products.find((product) => product.id === id);
         if (found) return found;
@@ -364,12 +396,22 @@ function liveApi(): VendreApi {
       return null;
     },
     getFeaturedProducts: async () => {
-      const menus = buildMenuTree((await live<RawMenusResponse>("navigation/menus")).menus ?? []);
-      const first = menus.find((node) => node.type === "category");
-      if (!first) return [];
-      const category = await live<RawCategoryResponse>(`categories/${first.id}?limit=8`);
-      return normaliseCategory(category).products.slice(0, 8);
+      // Parent categories in Vendre often carry no products of their own, so we
+      // walk the tree until a listing actually returns products.
+      const collected: Product[] = [];
+      for (const node of (await leafCategories()).slice(0, 5)) {
+        const category = normaliseCategory(
+          await liveCached<RawCategoryResponse>(`categories/${node.id}?limit=8`),
+        );
+        for (const product of category.products) {
+          if (!collected.some((entry) => entry.id === product.id)) collected.push(product);
+        }
+        if (collected.length >= 8) break;
+      }
+      return collected.slice(0, 8);
     },
+
+
     getCart: cart,
     addToCart: (productId, quantity = 1) =>
       mutateCart("shopping-cart/products", { products: [{ id: productId, quantity }] }),
