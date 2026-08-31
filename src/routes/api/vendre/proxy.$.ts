@@ -52,7 +52,7 @@ async function handle({ request, params }: { request: Request; params: { _splat?
   const upstream = await fetch(target, {
     method,
     headers,
-    body: method === "GET" || method === "HEAD" ? undefined : await request.text(),
+    body: method === "GET" || method === "HEAD" ? null : await request.text(),
     redirect: "manual",
   });
 
