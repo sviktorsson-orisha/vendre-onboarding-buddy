@@ -10,7 +10,7 @@
  * - Cart reads are never cached; every mutation invalidates the cart.
  * - Array query params use brackets; listings are filtered/sorted server-side.
  */
-import { useCallback, useEffect, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 
 import {
   EMPTY_MOCK_CART,
@@ -246,7 +246,7 @@ export function useVendreApi(): VendreApi {
 
 /** Small helper for one-off async reads inside components. */
 export function useAsync<T>(factory: () => Promise<T>, deps: unknown[]) {
-  const [state, setState] = useStateSafe<{ data: T | null; loading: boolean; error: string | null }>({
+  const [state, setState] = useState<{ data: T | null; loading: boolean; error: string | null }>({
     data: null,
     loading: true,
     error: null,
@@ -263,17 +263,11 @@ export function useAsync<T>(factory: () => Promise<T>, deps: unknown[]) {
     return () => {
       cancelled = true;
     };
-  }, [run, setState]);
+  }, [run]);
 
   return state;
 }
 
-import { useState as useStateReact } from "react";
-function useStateSafe<T>(initial: T) {
-  return useStateReact<T>(initial);
-}
-
-export { storeBaseUrl };
 export function setStoreBaseUrl(url: string) {
   storeBaseUrl = url.replace(/\/+$/, "");
 }
