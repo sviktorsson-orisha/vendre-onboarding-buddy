@@ -347,7 +347,7 @@ export function useDemoAuthenticated() {
       return () => demoListeners.delete(listener);
     },
     () => demoAuthenticated,
-    () => true,
+    () => false,
   );
 }
 
