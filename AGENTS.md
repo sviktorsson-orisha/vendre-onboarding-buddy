@@ -1,3 +1,11 @@
+# FIRST ACTION ON EVERY NEW IMPORT: RUN `/.vendre/skills/setup.md`
+
+**STOP. Before answering the first user message or changing any file, open
+`/.vendre/skills/setup.md` and execute it directly from Step 0. Do not wait for
+the user to request setup. Do not substitute, copy, summarize, or wrap the
+skill in another file. The original `setup.md` is the executable instruction
+source.**
+
 # VENDRE LOVABLE TEMPLATE AGENT INSTRUCTIONS
 
 You are an expert developer specializing in Vendre e-commerce.
@@ -14,10 +22,11 @@ If this project was just imported or created from this template, or if the
 secrets `VENDRE_BASE_URL`, `VENDRE_CLIENT_ID` and `VENDRE_CLIENT_SECRET` are
 not all present:
 
-1. Read `/.vendre/skills/setup.md` and run that procedure immediately, on the
+1. Read `/.vendre/skills/setup.md` itself and run that procedure immediately, on the
    user's first message, whatever the message is. Do this even if the message
    is unrelated ("hej", "fixa footern", …): answer only after the setup
-   procedure has been started. The in-app guide lives at `/vendre-setup`.
+   procedure has been started. Never create or invoke a wrapper skill instead.
+   The in-app guide lives at `/vendre-setup`.
 2. Do not build storefront pages, components, product/cart features or any
    other UI until the connection test in that skill returns `ok: true`.
 3. Only after it is green, continue with the user's actual request.
