@@ -45,11 +45,15 @@ function useAsyncData<T>(
   deps: unknown[],
 ): Async<T> {
   const isConfigured = useIsConfigured();
-  const [state, setState] = useState<{ data: T | undefined; error: Error | undefined; isLoading: boolean }>(() => ({
-    data: undefined,
-    error: undefined,
-    isLoading: isConfigured,
-  }));
+  const [state, setState] = useState<{ data: T | undefined; error: Error | undefined; isLoading: boolean }>(() => {
+    // Demo Mode renders synchronously (also during SSR); Live Mode fetches.
+    if (isConfigured) return { data: undefined, error: undefined, isLoading: true };
+    try {
+      return { data: demo(), error: undefined, isLoading: false };
+    } catch (error) {
+      return { data: undefined, error: toError(error), isLoading: false };
+    }
+  });
 
   const liveRef = useRef(live);
   liveRef.current = live;
