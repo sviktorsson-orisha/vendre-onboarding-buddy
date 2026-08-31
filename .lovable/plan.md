@@ -1,38 +1,49 @@
-# Spara uppstartsguidens framsteg vid omladdning
+# Live-läge ska gälla alla besökare — inte sparas per webbläsare
 
 ## Problemet
 
-Guiden håller allt sitt framsteg i vanlig komponent-state i `src/components/vendre/setup-wizard.tsx`:
-bockarna för Admin-steget och CORS-steget, resultatet av hemlighetskontrollen och resultatet av
-anslutningstestet. Inget av det sparas. Vid en sidomladdning nollställs de och guiden börjar om från
-steg 1. Bara två saker överlever idag: det publicerade domännamnet och flaggan "setup klar" som
-växlar över till butiken.
+Två saker sparas idag bara i besökarens egen webbläsare (`localStorage`):
+
+1. Flaggan "setup klar" (`vendre.setup-complete`) som styr om butiken visar demodata eller
+   riktig data. Det betyder att en ny besökare — eller du själv efter en rensning — får demodata
+   trots att butiken är korrekt kopplad.
+2. Guidens framsteg (bockar, testresultat). Därför nollställs guiden vid omladdning.
+
+Punkt 1 är den allvarliga: demoläge får aldrig visas för kunder när kopplingen fungerar.
 
 ## Lösningen
 
-Spara guidens framsteg lokalt i webbläsaren, precis som domännamnet redan sparas, och läs tillbaka
-det när guiden öppnas igen.
+Butikens läge (demo eller live) ska avgöras av servern, inte av besökarens webbläsare.
 
-- Bockarna för steg 1 (Admin) och steg 4 (CORS) sparas när användaren kryssar i dem.
-- Resultatet av hemlighetskontrollen (steg 2) sparas som "godkänd/ej godkänd" plus vilka nycklar som
-  saknades.
-- Resultatet av anslutningstestet (steg 5) sparas, så att grönt förblir grönt efter omladdning.
-- Guiden öppnar automatiskt på första ofärdiga steget istället för alltid steg 1.
-- Ingen hemlig information sparas — bara status, aldrig nycklar eller tokens.
+- En serverkontroll svarar på frågan "är butiken kopplad?" genom att läsa in nycklarna och hämta
+  ett OAuth-token mot Vendre. Svaret cachas kort på servern så att varje sidvisning inte kostar
+  ett anrop.
+- Butiken frågar den kontrollen vid start. Svarar den "kopplad" körs live-data för **alla**
+  besökare, direkt vid första sidvisningen och redan i serverrenderingen — ingen blink av demodata.
+- Demodata visas bara när butiken faktiskt inte är kopplad (nycklar saknas eller token nekas).
+- Knappen "Börja bygga" i guiden stänger guiden och tar dig till butiken, men den styr inte längre
+  om butiken är live. Toppbannern visas bara i demoläge.
+- Om kopplingen fungerar men CORS ännu inte är öppnat för besökarens adress går anropen via
+  serverproxyn i stället för att falla tillbaka till demodata.
 
-När allt är grönt och användaren klickat "Börja bygga" visas butiken som tidigare; guiden går även
-då att öppna igen från toppbannern och visar då fortsatt alla steg som klara.
+Guidens framsteg (bockarna för Admin och CORS, testresultat, valt domännamn) får fortsätta sparas
+lokalt — det är personliga arbetsanteckningar för den som konfigurerar, inte butikens läge. Det
+löser även omladdningsproblemet: guiden återupptas där du var.
 
 ## Teknisk detalj
 
-- Ny modul `src/lib/vendre/setup-progress.ts` med samma mönster som `published-origin.ts`:
-  läs/skriv en JSON-post under nyckeln `vendre.setup-progress` i `localStorage`, med try/catch och
-  SSR-säker `typeof window`-kontroll, samt en `useSetupProgress()`-hook som hydrerar i `useEffect`
-  (undviker hydration mismatch).
-- Sparad form: `{ adminDone: boolean, corsDone: boolean, secretsOk: boolean, missing: string[],
-  connection: ConnectionResult | null }`. `ConnectionResult` innehåller endast stegstatus, bas-URL
-  och origin — inga credentials.
-- `setup-wizard.tsx` byter ut `useState` för `adminDone`, `corsDone`, `secretStatus` och `result`
-  mot värden från hooken; varje `set*` skriver även till lagringen. Startvärdet för `open` beräknas
-  från första ofärdiga steget efter hydrering.
-- Ingen ändring i `src/lib/vendre/`-klienten, API-rutterna eller butiksytorna.
+- `src/routes/api/vendre/status.ts` utökas: utöver nyckelkontrollen görs ett tokenanrop via
+  befintlig serverlogik (`/api/vendre/token`-hjälparen) och svaret blir
+  `{ ok, secretsOk, tokenOk, missing }`, med `cache-control: no-store` mot klienten men en
+  minnescache på ~60 s i modulen så OAuth-kvoten inte bränns.
+- Ny serverfunktion/loader-läsning av samma status i `src/routes/__root.tsx` (eller en delad
+  `queryOptions` som butiksytorna använder) så att `isConfigured` finns redan vid SSR.
+- `src/context/onboarding-context.tsx` skrivs om: `isConfigured` kommer från serverstatusen
+  i stället för `localStorage`. `markConfigured()` blir enbart "stäng guiden" och sparas lokalt
+  under en ny nyckel (`vendre.guide-dismissed`), utan att påverka demo/live.
+- `src/lib/vendre/api.ts` och `src/lib/vendre/account.ts` behåller sitt demo/live-val men läser
+  läget från den nya källan.
+- Ny modul `src/lib/vendre/setup-progress.ts` (samma mönster som `published-origin.ts`) som sparar
+  `{ adminDone, corsDone, secretsOk, missing, connection }` i `localStorage` under
+  `vendre.setup-progress`, SSR-säkert och med try/catch. `setup-wizard.tsx` läser/skriver via den
+  och öppnar automatiskt första ofärdiga steget. Inga nycklar eller tokens sparas — bara status.
