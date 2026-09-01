@@ -117,6 +117,12 @@ export function StoreHeader() {
         </div>
       </div>
 
+      {searchOpen && (
+        <div className="mx-auto w-full max-w-6xl px-5 pb-3 sm:px-6 md:hidden">
+          <SearchBox autoFocus />
+        </div>
+      )}
+
       <nav className="hidden border-t border-border lg:block">
         <ul className="mx-auto flex w-full max-w-6xl items-center gap-1 px-5 sm:px-6">
           {tree.map((node) => (
