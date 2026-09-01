@@ -80,12 +80,34 @@ export type CategoryHeader = {
   href: string | null;
 };
 
-export type CategorySort = { name: string; value: string; selected?: boolean };
+/** Sort option as returned by the store, when the install provides a list. */
+export type CategorySort = {
+  name: string;
+  /** Field passed as sort_by. */
+  value?: string;
+  sort_by?: string;
+  sort_order?: string;
+  selected?: boolean;
+};
+
+export type CategoryFilterOption = {
+  id: string | number;
+  name: string;
+  count?: number;
+  selected?: boolean;
+  image?: VendreImage | null;
+};
 
 export type CategoryFilter = {
   id: string | number;
   name: string;
-  values: { id: string | number; name: string; count?: number; selected?: boolean }[];
+  /** 0 = category filter (subcategory links), 1 = tag filter, 2 = price range, 4 = spec filter. */
+  type?: number | string;
+  options?: CategoryFilterOption[];
+  /** Price filters (type 2) return a range instead of options. */
+  min?: number;
+  max?: number;
+  unit?: string;
 };
 
 export type CategoryResponse = {
@@ -98,6 +120,9 @@ export type CategoryResponse = {
   page_limits: { name: string | number; limit: number; selected: boolean }[];
   sort_by: string;
   sort_order: string;
+  /** Only some installs return a list of selectable sort options. */
+  sort_options?: CategorySort[];
+  sorts?: CategorySort[];
   subcategory_list: CategoryHeader[];
   filters: CategoryFilter[];
 };
@@ -138,4 +163,11 @@ export type CategoryQuery = {
   limit?: number;
   sort_by?: string;
   sort_order?: string;
+  /** Selected tag filter values, sent as tags[]=64&tags[]=81. */
+  tags?: (string | number)[];
+  /** Selected spec filter values, sent as f[44][]=Bomull. */
+  specs?: Record<string, string[]>;
+  /** Price range from the type 2 filter, sent as pfrom/pto. */
+  pfrom?: number;
+  pto?: number;
 };
