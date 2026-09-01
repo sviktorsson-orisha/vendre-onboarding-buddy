@@ -19,6 +19,7 @@ import {
   mockFeaturedProducts,
   mockMenus,
   mockProduct,
+  mockSearch,
   mockSessionContext,
 } from "@/mock/vendreResponses";
 import type {
