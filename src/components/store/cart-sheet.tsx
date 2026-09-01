@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { Loader2, Minus, Plus, Trash2 } from "lucide-react";
 
 import { ProductPrice } from "@/components/store/product-price";
@@ -11,6 +12,7 @@ import {
 import { useOnboarding } from "@/context/onboarding-context";
 import { useI18n } from "@/lib/i18n";
 import { useCart, useCartMutations, useVendreApi } from "@/lib/vendre/api";
+
 
 export function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { t } = useI18n();
