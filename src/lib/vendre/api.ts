@@ -52,7 +52,29 @@ export type VendreApi = {
   removeLine: (line: CartLine) => Promise<void>;
   getSessionContext: () => Promise<SessionContext>;
   checkoutUrl: () => Promise<string | null>;
+  searchProducts: (query: string, options?: SearchQuery) => Promise<SearchResult>;
 };
+
+export const SEARCH_MIN_CHARS = 3;
+export const SEARCH_SUGGESTION_LIMIT = 5;
+
+function paginate(list: Product[], limit: number, page: number): SearchResult {
+  const size = limit > 0 ? limit : 12;
+  const pageCount = Math.max(1, Math.ceil(list.length / size));
+  const pageIndex = Math.min(Math.max(page, 1), pageCount);
+  return {
+    products: list.slice((pageIndex - 1) * size, pageIndex * size),
+    product_count: list.length,
+    page_index: pageIndex,
+    page_count: pageCount,
+  };
+}
+
+function matchesQuery(product: Product, needle: string) {
+  return `${product.name} ${product.model ?? ""} ${product.description_short ?? ""}`
+    .toLowerCase()
+    .includes(needle);
+}
 
 /* ------------------------------------------------------------------ live -- */
 
