@@ -106,9 +106,6 @@ export default function CategoryPage({ id }: { id: number }) {
           <header className="mt-4 grid gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2">
               <h1 className="text-3xl font-extrabold text-foreground">{data.header.name}</h1>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {data.product_count} {t("store.products")}
-              </p>
               {data.header.text && (
                 <div
                   className="mt-3 max-w-2xl text-sm text-muted-foreground"
