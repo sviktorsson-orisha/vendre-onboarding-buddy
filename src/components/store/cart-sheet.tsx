@@ -106,7 +106,7 @@ export function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
         <div className="border-t border-border pt-4">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">{t("store.total")}</span>
-            <span className="text-lg font-bold text-foreground">{cart?.cart_total ?? 0} kr</span>
+            <span className="text-lg font-bold text-foreground">{cartTotal}</span>
           </div>
           <button
             type="button"
