@@ -136,6 +136,15 @@ const dictionary = {
     "store.prev": "Föregående",
     "store.next": "Nästa",
 
+    "search.title": "Sökresultat",
+    "search.for": "Träffar för “{q}”",
+    "search.hits": "{count} träffar",
+    "search.viewAll": "Visa alla resultat för “{q}”",
+    "search.minChars": "Skriv minst 3 tecken för att söka.",
+    "search.searching": "Söker…",
+    "search.noHits": "Inga produkter matchade “{q}”.",
+    "search.suggestions": "Produktförslag",
+
     "account.title": "Mitt konto",
     "account.signIn": "Logga in",
     "account.signUp": "Skapa konto",
@@ -325,6 +334,15 @@ const dictionary = {
     "store.loadError": "The category could not be loaded. Check the store connection.",
     "store.prev": "Previous",
     "store.next": "Next",
+
+    "search.title": "Search results",
+    "search.for": "Results for “{q}”",
+    "search.hits": "{count} results",
+    "search.viewAll": "Show all results for “{q}”",
+    "search.minChars": "Type at least 3 characters to search.",
+    "search.searching": "Searching…",
+    "search.noHits": "No products matched “{q}”.",
+    "search.suggestions": "Product suggestions",
 
     "account.title": "My account",
     "account.signIn": "Sign in",

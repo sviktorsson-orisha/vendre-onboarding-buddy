@@ -19,6 +19,7 @@ import {
   mockFeaturedProducts,
   mockMenus,
   mockProduct,
+  mockSearch,
   mockSessionContext,
 } from "@/mock/vendreResponses";
 import type {
@@ -29,6 +30,8 @@ import type {
   MenuItem,
   MenuNode,
   Product,
+  SearchQuery,
+  SearchResult,
   SessionContext,
 } from "@/types/vendre";
 
@@ -52,7 +55,29 @@ export type VendreApi = {
   removeLine: (line: CartLine) => Promise<void>;
   getSessionContext: () => Promise<SessionContext>;
   checkoutUrl: () => Promise<string | null>;
+  searchProducts: (query: string, options?: SearchQuery) => Promise<SearchResult>;
 };
+
+export const SEARCH_MIN_CHARS = 3;
+export const SEARCH_SUGGESTION_LIMIT = 5;
+
+function paginate(list: Product[], limit: number, page: number): SearchResult {
+  const size = limit > 0 ? limit : 12;
+  const pageCount = Math.max(1, Math.ceil(list.length / size));
+  const pageIndex = Math.min(Math.max(page, 1), pageCount);
+  return {
+    products: list.slice((pageIndex - 1) * size, pageIndex * size),
+    product_count: list.length,
+    page_index: pageIndex,
+    page_count: pageCount,
+  };
+}
+
+function matchesQuery(product: Product, needle: string) {
+  return `${product.name} ${product.model ?? ""} ${product.description_short ?? ""}`
+    .toLowerCase()
+    .includes(needle);
+}
 
 /* ------------------------------------------------------------------ live -- */
 
@@ -178,7 +203,88 @@ const liveApi: VendreApi = {
     storeBaseUrl = baseUrl;
     return `${baseUrl}/checkout`;
   },
+  searchProducts: async (query, options = {}) => {
+    const needle = query.trim().toLowerCase();
+    const limit = options.limit ?? 12;
+    const page = options.page ?? 1;
+    if (needle.length < SEARCH_MIN_CHARS) return paginate([], limit, 1);
+
+    // 1) VQL, when the install has it enabled.
+    if (!vqlDisabled) {
+      try {
+        const data = await guarded(() =>
+          surfaceJson<VqlProductsResponse>("vql", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              resource: "products",
+              query: needle,
+              search: needle,
+              page,
+              limit,
+            }),
+          }),
+        );
+        const list = data?.products ?? data?.product_list ?? data?.data?.products ?? null;
+        if (Array.isArray(list)) {
+          return {
+            products: list,
+            product_count: data?.product_count ?? list.length,
+            page_index: data?.page_index ?? page,
+            page_count: data?.page_count ?? Math.max(1, Math.ceil((data?.product_count ?? list.length) / limit)),
+          };
+        }
+        vqlDisabled = true;
+      } catch {
+        // VQL is off on this install (documented 500) — fall back for good.
+        vqlDisabled = true;
+      }
+    }
+
+    // 2) Fallback: match over the catalogue read from categories/{id}.
+    const all = await liveCatalogue();
+    return paginate(all.filter((p) => matchesQuery(p, needle)), limit, page);
+  },
 };
+
+type VqlProductsResponse = {
+  products?: Product[];
+  product_list?: Product[];
+  data?: { products?: Product[] };
+  product_count?: number;
+  page_index?: number;
+  page_count?: number;
+} | null;
+
+let vqlDisabled = false;
+let catalogueCache: { at: number; products: Promise<Product[]> } | null = null;
+
+/** Catalogue snapshot used by the search fallback; cached for 5 minutes. */
+function liveCatalogue(): Promise<Product[]> {
+  if (catalogueCache && Date.now() - catalogueCache.at < 5 * 60 * 1000) {
+    return catalogueCache.products;
+  }
+  const products = (async () => {
+    const menus = await liveApi.getMenus();
+    const leaves = menus.filter((item) => item.menu_type === "category" && !item.has_children);
+    const lists = await Promise.all(
+      leaves.map((item) =>
+        liveApi
+          .getCategory(item.id, { limit: 0 })
+          .then((data) => data.product_list ?? [])
+          .catch(() => [] as Product[]),
+      ),
+    );
+    const byId = new Map<string, Product>();
+    for (const product of lists.flat()) byId.set(String(product.id), product);
+    return [...byId.values()];
+  })().catch((error) => {
+    catalogueCache = null;
+    throw error;
+  });
+  catalogueCache = { at: Date.now(), products };
+  return products;
+}
 
 /* ------------------------------------------------------------------ demo -- */
 
@@ -232,6 +338,11 @@ const demoApi: VendreApi = {
     recalcDemoCart();
   },
   getSessionContext: async () => mockSessionContext,
+  searchProducts: async (query, options = {}) => {
+    const limit = options.limit ?? 12;
+    if (query.trim().length < SEARCH_MIN_CHARS) return paginate([], limit, 1);
+    return mockSearch(query, limit, options.page ?? 1);
+  },
   checkoutUrl: async () => null,
 };
 
@@ -374,4 +485,28 @@ export function resolveImageUrl(path: string | null | undefined) {
 
 export function formatPrice(product: Pick<Product, "price" | "price_raw">) {
   return product.price ?? (product.price_raw != null ? `${product.price_raw} kr` : "—");
+}
+
+/**
+ * Product search. Runs only from SEARCH_MIN_CHARS characters and shares the
+ * PLP cache scope, since prices depend on market/currency/language/VAT.
+ */
+export function useProductSearch(
+  query: string,
+  options: SearchQuery & { enabled?: boolean } = {},
+) {
+  const api = useVendreApi();
+  const scope = useCacheScope();
+  const term = query.trim();
+  const limit = options.limit ?? 12;
+  const page = options.page ?? 1;
+  const enabled = (options.enabled ?? true) && term.length >= SEARCH_MIN_CHARS;
+
+  return useQuery({
+    queryKey: ["vendre", api.mode, "search", term, limit, page, scope],
+    queryFn: () => api.searchProducts(term, { limit, page }),
+    enabled,
+    staleTime: 60 * 1000,
+    placeholderData: (previous) => previous,
+  });
 }

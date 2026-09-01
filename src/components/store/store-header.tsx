@@ -4,6 +4,7 @@ import { ChevronDown, Menu, Search, ShoppingBag } from "lucide-react";
 
 import { AccountMenu } from "@/components/store/account-menu";
 import { CartSheet } from "@/components/store/cart-sheet";
+import { SearchBox } from "@/components/store/search-box";
 import { LanguagePicker } from "@/components/vendre/language-picker";
 import { useI18n } from "@/lib/i18n";
 import { useCart, useMenuTree } from "@/lib/vendre/api";
@@ -67,6 +68,7 @@ export function StoreHeader() {
   const { data: cart } = useCart();
   const [cartOpen, setCartOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const count = cart?.cart_count ?? 0;
 
   return (
@@ -85,16 +87,18 @@ export function StoreHeader() {
           vendre
         </Link>
 
-        <div className="relative ml-2 hidden grow md:block">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="search"
-            placeholder={t("store.search")}
-            className="w-full rounded-lg border border-border bg-background py-2 pl-9 pr-3 text-sm text-foreground outline-hidden focus:border-primary"
-          />
-        </div>
+        <SearchBox className="ml-2 hidden grow md:block" />
 
         <div className="ml-auto flex items-center gap-2">
+          <button
+            type="button"
+            className="brand-button-ghost md:hidden"
+            aria-label={t("store.search")}
+            aria-expanded={searchOpen}
+            onClick={() => setSearchOpen((value) => !value)}
+          >
+            <Search className="size-4" />
+          </button>
           <LanguagePicker />
           <AccountMenu />
           <button
@@ -112,6 +116,12 @@ export function StoreHeader() {
           </button>
         </div>
       </div>
+
+      {searchOpen && (
+        <div className="mx-auto w-full max-w-6xl px-5 pb-3 sm:px-6 md:hidden">
+          <SearchBox autoFocus />
+        </div>
+      )}
 
       <nav className="hidden border-t border-border lg:block">
         <ul className="mx-auto flex w-full max-w-6xl items-center gap-1 px-5 sm:px-6">
