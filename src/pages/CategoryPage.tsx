@@ -84,6 +84,28 @@ export default function CategoryPage({ id }: { id: number }) {
 
   const trail = buildTrail(menus ?? [], id, data?.header.name ?? "");
 
+  const filterProps = (response: NonNullable<typeof data>): FilterProps => ({
+    filters: response.filters ?? [],
+    selected: tags,
+    selectedSpecs: specs,
+    priceFrom: search.pfrom,
+    priceTo: search.pto,
+    onPriceChange: (from, to) => setSearch({ pfrom: from, pto: to }),
+    onToggleTag: (tag) => {
+      const next = tags.includes(tag) ? tags.filter((value) => value !== tag) : [...tags, tag];
+      setSearch({ tags: next.length ? next.join(",") : undefined });
+    },
+    onToggleSpec: (filterId, value) => {
+      const current = specs[filterId] ?? [];
+      const next = current.includes(value)
+        ? current.filter((item) => item !== value)
+        : [...current, value];
+      setSearch({ specs: stringifySpecs({ ...specs, [filterId]: next }) });
+    },
+    onClear: () =>
+      setSearch({ tags: undefined, specs: undefined, pfrom: undefined, pto: undefined }),
+  });
+
   return (
     <StoreShell>
       {error && !data ? (
