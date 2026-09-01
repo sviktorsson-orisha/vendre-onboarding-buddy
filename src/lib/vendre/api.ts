@@ -29,6 +29,8 @@ import type {
   MenuItem,
   MenuNode,
   Product,
+  SearchQuery,
+  SearchResult,
   SessionContext,
 } from "@/types/vendre";
 
