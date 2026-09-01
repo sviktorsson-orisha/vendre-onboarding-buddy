@@ -318,6 +318,7 @@ const dictionary = {
     "store.sort": "Sort",
     "store.filters": "Filters",
     "store.clearFilters": "Clear filters",
+    "store.showProducts": "Show products",
     "store.priceFrom": "From",
     "store.priceTo": "To",
     "store.noResults": "No products match your selection.",
