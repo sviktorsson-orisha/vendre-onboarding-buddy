@@ -178,7 +178,7 @@ export default function CategoryPage({ id }: { id: number }) {
                 }
               />
 
-              {data.product_list.length === 0 ? (
+              {(data.product_list?.length ?? 0) === 0 ? (
                 <div className="py-16 text-center">
                   <p className="text-sm text-muted-foreground">{t("store.noResults")}</p>
                   <button
