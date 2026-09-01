@@ -108,6 +108,8 @@ function categoryQuery(query?: CategoryQuery) {
   if (query?.limit) params.set("limit", String(query.limit));
   if (query?.sort_by) params.set("sort_by", query.sort_by);
   if (query?.sort_order) params.set("sort_order", query.sort_order);
+  if (query?.pfrom != null) params.set("pfrom", String(query.pfrom));
+  if (query?.pto != null) params.set("pto", String(query.pto));
   for (const tag of query?.tags ?? []) params.append("tags[]", String(tag));
   for (const [specId, values] of Object.entries(query?.specs ?? {}))
     for (const value of values) params.append(`f[${specId}][]`, value);

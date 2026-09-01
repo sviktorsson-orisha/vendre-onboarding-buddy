@@ -101,9 +101,13 @@ export type CategoryFilterOption = {
 export type CategoryFilter = {
   id: string | number;
   name: string;
-  /** 0 = category filter (rendered as subcategory links), 1 = tag filter, 4 = spec filter. */
+  /** 0 = category filter (subcategory links), 1 = tag filter, 2 = price range, 4 = spec filter. */
   type?: number | string;
-  options: CategoryFilterOption[];
+  options?: CategoryFilterOption[];
+  /** Price filters (type 2) return a range instead of options. */
+  min?: number;
+  max?: number;
+  unit?: string;
 };
 
 export type CategoryResponse = {
@@ -163,4 +167,7 @@ export type CategoryQuery = {
   tags?: (string | number)[];
   /** Selected spec filter values, sent as f[44][]=Bomull. */
   specs?: Record<string, string[]>;
+  /** Price range from the type 2 filter, sent as pfrom/pto. */
+  pfrom?: number;
+  pto?: number;
 };
