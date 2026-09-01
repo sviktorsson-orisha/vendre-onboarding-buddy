@@ -486,3 +486,27 @@ export function resolveImageUrl(path: string | null | undefined) {
 export function formatPrice(product: Pick<Product, "price" | "price_raw">) {
   return product.price ?? (product.price_raw != null ? `${product.price_raw} kr` : "—");
 }
+
+/**
+ * Product search. Runs only from SEARCH_MIN_CHARS characters and shares the
+ * PLP cache scope, since prices depend on market/currency/language/VAT.
+ */
+export function useProductSearch(
+  query: string,
+  options: SearchQuery & { enabled?: boolean } = {},
+) {
+  const api = useVendreApi();
+  const scope = useCacheScope();
+  const term = query.trim();
+  const limit = options.limit ?? 12;
+  const page = options.page ?? 1;
+  const enabled = (options.enabled ?? true) && term.length >= SEARCH_MIN_CHARS;
+
+  return useQuery({
+    queryKey: ["vendre", api.mode, "search", term, limit, page, scope],
+    queryFn: () => api.searchProducts(term, { limit, page }),
+    enabled,
+    staleTime: 60 * 1000,
+    placeholderData: (previous) => previous,
+  });
+}
