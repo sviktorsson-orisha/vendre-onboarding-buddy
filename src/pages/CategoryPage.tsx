@@ -113,10 +113,10 @@ export default function CategoryPage({ id }: { id: number }) {
                 />
               )}
 
-              {data.subcategory_list.length > 0 && (
+              {(data.subcategory_list?.length ?? 0) > 0 && (
                 <nav className="mt-5" aria-label={t("store.subcategories")}>
                   <div className="flex flex-wrap gap-2">
-                    {data.subcategory_list.map((sub) => (
+                    {(data.subcategory_list ?? []).map((sub) => (
                       <Link
                         key={sub.id}
                         to="/kategori/$id"
@@ -146,7 +146,7 @@ export default function CategoryPage({ id }: { id: number }) {
 
           <div className="mt-8 flex flex-col gap-8 lg:flex-row">
             <CategoryFilters
-              filters={data.filters}
+              filters={data.filters ?? []}
               selected={tags}
               selectedSpecs={specs}
               priceFrom={search.pfrom}
@@ -178,7 +178,7 @@ export default function CategoryPage({ id }: { id: number }) {
                 }
               />
 
-              {data.product_list.length === 0 ? (
+              {(data.product_list?.length ?? 0) === 0 ? (
                 <div className="py-16 text-center">
                   <p className="text-sm text-muted-foreground">{t("store.noResults")}</p>
                   <button
@@ -202,7 +202,7 @@ export default function CategoryPage({ id }: { id: number }) {
                     isFetching ? "opacity-60" : ""
                   }`}
                 >
-                  {data.product_list.map((product) => (
+                  {(data.product_list ?? []).map((product) => (
                     <ProductCard key={product.id} product={product} />
                   ))}
                 </div>
