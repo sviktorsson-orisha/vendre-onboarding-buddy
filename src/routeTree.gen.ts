@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LoggaInRouteImport } from './routes/logga-in'
 import { Route as MittKontoRouteImport } from './routes/mitt-konto'
+import { Route as SokRouteImport } from './routes/sok'
 import { Route as KategoriIdRouteImport } from './routes/kategori.$id'
 import { Route as MittKontoIndexRouteImport } from './routes/mitt-konto.index'
 import { Route as MittKontoViewRouteImport } from './routes/mitt-konto.$view'
@@ -32,6 +33,11 @@ const LoggaInRoute = LoggaInRouteImport.update({
 const MittKontoRoute = MittKontoRouteImport.update({
   id: '/mitt-konto',
   path: '/mitt-konto',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SokRoute = SokRouteImport.update({
+  id: '/sok',
+  path: '/sok',
   getParentRoute: () => rootRouteImport,
 } as any)
 const KategoriIdRoute = KategoriIdRouteImport.update({
@@ -69,6 +75,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/logga-in': typeof LoggaInRoute
   '/mitt-konto': typeof MittKontoRouteWithChildren
+  '/sok': typeof SokRoute
   '/kategori/$id': typeof KategoriIdRoute
   '/mitt-konto/$view': typeof MittKontoViewRoute
   '/produkt/$id': typeof ProduktIdRoute
@@ -79,6 +86,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/logga-in': typeof LoggaInRoute
+  '/sok': typeof SokRoute
   '/kategori/$id': typeof KategoriIdRoute
   '/mitt-konto/$view': typeof MittKontoViewRoute
   '/produkt/$id': typeof ProduktIdRoute
@@ -91,6 +99,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/logga-in': typeof LoggaInRoute
   '/mitt-konto': typeof MittKontoRouteWithChildren
+  '/sok': typeof SokRoute
   '/kategori/$id': typeof KategoriIdRoute
   '/mitt-konto/$view': typeof MittKontoViewRoute
   '/produkt/$id': typeof ProduktIdRoute
@@ -104,6 +113,7 @@ export interface FileRouteTypes {
     | '/'
     | '/logga-in'
     | '/mitt-konto'
+    | '/sok'
     | '/kategori/$id'
     | '/mitt-konto/$view'
     | '/produkt/$id'
@@ -114,6 +124,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/logga-in'
+    | '/sok'
     | '/kategori/$id'
     | '/mitt-konto/$view'
     | '/produkt/$id'
@@ -125,6 +136,7 @@ export interface FileRouteTypes {
     | '/'
     | '/logga-in'
     | '/mitt-konto'
+    | '/sok'
     | '/kategori/$id'
     | '/mitt-konto/$view'
     | '/produkt/$id'
@@ -137,6 +149,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoggaInRoute: typeof LoggaInRoute
   MittKontoRoute: typeof MittKontoRouteWithChildren
+  SokRoute: typeof SokRoute
   KategoriIdRoute: typeof KategoriIdRoute
   ProduktIdRoute: typeof ProduktIdRoute
   ApiVendreStatusRoute: typeof ApiVendreStatusRoute
@@ -164,6 +177,13 @@ declare module '@tanstack/react-router' {
       path: '/mitt-konto'
       fullPath: '/mitt-konto'
       preLoaderRoute: typeof MittKontoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sok': {
+      id: '/sok'
+      path: '/sok'
+      fullPath: '/sok'
+      preLoaderRoute: typeof SokRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/kategori/$id': {
@@ -229,6 +249,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoggaInRoute: LoggaInRoute,
   MittKontoRoute: MittKontoRouteWithChildren,
+  SokRoute: SokRoute,
   KategoriIdRoute: KategoriIdRoute,
   ProduktIdRoute: ProduktIdRoute,
   ApiVendreStatusRoute: ApiVendreStatusRoute,

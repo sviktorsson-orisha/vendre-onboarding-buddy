@@ -85,16 +85,18 @@ export function StoreHeader() {
           vendre
         </Link>
 
-        <div className="relative ml-2 hidden grow md:block">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="search"
-            placeholder={t("store.search")}
-            className="w-full rounded-lg border border-border bg-background py-2 pl-9 pr-3 text-sm text-foreground outline-hidden focus:border-primary"
-          />
-        </div>
+        <SearchBox className="ml-2 hidden grow md:block" />
 
         <div className="ml-auto flex items-center gap-2">
+          <button
+            type="button"
+            className="brand-button-ghost md:hidden"
+            aria-label={t("store.search")}
+            aria-expanded={searchOpen}
+            onClick={() => setSearchOpen((value) => !value)}
+          >
+            <Search className="size-4" />
+          </button>
           <LanguagePicker />
           <AccountMenu />
           <button
