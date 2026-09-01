@@ -28,7 +28,7 @@ export default function CategoryPage({ id }: { id: number }) {
   const search = useSearch({ from: "/kategori/$id" });
   const { data: menus } = useMenus();
 
-  const tags = search.tags ?? [];
+  const tags = search.tags ? search.tags.split(",").filter(Boolean) : [];
   const query = {
     page: search.page ?? 1,
     limit: search.limit ?? 12,
@@ -127,18 +127,17 @@ export default function CategoryPage({ id }: { id: number }) {
             {data.filters.length > 0 && (
               <CategoryFilters
                 filters={data.filters}
-                selected={tags.map(String)}
+                selected={tags}
                 priceFrom={search.pfrom}
                 priceTo={search.pto}
-                onToggleTag={(tag) =>
-                  setSearch({
-                    tags: tags.map(String).includes(tag)
-                      ? tags.map(String).filter((value) => value !== tag)
-                      : [...tags.map(String), tag],
-                  })
-                }
+                onToggleTag={(tag) => {
+                  const next = tags.includes(tag)
+                    ? tags.filter((value) => value !== tag)
+                    : [...tags, tag];
+                  setSearch({ tags: next.length ? next.join(",") : undefined });
+                }}
                 onPriceChange={(from, to) => setSearch({ pfrom: from, pto: to })}
-                onClear={() => setSearch({ tags: [], pfrom: undefined, pto: undefined })}
+                onClear={() => setSearch({ tags: undefined, pfrom: undefined, pto: undefined })}
               />
             )}
 
@@ -159,7 +158,7 @@ export default function CategoryPage({ id }: { id: number }) {
                   <button
                     type="button"
                     className="brand-button mt-4"
-                    onClick={() => setSearch({ tags: [], pfrom: undefined, pto: undefined })}
+                    onClick={() => setSearch({ tags: undefined, pfrom: undefined, pto: undefined })}
                   >
                     {t("store.clearFilters")}
                   </button>

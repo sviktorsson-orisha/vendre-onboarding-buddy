@@ -7,7 +7,8 @@ export type CategorySearch = {
   limit?: number | undefined;
   sort_by?: string | undefined;
   sort_order?: string | undefined;
-  tags?: string[] | undefined;
+  /** Comma-separated tag ids, e.g. "m,xl". */
+  tags?: string | undefined;
   pfrom?: number | undefined;
   pto?: number | undefined;
 };
@@ -19,11 +20,11 @@ function num(value: unknown) {
 
 export const Route = createFileRoute("/kategori/$id")({
   validateSearch: (search: Record<string, unknown>): CategorySearch => {
-    const rawTags = search["tags"] ?? search["tags[]"];
+    const rawTags = search["tags"];
     const tags = Array.isArray(rawTags)
-      ? rawTags.map(String)
+      ? rawTags.map(String).join(",")
       : typeof rawTags === "string" && rawTags
-        ? [rawTags]
+        ? rawTags
         : undefined;
     const sortOrder = String(search["sort_order"] ?? "").toUpperCase();
     return {
@@ -33,7 +34,7 @@ export const Route = createFileRoute("/kategori/$id")({
         ? { sort_by: search["sort_by"] }
         : {}),
       ...(sortOrder === "ASC" || sortOrder === "DESC" ? { sort_order: sortOrder } : {}),
-      ...(tags?.length ? { tags } : {}),
+      ...(tags ? { tags } : {}),
       ...(num(search["pfrom"]) ? { pfrom: num(search["pfrom"]) } : {}),
       ...(num(search["pto"]) ? { pto: num(search["pto"]) } : {}),
     };
