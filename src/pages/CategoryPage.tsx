@@ -146,7 +146,7 @@ export default function CategoryPage({ id }: { id: number }) {
 
           <div className="mt-8 flex flex-col gap-8 lg:flex-row">
             <CategoryFilters
-              filters={data.filters}
+              filters={data.filters ?? []}
               selected={tags}
               selectedSpecs={specs}
               priceFrom={search.pfrom}
