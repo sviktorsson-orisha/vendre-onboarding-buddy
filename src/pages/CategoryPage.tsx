@@ -113,7 +113,7 @@ export default function CategoryPage({ id }: { id: number }) {
                 />
               )}
 
-              {data.subcategory_list.length > 0 && (
+              {(data.subcategory_list?.length ?? 0) > 0 && (
                 <nav className="mt-5" aria-label={t("store.subcategories")}>
                   <div className="flex flex-wrap gap-2">
                     {data.subcategory_list.map((sub) => (
