@@ -46,17 +46,30 @@ export function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
             <ul className="space-y-4">
               {lines.map((line) => (
                 <li key={line.id} className="flex gap-3">
-                  <StoreImage
-                    image={line.product_data?.image ?? null}
-                    alt={line.product_data?.name ?? `#${line.productId}`}
-                    label={line.product_data?.name ?? "P"}
-                    className="size-16 shrink-0 rounded-md"
-                  />
+                  <Link
+                    to="/produkt/$id"
+                    params={{ id: String(line.productId) }}
+                    onClick={() => onOpenChange(false)}
+                    className="shrink-0"
+                  >
+                    <StoreImage
+                      image={line.product_data?.image ?? null}
+                      alt={line.product_data?.name ?? `#${line.productId}`}
+                      label={line.product_data?.name ?? "P"}
+                      className="size-16 shrink-0 rounded-md"
+                    />
+                  </Link>
                   <div className="grow">
-                    <p className="text-sm font-semibold text-foreground">
+                    <Link
+                      to="/produkt/$id"
+                      params={{ id: String(line.productId) }}
+                      onClick={() => onOpenChange(false)}
+                      className="text-sm font-semibold text-foreground transition-colors hover:text-primary"
+                    >
                       {line.product_data?.name ?? `#${line.productId}`}
-                    </p>
+                    </Link>
                     {line.product_data && <ProductPrice product={line.product_data} size="sm" />}
+
                     <div className="mt-2 flex items-center gap-2">
                       <button
                         type="button"
