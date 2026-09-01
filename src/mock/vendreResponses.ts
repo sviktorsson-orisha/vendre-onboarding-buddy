@@ -9,6 +9,7 @@
 import type {
   Cart,
   CategoryHeader,
+  CategoryQuery,
   CategoryResponse,
   MenuItem,
   Product,
