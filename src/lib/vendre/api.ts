@@ -101,12 +101,16 @@ export async function guarded<T>(run: () => Promise<T>): Promise<T> {
   }
 }
 
+/** Serialises listing state for GET categories/{id}; arrays use bracket syntax. */
 function categoryQuery(query?: CategoryQuery) {
   const params = new URLSearchParams();
   if (query?.page) params.set("page", String(query.page));
   if (query?.limit) params.set("limit", String(query.limit));
   if (query?.sort_by) params.set("sort_by", query.sort_by);
   if (query?.sort_order) params.set("sort_order", query.sort_order);
+  if (query?.pfrom != null) params.set("pfrom", String(query.pfrom));
+  if (query?.pto != null) params.set("pto", String(query.pto));
+  for (const tag of query?.tags ?? []) params.append("tags[]", String(tag));
   const qs = params.toString();
   return qs ? `?${qs}` : "";
 }
