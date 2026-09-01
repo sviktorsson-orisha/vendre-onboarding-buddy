@@ -1,7 +1,11 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 
 import { Breadcrumbs, type Crumb } from "@/components/store/breadcrumbs";
-import { CategoryFilters } from "@/components/store/category-filters";
+import {
+  CategoryFilters,
+  type FilterProps,
+} from "@/components/store/category-filters";
+import { CategoryMobileControls } from "@/components/store/category-mobile-controls";
 import { CategoryToolbar } from "@/components/store/category-toolbar";
 import { Pagination } from "@/components/store/pagination";
 import { ProductCard } from "@/components/store/product-card";
@@ -80,6 +84,28 @@ export default function CategoryPage({ id }: { id: number }) {
 
   const trail = buildTrail(menus ?? [], id, data?.header.name ?? "");
 
+  const filterProps = (response: NonNullable<typeof data>): FilterProps => ({
+    filters: response.filters ?? [],
+    selected: tags,
+    selectedSpecs: specs,
+    priceFrom: search.pfrom,
+    priceTo: search.pto,
+    onPriceChange: (from, to) => setSearch({ pfrom: from, pto: to }),
+    onToggleTag: (tag) => {
+      const next = tags.includes(tag) ? tags.filter((value) => value !== tag) : [...tags, tag];
+      setSearch({ tags: next.length ? next.join(",") : undefined });
+    },
+    onToggleSpec: (filterId, value) => {
+      const current = specs[filterId] ?? [];
+      const next = current.includes(value)
+        ? current.filter((item) => item !== value)
+        : [...current, value];
+      setSearch({ specs: stringifySpecs({ ...specs, [filterId]: next }) });
+    },
+    onClear: () =>
+      setSearch({ tags: undefined, specs: undefined, pfrom: undefined, pto: undefined }),
+  });
+
   return (
     <StoreShell>
       {error && !data ? (
@@ -145,38 +171,27 @@ export default function CategoryPage({ id }: { id: number }) {
           </header>
 
           <div className="mt-8 flex flex-col gap-8 lg:flex-row">
-            <CategoryFilters
-              filters={data.filters ?? []}
-              selected={tags}
-              selectedSpecs={specs}
-              priceFrom={search.pfrom}
-              priceTo={search.pto}
-              onPriceChange={(from, to) => setSearch({ pfrom: from, pto: to })}
-              onToggleTag={(tag) => {
-                const next = tags.includes(tag)
-                  ? tags.filter((value) => value !== tag)
-                  : [...tags, tag];
-                setSearch({ tags: next.length ? next.join(",") : undefined });
-              }}
-              onToggleSpec={(filterId, value) => {
-                const current = specs[filterId] ?? [];
-                const next = current.includes(value)
-                  ? current.filter((item) => item !== value)
-                  : [...current, value];
-                setSearch({ specs: stringifySpecs({ ...specs, [filterId]: next }) });
-              }}
-              onClear={() =>
-                setSearch({ tags: undefined, specs: undefined, pfrom: undefined, pto: undefined })
-              }
-            />
+            <CategoryFilters {...filterProps(data)} />
 
-            <div className="grow">
+            <div className="min-w-0 grow">
               <CategoryToolbar
                 data={data}
                 onSortChange={(sortBy, sortOrder) =>
                   setSearch({ sort_by: sortBy, sort_order: sortOrder })
                 }
               />
+
+              <div className="mt-4">
+                <CategoryMobileControls
+                  data={data}
+                  filterProps={filterProps(data)}
+                  onSortChange={(sortBy, sortOrder) =>
+                    setSearch({ sort_by: sortBy, sort_order: sortOrder })
+                  }
+                />
+              </div>
+
+
 
               {(data.product_list?.length ?? 0) === 0 ? (
                 <div className="py-16 text-center">
