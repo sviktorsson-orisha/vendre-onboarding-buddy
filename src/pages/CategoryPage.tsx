@@ -1,7 +1,11 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 
 import { Breadcrumbs, type Crumb } from "@/components/store/breadcrumbs";
-import { CategoryFilters } from "@/components/store/category-filters";
+import {
+  CategoryFilters,
+  type FilterProps,
+} from "@/components/store/category-filters";
+import { CategoryMobileControls } from "@/components/store/category-mobile-controls";
 import { CategoryToolbar } from "@/components/store/category-toolbar";
 import { Pagination } from "@/components/store/pagination";
 import { ProductCard } from "@/components/store/product-card";
