@@ -223,7 +223,8 @@ export function mockCategory(id: number, query: CategoryQuery = {}): CategoryRes
       {
         id: "size",
         name: "Storlek",
-        values: ["s", "m", "l", "xl"]
+        type: 1,
+        options: ["s", "m", "l", "xl"]
           .map((value) => ({
             id: value,
             name: value.toUpperCase(),
@@ -235,7 +236,8 @@ export function mockCategory(id: number, query: CategoryQuery = {}): CategoryRes
       {
         id: "price-band",
         name: "Prisklass",
-        values: [
+        type: 1,
+        options: [
           { id: "band-low", name: "Under 1 000 kr" },
           { id: "band-mid", name: "1 000–2 500 kr" },
           { id: "band-high", name: "Över 2 500 kr" },
@@ -247,7 +249,7 @@ export function mockCategory(id: number, query: CategoryQuery = {}): CategoryRes
           }))
           .filter((value) => value.count > 0),
       },
-    ].filter((filter) => filter.values.length > 0),
+    ].filter((filter) => filter.options.length > 0),
   };
 }
 
