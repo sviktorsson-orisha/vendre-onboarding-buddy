@@ -68,6 +68,7 @@ export function StoreHeader() {
   const { data: cart } = useCart();
   const [cartOpen, setCartOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const count = cart?.cart_count ?? 0;
 
   return (
