@@ -202,7 +202,7 @@ export default function CategoryPage({ id }: { id: number }) {
                     isFetching ? "opacity-60" : ""
                   }`}
                 >
-                  {data.product_list.map((product) => (
+                  {(data.product_list ?? []).map((product) => (
                     <ProductCard key={product.id} product={product} />
                   ))}
                 </div>
