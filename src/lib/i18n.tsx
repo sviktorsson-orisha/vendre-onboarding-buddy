@@ -335,6 +335,15 @@ const dictionary = {
     "store.prev": "Previous",
     "store.next": "Next",
 
+    "search.title": "Search results",
+    "search.for": "Results for “{q}”",
+    "search.hits": "{count} results",
+    "search.viewAll": "Show all results for “{q}”",
+    "search.minChars": "Type at least 3 characters to search.",
+    "search.searching": "Searching…",
+    "search.noHits": "No products matched “{q}”.",
+    "search.suggestions": "Product suggestions",
+
     "account.title": "My account",
     "account.signIn": "Sign in",
     "account.signUp": "Create account",
