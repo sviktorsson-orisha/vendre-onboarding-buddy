@@ -1,90 +1,90 @@
 # Category / product listing page (PLP)
 
-Beskriver den fungerande implementationen i detta projekt. Källa: `GET /surface/2/categories/{id}`.
-Enskild produkt: `pdp-products.md`. Frågespråk: `vql-queries.md`. Endpoint-sanning: `.vendre/knowledge/api-reference.md`.
+Describes the working implementation in this project. Source: `GET /surface/2/categories/{id}`.
+Single product: `pdp-products.md`. Query language: `vql-queries.md`. Endpoint source of truth: `.vendre/knowledge/api-reference.md`.
 
-## Filer
+## Files
 
 ```text
 src/routes/kategori.$id.tsx            route + validateSearch + head()
-src/pages/CategoryPage.tsx             state, URL-styrning, layout
-src/components/store/category-filters.tsx        filterlogik + desktop-sidebar
-src/components/store/category-toolbar.tsx        antal + desktop-sortering + sort-helpers
-src/components/store/category-mobile-controls.tsx mobil filter/sort i Sheet
-src/lib/vendre/api.ts                  useCategory + categoryQuery-serialisering
-src/mock/vendreResponses.ts            mockCategory (demo-läge)
-src/types/vendre.ts                    CategoryResponse m.fl.
+src/pages/CategoryPage.tsx             state, URL handling, layout
+src/components/store/category-filters.tsx        filter logic + desktop sidebar
+src/components/store/category-toolbar.tsx        count + desktop sorting + sort helpers
+src/components/store/category-mobile-controls.tsx mobile filter/sort in Sheets
+src/lib/vendre/api.ts                  useCategory + categoryQuery serialisation
+src/mock/vendreResponses.ts            mockCategory (demo mode)
+src/types/vendre.ts                    CategoryResponse and related types
 ```
 
-## Data-fält som faktiskt används
+## Data fields actually used
 
-Från `CategoryResponse`:
+From `CategoryResponse`:
 
-- `header.name`, `header.text` (HTML, renderas med `dangerouslySetInnerHTML`), `header.image`
-- `subcategory_list[]` → `id`, `name` (renderas som knapp-länkar)
-- `product_list[]` → renderas av `ProductCard`
-- `product_count` (visas en gång, i toolbaren)
-- `page_index`, `page_count` (paginering; `page_limit`/`page_limits` används inte i UI:t)
-- `sort_by`, `sort_order` (för att markera aktivt sorteringsval)
-- `sort_options` / `sorts` (fallback-ordning) → `name`, `value` eller `sort_by`+`sort_order`, `selected`
-- `filters[]` → `id`, `name`, `type`, `options[] (id, name, count)`, samt `min`/`max` för type 2
+- `header.name`, `header.text` (HTML, rendered with `dangerouslySetInnerHTML`), `header.image`
+- `subcategory_list[]` → `id`, `name` (rendered as button links)
+- `product_list[]` → rendered by `ProductCard`
+- `product_count` (shown once, in the toolbar)
+- `page_index`, `page_count` (pagination; `page_limit`/`page_limits` are not exposed in the UI)
+- `sort_by`, `sort_order` (to mark the active sort option)
+- `sort_options` / `sorts` (fallback order) → `name`, `value` or `sort_by`+`sort_order`, `selected`
+- `filters[]` → `id`, `name`, `type`, `options[] (id, name, count)`, plus `min`/`max` for type 2
 
-Allt annat som butiken returnerar ignoreras medvetet.
+Everything else the store returns is deliberately ignored.
 
-### Filtertyper
+### Filter types
 
-| type | Betydelse | Rendering | Skickas som |
-| ---- | --------- | --------- | ----------- |
-| 0 | Kategori-filter | Renderas **inte** (finns som subkategorilänkar) | – |
-| 1 | Tag-filter | Kryssrutor på `option.id` | `tags[]=<id>` |
-| 2 | Prisintervall (`min`/`max`, inga options) | Dubbelhandtags-slider | `pfrom` / `pto` |
-| 4 | Spec-filter (options identifieras med **namn**, inte id) | Kryssrutor på `option.name` | `f[{filterId}][]=<namn>` |
+| type | Meaning | Rendering | Sent as |
+| ---- | ------- | --------- | ------- |
+| 0 | Category filter | **Not** rendered (exists as subcategory links) | – |
+| 1 | Tag filter | Checkboxes keyed on `option.id` | `tags[]=<id>` |
+| 2 | Price range (`min`/`max`, no options) | Dual-handle slider | `pfrom` / `pto` |
+| 4 | Spec filter (options identified by **name**, not id) | Checkboxes keyed on `option.name` | `f[{filterId}][]=<name>` |
 
-`visibleFilters()` döljer type 0 samt filter utan användbara värden (tomma `options`, eller type 2 utan `min`/`max`).
+`visibleFilters()` hides type 0 and any filter without usable values (empty `options`, or type 2 without `min`/`max`).
 
-## State, sortering, filtrering, paginering
+## State, sorting, filtering, pagination
 
-All listningsstate ligger i URL:en — inget lokalt filter-state utom sliderns dragvärde.
+All listing state lives in the URL — no local filter state except the slider's drag value.
 
-`validateSearch` i `kategori.$id.tsx` normaliserar:
+`validateSearch` in `kategori.$id.tsx` normalises:
 
-- `page` (positivt tal)
-- `sort_by`, `sort_order` (endast `ASC`/`DESC`)
-- `tags` – kommaseparerad sträng, t.ex. `m,xl`
-- `specs` – `44:Bomull,44:Lin`, parsas till `{ "44": ["Bomull","Lin"] }`
-- `pfrom`, `pto` – tal
+- `page` (positive number)
+- `sort_by`, `sort_order` (only `ASC`/`DESC`)
+- `tags` – comma-separated string, e.g. `m,xl`
+- `specs` – `44:Bomull,44:Lin`, parsed into `{ "44": ["Bomull","Lin"] }`
+- `pfrom`, `pto` – numbers
 
-`setSearch(patch, resetPage = true)` i `CategoryPage` navigerar med en ny search-funktion, tar bort tomma värden och nollställer `page` — utom vid sidbyte, där `resetPage = false`.
+`setSearch(patch, resetPage = true)` in `CategoryPage` navigates with a new search function, strips empty values and resets `page` — except on page changes, where `resetPage = false`.
 
-Sortering: **endast** alternativ som butiken returnerar. Finns inga `sort_options`/`sorts` visas ingen sorteringskontroll alls. Helpers: `sortOptionsOf`, `sortKeyOf`, `currentSortKey`, `applySort`.
+Sorting: **only** options the store returns. If no `sort_options`/`sorts` are present, no sort control is rendered at all. Helpers: `sortOptionsOf`, `sortKeyOf`, `currentSortKey`, `applySort`.
 
-Responsivt: desktop (`lg:`) har filtersidebar till vänster + sort-select i toolbaren. Under `lg` visas `CategoryMobileControls` — knapparna Filter (med badge för antal aktiva) och Sortera ovanför produktrutnätet, som öppnar Sheet från vänster respektive botten. Samma `FiltersContent` återanvänds i båda lägena via det delade `FilterProps`-objektet.
+Responsive: desktop (`lg:`) has the filter sidebar on the left plus the sort select in the toolbar. Below `lg`, `CategoryMobileControls` renders Filter (with a badge for the active count) and Sort buttons above the product grid, opening a Sheet from the left and the bottom respectively. The same `FiltersContent` is reused in both layouts through the shared `FilterProps` object.
 
-## Hur anropet görs
+## How the call is made
 
 ```tsx
 const { data, isLoading, isFetching, error } = useCategory(id, query);
 ```
 
-`useCategory` (i `src/lib/vendre/api.ts`) väljer adapter med `useVendreApi()`:
-`isConfigured` från onboarding-contexten → `liveApi`, annars `demoApi` (`mockCategory`).
-Anropa aldrig `liveApi`/mock direkt från en komponent.
+`useCategory` (in `src/lib/vendre/api.ts`) picks the adapter via `useVendreApi()`:
+`isConfigured` from the onboarding context → `liveApi`, otherwise `demoApi` (`mockCategory`).
+Never call `liveApi` or the mock directly from a component.
 
-- queryKey: `["vendre", api.mode, "category", id, query ?? null, scope]` där `scope` = market, valuta, språk och `prices_include_vat` från session-contexten.
-- `staleTime` 5 min, `placeholderData: previous` → gammal lista ligger kvar och dimmas via `isFetching`.
-- Live: `guarded(() => surfaceJson('categories/{id}' + categoryQuery(query)))`; `guarded` gör en re-bootstrap vid `SURFACE_SESSION_UNAUTHORIZED`/401.
-- `categoryQuery` serialiserar: `page`, `limit`, `sort_by`, `sort_order`, `pfrom`, `pto`, `tags[]`, `f[{id}][]`.
-- Demo: `mockCategory(id, query)` gör samma filtrering, sortering och paginering lokalt så UI:t beter sig identiskt.
+- queryKey: `["vendre", api.mode, "category", id, query ?? null, scope]` where `scope` = market, currency, language and `prices_include_vat` from the session context.
+- `staleTime` 5 min, `placeholderData: previous` → the old list stays visible and dims via `isFetching`.
+- Live: `guarded(() => surfaceJson('categories/{id}' + categoryQuery(query)))`; `guarded` re-bootstraps on `SURFACE_SESSION_UNAUTHORIZED`/401.
+- `categoryQuery` serialises: `page`, `limit`, `sort_by`, `sort_order`, `pfrom`, `pto`, `tags[]`, `f[{id}][]`.
+- Demo: `mockCategory(id, query)` performs the same filtering, sorting and pagination locally so the UI behaves identically.
 
-## Edge-cases och fallgropar
+## Edge cases and pitfalls
 
-- **Hitta aldrig på filter eller sorteringsalternativ.** Prisfilter och sort-listor renderas bara om butiken returnerar dem.
-- **Spec-filter (type 4) har inga stabila option-id:n** — matcha på `option.name`, både i URL och i `f[..][]`.
-- **Nullbara listor:** `product_list`, `subcategory_list`, `filters` kan vara `null` i live-svar. Använd alltid `?? []` / `?.length ?? 0`.
-- **Filtrera aldrig i browsern** när listan är paginerad — `product_count` och `page_count` kommer från butiken.
-- **Nollställ `page` vid varje filter-/sortändring**, annars landar man på en tom sida.
-- **Prisslider:** commit sker på `onValueCommit`, och värden lika med `min`/`max` skickas som `undefined` så att URL:en inte fylls med default-intervall. Filtret döljs om `max <= min`.
-- **Cachenyckeln måste innehålla market/valuta/språk/VAT** — priser ändras vid kontextbyte.
-- **Visa produktantalet på ett ställe** (toolbaren), inte även under rubriken.
-- **CORS:** `categories` är en egen policy i Surface-konfigurationen; 401 utan CORS-headers ser ut som ett generiskt CORS-fel.
-- **Serverfel** visar felruta endast när ingen tidigare data finns — annars behålls senaste lyckade listning.
+- **Never invent filters or sort options.** Price filters and sort lists render only when the store returns them.
+- **Spec filters (type 4) have no stable option ids** — match on `option.name`, both in the URL and in `f[..][]`.
+- **Nullable lists:** `product_list`, `subcategory_list` and `filters` can be `null` in live responses. Always use `?? []` / `?.length ?? 0`.
+- **Never filter in the browser** when the list is paginated — `product_count` and `page_count` come from the store.
+- **Reset `page` on every filter/sort change**, otherwise the user lands on an empty page.
+- **Price slider:** commit happens on `onValueCommit`, and values equal to `min`/`max` are sent as `undefined` so the URL is not filled with the default range. The filter is hidden when `max <= min`.
+- **The cache key must include market/currency/language/VAT** — prices change when the context changes.
+- **Show the product count in one place** (the toolbar), not also under the heading.
+- **CORS:** `categories` is its own policy in the Surface configuration; a 401 without CORS headers looks like a generic CORS error.
+- **Server errors** show the error box only when no previous data exists — otherwise the last successful listing is kept.
