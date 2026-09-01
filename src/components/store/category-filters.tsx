@@ -1,35 +1,43 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { SlidersHorizontal } from "lucide-react";
 
 import { useI18n } from "@/lib/i18n";
 import type { CategoryFilter } from "@/types/vendre";
 
+/** Spec filters (type 4) carry no ids — their options are identified by name. */
+export function isSpecFilter(filter: CategoryFilter) {
+  return String(filter.type) === "4";
+}
+
+/**
+ * Renders only what the store returns in `filters`.
+ * Tag filters (type 1) are sent as tags[], spec filters (type 4) as f[{id}][].
+ * Category filters (type 0) are rendered as subcategory links elsewhere.
+ */
 export function CategoryFilters({
   filters,
   selected,
-  priceFrom,
-  priceTo,
+  selectedSpecs,
   onToggleTag,
-  onPriceChange,
+  onToggleSpec,
   onClear,
 }: {
   filters: CategoryFilter[];
   selected: string[];
-  priceFrom?: number | undefined;
-  priceTo?: number | undefined;
+  selectedSpecs: Record<string, string[]>;
   onToggleTag: (id: string) => void;
-  onPriceChange: (from?: number | undefined, to?: number | undefined) => void;
+  onToggleSpec: (filterId: string, value: string) => void;
   onClear: () => void;
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
-  const [from, setFrom] = useState(priceFrom != null ? String(priceFrom) : "");
-  const [to, setTo] = useState(priceTo != null ? String(priceTo) : "");
 
-  useEffect(() => setFrom(priceFrom != null ? String(priceFrom) : ""), [priceFrom]);
-  useEffect(() => setTo(priceTo != null ? String(priceTo) : ""), [priceTo]);
+  const visible = filters.filter(
+    (filter) => String(filter.type) !== "0" && (filter.options ?? []).length > 0,
+  );
+  if (visible.length === 0) return null;
 
-  const active = selected.length > 0 || priceFrom != null || priceTo != null;
+  const active = selected.length > 0 || Object.values(selectedSpecs).some((v) => v.length > 0);
 
   return (
     <aside className="lg:w-60 lg:shrink-0">
@@ -52,70 +60,40 @@ export function CategoryFilters({
           )}
         </div>
 
-        {filters
-          .filter((filter) => filter.type !== 0)
-          .map((filter) => (
-          <fieldset key={String(filter.id)} className="space-y-2">
-            <legend className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {filter.name}
-            </legend>
-            {(filter.options ?? []).map((value) => {
-              const id = String(value.id);
-              return (
-                <label key={id} className="flex items-center gap-2 text-sm text-foreground">
-                  <input
-                    type="checkbox"
-                    className="size-4 rounded border-border"
-                    checked={selected.includes(id)}
-                    onChange={() => onToggleTag(id)}
-                  />
-                  <span className="grow">{value.name}</span>
-                  {value.count != null && (
-                    <span className="text-xs text-muted-foreground">{value.count}</span>
-                  )}
-                </label>
-              );
-            })}
-          </fieldset>
-          ))}
-
-        <fieldset className="space-y-2">
-          <legend className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            {t("store.price")}
-          </legend>
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              inputMode="numeric"
-              min={0}
-              placeholder={t("store.from")}
-              value={from}
-              onChange={(event) => setFrom(event.target.value)}
-              className="h-9 w-full rounded-md border border-border bg-background px-2 text-sm"
-            />
-            <input
-              type="number"
-              inputMode="numeric"
-              min={0}
-              placeholder={t("store.to")}
-              value={to}
-              onChange={(event) => setTo(event.target.value)}
-              className="h-9 w-full rounded-md border border-border bg-background px-2 text-sm"
-            />
-          </div>
-          <button
-            type="button"
-            className="brand-button-ghost w-full justify-center"
-            onClick={() =>
-              onPriceChange(
-                from.trim() === "" ? undefined : Number(from),
-                to.trim() === "" ? undefined : Number(to),
-              )
-            }
-          >
-            {t("store.apply")}
-          </button>
-        </fieldset>
+        {visible.map((filter) => {
+          const spec = isSpecFilter(filter);
+          const filterId = String(filter.id);
+          const chosen = spec ? (selectedSpecs[filterId] ?? []) : selected;
+          return (
+            <fieldset key={filterId} className="space-y-2">
+              <legend className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {filter.name}
+              </legend>
+              {(filter.options ?? []).map((option) => {
+                const value = spec ? option.name : String(option.id);
+                return (
+                  <label
+                    key={`${filterId}-${value}`}
+                    className="flex items-center gap-2 text-sm text-foreground"
+                  >
+                    <input
+                      type="checkbox"
+                      className="size-4 rounded border-border"
+                      checked={chosen.includes(value)}
+                      onChange={() =>
+                        spec ? onToggleSpec(filterId, value) : onToggleTag(value)
+                      }
+                    />
+                    <span className="grow">{option.name}</span>
+                    {option.count != null && (
+                      <span className="text-xs text-muted-foreground">{option.count}</span>
+                    )}
+                  </label>
+                );
+              })}
+            </fieldset>
+          );
+        })}
       </div>
     </aside>
   );

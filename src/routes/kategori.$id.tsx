@@ -4,13 +4,12 @@ import CategoryPage from "@/pages/CategoryPage";
 
 export type CategorySearch = {
   page?: number | undefined;
-  limit?: number | undefined;
   sort_by?: string | undefined;
   sort_order?: string | undefined;
   /** Comma-separated tag ids, e.g. "m,xl". */
   tags?: string | undefined;
-  pfrom?: number | undefined;
-  pto?: number | undefined;
+  /** Spec filter values, "44:Bomull,44:Lin". */
+  specs?: string | undefined;
 };
 
 function num(value: unknown) {
@@ -29,14 +28,14 @@ export const Route = createFileRoute("/kategori/$id")({
     const sortOrder = String(search["sort_order"] ?? "").toUpperCase();
     return {
       ...(num(search["page"]) ? { page: num(search["page"]) } : {}),
-      ...(num(search["limit"]) ? { limit: num(search["limit"]) } : {}),
       ...(typeof search["sort_by"] === "string" && search["sort_by"]
         ? { sort_by: search["sort_by"] }
         : {}),
       ...(sortOrder === "ASC" || sortOrder === "DESC" ? { sort_order: sortOrder } : {}),
       ...(tags ? { tags } : {}),
-      ...(num(search["pfrom"]) ? { pfrom: num(search["pfrom"]) } : {}),
-      ...(num(search["pto"]) ? { pto: num(search["pto"]) } : {}),
+      ...(typeof search["specs"] === "string" && search["specs"]
+        ? { specs: search["specs"] }
+        : {}),
     };
   },
   head: () => ({

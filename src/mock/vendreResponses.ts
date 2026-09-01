@@ -161,12 +161,15 @@ function descendantIds(id: number): number[] {
   return [id, ...children.flatMap(descendantIds)];
 }
 
+/** Demo spec value (mirrors a type 4 spec filter from a live store). */
+function productMaterial(p: Product): string {
+  return (Number(p.id) % 2 === 0 ? "Bomull" : "Lin");
+}
+
 /** Filter values a demo product matches (mirrors tag ids from a live store). */
 function productTags(p: Product): string[] {
   const sizes = (p.attributes ?? []).flatMap((attr) => attr.values.map((v) => String(v.id)));
-  const priceBand =
-    (p.price_raw ?? 0) < 1000 ? "band-low" : (p.price_raw ?? 0) < 2500 ? "band-mid" : "band-high";
-  return [...sizes, priceBand];
+  return sizes;
 }
 
 /**
@@ -180,8 +183,9 @@ export function mockCategory(id: number, query: CategoryQuery = {}): CategoryRes
   const tags = (query.tags ?? []).map(String);
   let list = inCategory.filter((p) => {
     if (tags.length && !tags.some((tag) => productTags(p).includes(tag))) return false;
-    if (query.pfrom != null && (p.price_raw ?? 0) < query.pfrom) return false;
-    if (query.pto != null && (p.price_raw ?? 0) > query.pto) return false;
+    for (const values of Object.values(query.specs ?? {})) {
+      if (values.length && !values.includes(productMaterial(p))) return false;
+    }
     return true;
   });
 
@@ -234,18 +238,14 @@ export function mockCategory(id: number, query: CategoryQuery = {}): CategoryRes
           .filter((value) => value.count > 0),
       },
       {
-        id: "price-band",
-        name: "Prisklass",
-        type: 1,
-        options: [
-          { id: "band-low", name: "Under 1 000 kr" },
-          { id: "band-mid", name: "1 000–2 500 kr" },
-          { id: "band-high", name: "Över 2 500 kr" },
-        ]
+        id: "44",
+        name: "Material",
+        type: "4",
+        options: ["Bomull", "Lin"]
           .map((value) => ({
-            ...value,
-            count: count(value.id),
-            selected: tags.includes(value.id),
+            id: value,
+            name: value,
+            count: inCategory.filter((p) => productMaterial(p) === value).length,
           }))
           .filter((value) => value.count > 0),
       },

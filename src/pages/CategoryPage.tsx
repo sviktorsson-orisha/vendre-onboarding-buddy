@@ -2,7 +2,7 @@ import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 
 import { Breadcrumbs, type Crumb } from "@/components/store/breadcrumbs";
 import { CategoryFilters } from "@/components/store/category-filters";
-import { CategoryToolbar, type SortValue } from "@/components/store/category-toolbar";
+import { CategoryToolbar } from "@/components/store/category-toolbar";
 import { Pagination } from "@/components/store/pagination";
 import { ProductCard } from "@/components/store/product-card";
 import { StoreImage } from "@/components/store/store-image";
@@ -22,6 +22,26 @@ function buildTrail(menus: MenuItem[], id: number, fallbackName: string): Crumb[
   return trail.length ? trail : [{ id, name: fallbackName }];
 }
 
+/** URL form: "44:Bomull,44:Lin" -> { "44": ["Bomull", "Lin"] } */
+function parseSpecs(raw?: string): Record<string, string[]> {
+  const specs: Record<string, string[]> = {};
+  for (const part of (raw ?? "").split(",").filter(Boolean)) {
+    const index = part.indexOf(":");
+    if (index <= 0) continue;
+    const key = part.slice(0, index);
+    const value = part.slice(index + 1);
+    (specs[key] ??= []).push(value);
+  }
+  return specs;
+}
+
+function stringifySpecs(specs: Record<string, string[]>) {
+  const parts = Object.entries(specs).flatMap(([key, values]) =>
+    values.map((value) => `${key}:${value}`),
+  );
+  return parts.length ? parts.join(",") : undefined;
+}
+
 export default function CategoryPage({ id }: { id: number }) {
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -29,14 +49,13 @@ export default function CategoryPage({ id }: { id: number }) {
   const { data: menus } = useMenus();
 
   const tags = search.tags ? search.tags.split(",").filter(Boolean) : [];
+  const specs = parseSpecs(search.specs);
   const query = {
     page: search.page ?? 1,
-    limit: search.limit ?? 12,
-    sort_by: search.sort_by ?? "name",
-    sort_order: search.sort_order ?? "ASC",
+    ...(search.sort_by ? { sort_by: search.sort_by } : {}),
+    ...(search.sort_order ? { sort_order: search.sort_order } : {}),
     ...(tags.length ? { tags } : {}),
-    ...(search.pfrom != null ? { pfrom: search.pfrom } : {}),
-    ...(search.pto != null ? { pto: search.pto } : {}),
+    ...(Object.keys(specs).length ? { specs } : {}),
   };
 
   const { data, isLoading, isFetching, error } = useCategory(id, query);
@@ -82,9 +101,40 @@ export default function CategoryPage({ id }: { id: number }) {
         <>
           <Breadcrumbs trail={trail} />
 
-          <header className="mt-4">
+          <header className="mt-4 grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <h1 className="text-3xl font-extrabold text-foreground">{data.header.name}</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {data.product_count} {t("store.products")}
+              </p>
+              {data.header.text && (
+                <div
+                  className="mt-3 max-w-2xl text-sm text-muted-foreground"
+                  dangerouslySetInnerHTML={{ __html: data.header.text }}
+                />
+              )}
+
+              {data.subcategory_list.length > 0 && (
+                <nav className="mt-5" aria-label={t("store.subcategories")}>
+                  <div className="flex flex-wrap gap-2">
+                    {data.subcategory_list.map((sub) => (
+                      <Link
+                        key={sub.id}
+                        to="/kategori/$id"
+                        params={{ id: String(sub.id) }}
+                        className="brand-button-ghost"
+                        activeProps={{ "aria-current": "page" }}
+                      >
+                        {sub.name}
+                      </Link>
+                    ))}
+                  </div>
+                </nav>
+              )}
+            </div>
+
             {data.header.image && (
-              <div className="mb-5 aspect-[16/5] overflow-hidden rounded-xl">
+              <div className="overflow-hidden rounded-xl lg:col-span-1">
                 <StoreImage
                   image={data.header.image}
                   alt={data.header.name}
@@ -93,63 +143,35 @@ export default function CategoryPage({ id }: { id: number }) {
                 />
               </div>
             )}
-            <h1 className="text-3xl font-extrabold text-foreground">{data.header.name}</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {data.product_count} {t("store.products")}
-            </p>
-            {data.header.text && (
-              <div
-                className="mt-3 max-w-2xl text-sm text-muted-foreground"
-                dangerouslySetInnerHTML={{ __html: data.header.text }}
-              />
-            )}
           </header>
 
-          {data.subcategory_list.length > 0 && (
-            <nav className="mt-6" aria-label={t("store.subcategories")}>
-              <div className="flex flex-wrap gap-2">
-                {data.subcategory_list.map((sub) => (
-                  <Link
-                    key={sub.id}
-                    to="/kategori/$id"
-                    params={{ id: String(sub.id) }}
-                    className="brand-button-ghost"
-                    activeProps={{ "aria-current": "page" }}
-                  >
-                    {sub.name}
-                  </Link>
-                ))}
-              </div>
-            </nav>
-          )}
-
           <div className="mt-8 flex flex-col gap-8 lg:flex-row">
-            {data.filters.length > 0 && (
-              <CategoryFilters
-                filters={data.filters}
-                selected={tags}
-                priceFrom={search.pfrom}
-                priceTo={search.pto}
-                onToggleTag={(tag) => {
-                  const next = tags.includes(tag)
-                    ? tags.filter((value) => value !== tag)
-                    : [...tags, tag];
-                  setSearch({ tags: next.length ? next.join(",") : undefined });
-                }}
-                onPriceChange={(from, to) => setSearch({ pfrom: from, pto: to })}
-                onClear={() => setSearch({ tags: undefined, pfrom: undefined, pto: undefined })}
-              />
-            )}
+            <CategoryFilters
+              filters={data.filters}
+              selected={tags}
+              selectedSpecs={specs}
+              onToggleTag={(tag) => {
+                const next = tags.includes(tag)
+                  ? tags.filter((value) => value !== tag)
+                  : [...tags, tag];
+                setSearch({ tags: next.length ? next.join(",") : undefined });
+              }}
+              onToggleSpec={(filterId, value) => {
+                const current = specs[filterId] ?? [];
+                const next = current.includes(value)
+                  ? current.filter((item) => item !== value)
+                  : [...current, value];
+                setSearch({ specs: stringifySpecs({ ...specs, [filterId]: next }) });
+              }}
+              onClear={() => setSearch({ tags: undefined, specs: undefined })}
+            />
 
             <div className="grow">
               <CategoryToolbar
                 data={data}
-                sort={`${data.sort_by}-${data.sort_order}` as SortValue}
-                onSortChange={(value) => {
-                  const [sortBy, sortOrder] = value.split("-");
-                  setSearch({ sort_by: sortBy, sort_order: sortOrder });
-                }}
-                onLimitChange={(limit) => setSearch({ limit })}
+                onSortChange={(sortBy, sortOrder) =>
+                  setSearch({ sort_by: sortBy, sort_order: sortOrder })
+                }
               />
 
               {data.product_list.length === 0 ? (
@@ -158,7 +180,7 @@ export default function CategoryPage({ id }: { id: number }) {
                   <button
                     type="button"
                     className="brand-button mt-4"
-                    onClick={() => setSearch({ tags: undefined, pfrom: undefined, pto: undefined })}
+                    onClick={() => setSearch({ tags: undefined, specs: undefined })}
                   >
                     {t("store.clearFilters")}
                   </button>

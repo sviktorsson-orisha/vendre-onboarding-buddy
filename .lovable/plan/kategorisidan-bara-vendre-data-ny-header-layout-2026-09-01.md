@@ -4,19 +4,24 @@ Kontroll mot den anslutna butiken (GET /surface/2/categories/90) visar vad svare
 
 ## Ändringar
 
-### 1. Prisfiltret tas bort
-Prisintervallet (från/till + Använd) var byggt på de dokumenterade `pfrom`/`pto`-parametrarna, inte på data från butiken. Det tas bort helt ur filterpanelen, ur URL-state och ur anropet. Endast filter som Vendre returnerar i `filters` renderas.
+### **1. Endast filter som kommer ifrån Vendre ska visas**  
+  
+Bygg inte upp egna filter, som tex ett prisfilter, ifall det inte komer med som filter ifrån Vendre
 
 ### 2. "Per sida"-dropdownen tas bort
+
 Den byggde på `page_limits` som faktiskt kommer från Vendre, men eftersom den inte ska finnas tas kontrollen bort. Listan använder butikens `page_limit` som den är.
 
 ### 3. Sortering enbart från API:t
+
 Vendre returnerar i dag bara aktuell sortering, inte valbara alternativ. Därför: om svaret innehåller en lista med sorteringsalternativ renderas den; saknas den visas ingen dropdown alls. Inga påhittade alternativ.
 
 ### 4. Ny header-layout i två kolumner
-Kategorinamn, beskrivning och underkategoriknapparna hamnar i vänsterkolumnen (ca 2/3) och kategoribilden till höger (ca 1/3). Staplas under varandra på mobil. Bilden visas bara när `header.image` finns (den är tom i demo-/testkategorin men finns i andra kategorier).
+
+Kategorinamn, beskrivning och underkategoriknapparna hamnar i vänsterkolumnen (ca 2/3) och kategoribilden till höger (ca 1/3). Staplas under varandra på mobil. Bilden visas bara när kategoribild finns.
 
 ### 5. Material-filtret (spec, type 4)
+
 Vendre skickar även spec-filter vars alternativ saknar id. De skickas som spec/`f`-parameter i stället för `tags[]`, och filtreringen verifieras mot den riktiga butiken innan det är klart.
 
 ## Tekniskt
