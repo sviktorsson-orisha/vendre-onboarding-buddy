@@ -138,4 +138,9 @@ export type CategoryQuery = {
   limit?: number;
   sort_by?: string;
   sort_order?: string;
+  /** Selected filter values, sent as tags[]=64&tags[]=81. */
+  tags?: (string | number)[];
+  /** Price range (raw amounts in the session currency). */
+  pfrom?: number;
+  pto?: number;
 };
