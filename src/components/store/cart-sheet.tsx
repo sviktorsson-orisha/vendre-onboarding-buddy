@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { Loader2, Minus, Plus, Trash2 } from "lucide-react";
 
 import { ProductPrice } from "@/components/store/product-price";
@@ -12,6 +13,7 @@ import { useOnboarding } from "@/context/onboarding-context";
 import { useI18n } from "@/lib/i18n";
 import { useCart, useCartMutations, useVendreApi } from "@/lib/vendre/api";
 
+
 export function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { t } = useI18n();
   const api = useVendreApi();
@@ -19,6 +21,11 @@ export function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
   const { data: cart, isLoading } = useCart();
   const { update, remove } = useCartMutations();
   const lines = cart?.products ?? [];
+  // The total always comes from the store — never summed in the frontend.
+  const cartTotal =
+    cart?.cart_total_formatted ??
+    (cart?.cart_total != null ? `${cart.cart_total} kr` : "—");
+
 
   const goToCheckout = async () => {
     // Checkout is a real browser navigation so the store session cookie follows.
@@ -44,17 +51,30 @@ export function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
             <ul className="space-y-4">
               {lines.map((line) => (
                 <li key={line.id} className="flex gap-3">
-                  <StoreImage
-                    image={line.product_data?.image ?? null}
-                    alt={line.product_data?.name ?? `#${line.productId}`}
-                    label={line.product_data?.name ?? "P"}
-                    className="size-16 shrink-0 rounded-md"
-                  />
+                  <Link
+                    to="/produkt/$id"
+                    params={{ id: String(line.productId) }}
+                    onClick={() => onOpenChange(false)}
+                    className="shrink-0"
+                  >
+                    <StoreImage
+                      image={line.product_data?.image ?? null}
+                      alt={line.product_data?.name ?? `#${line.productId}`}
+                      label={line.product_data?.name ?? "P"}
+                      className="size-16 shrink-0 rounded-md"
+                    />
+                  </Link>
                   <div className="grow">
-                    <p className="text-sm font-semibold text-foreground">
+                    <Link
+                      to="/produkt/$id"
+                      params={{ id: String(line.productId) }}
+                      onClick={() => onOpenChange(false)}
+                      className="text-sm font-semibold text-foreground transition-colors hover:text-primary"
+                    >
                       {line.product_data?.name ?? `#${line.productId}`}
-                    </p>
+                    </Link>
                     {line.product_data && <ProductPrice product={line.product_data} size="sm" />}
+
                     <div className="mt-2 flex items-center gap-2">
                       <button
                         type="button"
@@ -91,7 +111,7 @@ export function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
         <div className="border-t border-border pt-4">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">{t("store.total")}</span>
-            <span className="text-lg font-bold text-foreground">{cart?.cart_total ?? 0} kr</span>
+            <span className="text-lg font-bold text-foreground">{cartTotal}</span>
           </div>
           <button
             type="button"

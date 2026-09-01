@@ -143,10 +143,14 @@ export type CartLine = {
 export type Cart = {
   products: CartLine[];
   cart_count: number;
+  /** Store-calculated cart total (raw). The frontend never computes totals. */
   cart_total: number;
+  /** Some installs return the total already formatted in the session currency. */
+  cart_total_formatted?: string | null;
   /** Refreshed mutation protection token, when the store returns one. */
   mutationProtectionToken?: string;
 };
+
 
 export type SessionContext = {
   authenticated: boolean;
