@@ -4,6 +4,7 @@ import { ChevronDown, Menu, Search, ShoppingBag } from "lucide-react";
 
 import { AccountMenu } from "@/components/store/account-menu";
 import { CartSheet } from "@/components/store/cart-sheet";
+import { SearchBox } from "@/components/store/search-box";
 import { LanguagePicker } from "@/components/vendre/language-picker";
 import { useI18n } from "@/lib/i18n";
 import { useCart, useMenuTree } from "@/lib/vendre/api";
