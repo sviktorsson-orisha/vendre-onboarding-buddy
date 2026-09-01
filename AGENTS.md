@@ -28,6 +28,14 @@ Before performing any architectural decisions or API calls, consult the correspo
 
 ## 2. SKILLS ROUTING TABLE (`/.vendre/skills/`)
 
+### MANDATORY SKILL EXECUTION PROTOCOL
+
+Before writing, refactoring, or generating ANY code for a requested feature:
+
+1. **Search & Check:** You MUST check the table below and open the matching file in `/.vendre/skills/`.
+2. **Strict Adherence:** If a relevant skill exists, you MUST follow its rules, component patterns, and API logic over your general knowledge.
+3. **No Assumptions:** Never guess Vendre API schemas, endpoints, or state management logic — always derive them from the matching skill and `/.vendre/knowledge/api-reference.md`.
+
 Always read the matching skill file **before** starting work in that area.
 
 | Task / area                                            | File                                       |
