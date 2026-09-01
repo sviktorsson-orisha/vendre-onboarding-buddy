@@ -10,6 +10,9 @@ export type CategorySearch = {
   tags?: string | undefined;
   /** Spec filter values, "44:Bomull,44:Lin". */
   specs?: string | undefined;
+  /** Price range from the store's type 2 filter. */
+  pfrom?: number | undefined;
+  pto?: number | undefined;
 };
 
 function num(value: unknown) {
@@ -36,6 +39,8 @@ export const Route = createFileRoute("/kategori/$id")({
       ...(typeof search["specs"] === "string" && search["specs"]
         ? { specs: search["specs"] }
         : {}),
+      ...(num(search["pfrom"]) ? { pfrom: num(search["pfrom"]) } : {}),
+      ...(num(search["pto"]) ? { pto: num(search["pto"]) } : {}),
     };
   },
   head: () => ({
