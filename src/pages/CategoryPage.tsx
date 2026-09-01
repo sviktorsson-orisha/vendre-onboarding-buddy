@@ -47,7 +47,7 @@ export default function CategoryPage({ id }: { id: number }) {
       params: { id: String(id) },
       search: (prev: Record<string, unknown>) => {
         const next = { ...prev, ...patch };
-        if (resetPage) next.page = 1;
+        if (resetPage) next["page"] = 1;
         for (const key of Object.keys(next)) {
           const value = next[key];
           if (value == null || (Array.isArray(value) && value.length === 0)) delete next[key];

@@ -15,10 +15,10 @@ export function CategoryFilters({
 }: {
   filters: CategoryFilter[];
   selected: string[];
-  priceFrom?: number;
-  priceTo?: number;
+  priceFrom?: number | undefined;
+  priceTo?: number | undefined;
   onToggleTag: (id: string) => void;
-  onPriceChange: (from?: number, to?: number) => void;
+  onPriceChange: (from?: number | undefined, to?: number | undefined) => void;
   onClear: () => void;
 }) {
   const { t } = useI18n();

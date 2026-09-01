@@ -3,13 +3,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import CategoryPage from "@/pages/CategoryPage";
 
 export type CategorySearch = {
-  page?: number;
-  limit?: number;
-  sort_by?: string;
-  sort_order?: string;
-  tags?: string[];
-  pfrom?: number;
-  pto?: number;
+  page?: number | undefined;
+  limit?: number | undefined;
+  sort_by?: string | undefined;
+  sort_order?: string | undefined;
+  tags?: string[] | undefined;
+  pfrom?: number | undefined;
+  pto?: number | undefined;
 };
 
 function num(value: unknown) {
