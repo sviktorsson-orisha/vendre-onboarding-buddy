@@ -338,6 +338,11 @@ const demoApi: VendreApi = {
     recalcDemoCart();
   },
   getSessionContext: async () => mockSessionContext,
+  searchProducts: async (query, options = {}) => {
+    const limit = options.limit ?? 12;
+    if (query.trim().length < SEARCH_MIN_CHARS) return paginate([], limit, 1);
+    return mockSearch(query, limit, options.page ?? 1);
+  },
   checkoutUrl: async () => null,
 };
 
