@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { SlidersHorizontal } from "lucide-react";
 
+import { Slider } from "@/components/ui/slider";
 import { useI18n } from "@/lib/i18n";
 import type { CategoryFilter } from "@/types/vendre";
 
