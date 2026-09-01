@@ -76,17 +76,7 @@ function PriceFilter({
 }
 
 
-export function CategoryFilters({
-  filters,
-  selected,
-  selectedSpecs,
-  priceFrom,
-  priceTo,
-  onToggleTag,
-  onToggleSpec,
-  onPriceChange,
-  onClear,
-}: {
+export type FilterProps = {
   filters: CategoryFilter[];
   selected: string[];
   selectedSpecs: Record<string, string[]>;
@@ -96,89 +86,120 @@ export function CategoryFilters({
   onToggleSpec: (filterId: string, value: string) => void;
   onPriceChange: (from?: number, to?: number) => void;
   onClear: () => void;
-}) {
-  const { t } = useI18n();
-  const [open, setOpen] = useState(false);
+};
 
-  const visible = filters.filter(
+/** Only filters the store actually returns with usable values. */
+export function visibleFilters(filters: CategoryFilter[]) {
+  return (filters ?? []).filter(
     (filter) =>
       String(filter.type) !== "0" &&
-      (isPriceFilter(filter) ? filter.min != null && filter.max != null : (filter.options ?? []).length > 0),
+      (isPriceFilter(filter)
+        ? filter.min != null && filter.max != null
+        : (filter.options ?? []).length > 0),
   );
+}
+
+export function activeFilterCount({
+  selected,
+  selectedSpecs,
+  priceFrom,
+  priceTo,
+}: Pick<FilterProps, "selected" | "selectedSpecs" | "priceFrom" | "priceTo">) {
+  return (
+    selected.length +
+    Object.values(selectedSpecs).reduce((sum, values) => sum + values.length, 0) +
+    (priceFrom != null || priceTo != null ? 1 : 0)
+  );
+}
+
+/** The filter controls themselves — reused by the sidebar and the mobile panel. */
+export function FiltersContent({
+  filters,
+  selected,
+  selectedSpecs,
+  priceFrom,
+  priceTo,
+  onToggleTag,
+  onToggleSpec,
+  onPriceChange,
+  onClear,
+  showHeading = true,
+}: FilterProps & { showHeading?: boolean }) {
+  const { t } = useI18n();
+  const visible = visibleFilters(filters);
   if (visible.length === 0) return null;
 
-  const active =
-    selected.length > 0 ||
-    Object.values(selectedSpecs).some((v) => v.length > 0) ||
-    priceFrom != null ||
-    priceTo != null;
+  const active = activeFilterCount({ selected, selectedSpecs, priceFrom, priceTo }) > 0;
 
   return (
-    <aside className="lg:w-60 lg:shrink-0">
-      <button
-        type="button"
-        className="brand-button-ghost mb-3 w-full justify-center lg:hidden"
-        onClick={() => setOpen((value) => !value)}
-        aria-expanded={open}
-      >
-        <SlidersHorizontal className="size-4" aria-hidden /> {t("store.filters")}
-      </button>
-
-      <div className={`${open ? "block" : "hidden"} space-y-6 lg:block`}>
+    <div className="space-y-6">
+      {(showHeading || active) && (
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-foreground">{t("store.filters")}</h2>
+          {showHeading ? (
+            <h2 className="text-sm font-semibold text-foreground">{t("store.filters")}</h2>
+          ) : (
+            <span />
+          )}
           {active && (
             <button type="button" className="text-xs text-primary underline" onClick={onClear}>
               {t("store.clearFilters")}
             </button>
           )}
         </div>
+      )}
 
-        {visible.map((filter) => {
-          if (isPriceFilter(filter))
-            return (
-              <PriceFilter
-                key={String(filter.id)}
-                filter={filter}
-                from={priceFrom}
-                to={priceTo}
-                onApply={onPriceChange}
-              />
-            );
-          const spec = isSpecFilter(filter);
-          const filterId = String(filter.id);
-          const chosen = spec ? (selectedSpecs[filterId] ?? []) : selected;
+      {visible.map((filter) => {
+        if (isPriceFilter(filter))
           return (
-            <fieldset key={filterId} className="space-y-2">
-              <legend className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {filter.name}
-              </legend>
-              {(filter.options ?? []).map((option) => {
-                const value = spec ? option.name : String(option.id);
-                return (
-                  <label
-                    key={`${filterId}-${value}`}
-                    className="flex items-center gap-2 text-sm text-foreground"
-                  >
-                    <input
-                      type="checkbox"
-                      className="size-4 rounded border-border"
-                      checked={chosen.includes(value)}
-                      onChange={() =>
-                        spec ? onToggleSpec(filterId, value) : onToggleTag(value)
-                      }
-                    />
-                    <span className="grow">{option.name}</span>
-                    {option.count != null && (
-                      <span className="text-xs text-muted-foreground">{option.count}</span>
-                    )}
-                  </label>
-                );
-              })}
-            </fieldset>
+            <PriceFilter
+              key={String(filter.id)}
+              filter={filter}
+              from={priceFrom}
+              to={priceTo}
+              onApply={onPriceChange}
+            />
           );
-        })}
-      </div>
+        const spec = isSpecFilter(filter);
+        const filterId = String(filter.id);
+        const chosen = spec ? (selectedSpecs[filterId] ?? []) : selected;
+        return (
+          <fieldset key={filterId} className="space-y-2">
+            <legend className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {filter.name}
+            </legend>
+            {(filter.options ?? []).map((option) => {
+              const value = spec ? option.name : String(option.id);
+              return (
+                <label
+                  key={`${filterId}-${value}`}
+                  className="flex items-center gap-2 text-sm text-foreground"
+                >
+                  <input
+                    type="checkbox"
+                    className="size-4 rounded border-border"
+                    checked={chosen.includes(value)}
+                    onChange={() => (spec ? onToggleSpec(filterId, value) : onToggleTag(value))}
+                  />
+                  <span className="grow">{option.name}</span>
+                  {option.count != null && (
+                    <span className="text-xs text-muted-foreground">{option.count}</span>
+                  )}
+                </label>
+              );
+            })}
+          </fieldset>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Desktop sidebar. Mobile uses CategoryMobileControls instead. */
+export function CategoryFilters(props: FilterProps) {
+  if (visibleFilters(props.filters).length === 0) return null;
+  return (
+    <aside className="hidden lg:block lg:w-60 lg:shrink-0">
+      <FiltersContent {...props} />
     </aside>
   );
 }
