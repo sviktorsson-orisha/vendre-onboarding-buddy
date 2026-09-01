@@ -82,10 +82,20 @@ export type CategoryHeader = {
 
 export type CategorySort = { name: string; value: string; selected?: boolean };
 
+export type CategoryFilterOption = {
+  id: string | number;
+  name: string;
+  count?: number;
+  selected?: boolean;
+  image?: VendreImage | null;
+};
+
 export type CategoryFilter = {
   id: string | number;
   name: string;
-  values: { id: string | number; name: string; count?: number; selected?: boolean }[];
+  /** 0 = category filter (rendered as subcategory links), 1 = tag filter. */
+  type?: number;
+  options: CategoryFilterOption[];
 };
 
 export type CategoryResponse = {
@@ -138,4 +148,9 @@ export type CategoryQuery = {
   limit?: number;
   sort_by?: string;
   sort_order?: string;
+  /** Selected filter values, sent as tags[]=64&tags[]=81. */
+  tags?: (string | number)[];
+  /** Price range (raw amounts in the session currency). */
+  pfrom?: number;
+  pto?: number;
 };

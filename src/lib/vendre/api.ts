@@ -101,12 +101,16 @@ export async function guarded<T>(run: () => Promise<T>): Promise<T> {
   }
 }
 
+/** Serialises listing state for GET categories/{id}; arrays use bracket syntax. */
 function categoryQuery(query?: CategoryQuery) {
   const params = new URLSearchParams();
   if (query?.page) params.set("page", String(query.page));
   if (query?.limit) params.set("limit", String(query.limit));
   if (query?.sort_by) params.set("sort_by", query.sort_by);
   if (query?.sort_order) params.set("sort_order", query.sort_order);
+  if (query?.pfrom != null) params.set("pfrom", String(query.pfrom));
+  if (query?.pto != null) params.set("pto", String(query.pto));
+  for (const tag of query?.tags ?? []) params.append("tags[]", String(tag));
   const qs = params.toString();
   return qs ? `?${qs}` : "";
 }
@@ -192,7 +196,7 @@ function recalcDemoCart() {
 const demoApi: VendreApi = {
   mode: "demo",
   getMenus: async () => mockMenus,
-  getCategory: async (id) => mockCategory(id),
+  getCategory: async (id, query) => mockCategory(id, query),
   getProduct: async (id) => mockProduct(id),
   getCart: async () => demoCart,
   addToCart: async (productId, quantity = 1) => {
@@ -262,12 +266,29 @@ export function buildMenuTree(items: MenuItem[]): MenuNode[] {
   return roots;
 }
 
+/**
+ * Cache scope for price-bearing data: market, currency, language and VAT mode
+ * change what the store returns, so they belong in every cache key.
+ */
+export function useCacheScope() {
+  const { data } = useSessionContext();
+  return useMemo(
+    () =>
+      data
+        ? [data.market?.id ?? null, data.currency?.code ?? null, data.language?.code ?? null, data.prices_include_vat]
+        : null,
+    [data],
+  );
+}
+
 export function useCategory(id: number, query?: CategoryQuery) {
   const api = useVendreApi();
+  const scope = useCacheScope();
   return useQuery({
-    queryKey: ["vendre", api.mode, "category", id, query ?? null],
+    queryKey: ["vendre", api.mode, "category", id, query ?? null, scope],
     queryFn: () => api.getCategory(id, query),
     staleTime: 5 * 60 * 1000,
+    placeholderData: (previous) => previous,
   });
 }
 

@@ -9,6 +9,7 @@
 import type {
   Cart,
   CategoryHeader,
+  CategoryQuery,
   CategoryResponse,
   MenuItem,
   Product,
@@ -160,23 +161,61 @@ function descendantIds(id: number): number[] {
   return [id, ...children.flatMap(descendantIds)];
 }
 
-export function mockCategory(id: number): CategoryResponse {
+/** Filter values a demo product matches (mirrors tag ids from a live store). */
+function productTags(p: Product): string[] {
+  const sizes = (p.attributes ?? []).flatMap((attr) => attr.values.map((v) => String(v.id)));
+  const priceBand =
+    (p.price_raw ?? 0) < 1000 ? "band-low" : (p.price_raw ?? 0) < 2500 ? "band-mid" : "band-high";
+  return [...sizes, priceBand];
+}
+
+/**
+ * Demo listing. Sorting, filtering and pagination happen here so the PLP behaves
+ * exactly like it does against `GET categories/{id}` in live mode.
+ */
+export function mockCategory(id: number, query: CategoryQuery = {}): CategoryResponse {
   const ids = new Set(descendantIds(id).map(String));
-  const list = products.filter((p) => ids.has(p.categories_id ?? ""));
+  const inCategory = products.filter((p) => ids.has(p.categories_id ?? ""));
+
+  const tags = (query.tags ?? []).map(String);
+  let list = inCategory.filter((p) => {
+    if (tags.length && !tags.some((tag) => productTags(p).includes(tag))) return false;
+    if (query.pfrom != null && (p.price_raw ?? 0) < query.pfrom) return false;
+    if (query.pto != null && (p.price_raw ?? 0) > query.pto) return false;
+    return true;
+  });
+
+  const sortBy = query.sort_by ?? "name";
+  const sortOrder = (query.sort_order ?? "ASC").toUpperCase() === "DESC" ? -1 : 1;
+  list = [...list].sort((a, b) => {
+    const diff =
+      sortBy === "price"
+        ? (a.price_raw ?? 0) - (b.price_raw ?? 0)
+        : a.name.localeCompare(b.name, "sv");
+    return diff * sortOrder;
+  });
+
+  const limit = query.limit && query.limit > 0 ? query.limit : 12;
+  const pageCount = Math.max(1, Math.ceil(list.length / limit));
+  const pageIndex = Math.min(Math.max(query.page ?? 1, 1), pageCount);
+  const paged = list.slice((pageIndex - 1) * limit, pageIndex * limit);
+
+  const count = (tag: string) => inCategory.filter((p) => productTags(p).includes(tag)).length;
+
   return {
     header: categoryHeaders[id] ?? header(id, "Kategori"),
-    product_list: list,
+    product_list: paged,
     product_count: list.length,
-    page_index: 1,
-    page_count: 1,
-    page_limit: 12,
-    page_limits: [
-      { name: 12, limit: 12, selected: true },
-      { name: 24, limit: 24, selected: false },
-      { name: "Alla", limit: 0, selected: false },
-    ],
-    sort_by: "name",
-    sort_order: "ASC",
+    page_index: pageIndex,
+    page_count: pageCount,
+    page_limit: limit,
+    page_limits: [12, 24, 48].map((value) => ({
+      name: value,
+      limit: value,
+      selected: value === limit,
+    })),
+    sort_by: sortBy,
+    sort_order: sortOrder === -1 ? "DESC" : "ASC",
     subcategory_list: mockMenus
       .filter((item) => item.parent_id === id)
       .map((item) => categoryHeaders[item.id] ?? header(item.id, item.name)),
@@ -184,22 +223,33 @@ export function mockCategory(id: number): CategoryResponse {
       {
         id: "size",
         name: "Storlek",
-        values: [
-          { id: "s", name: "S" },
-          { id: "m", name: "M" },
-          { id: "l", name: "L" },
-        ],
+        type: 1,
+        options: ["s", "m", "l", "xl"]
+          .map((value) => ({
+            id: value,
+            name: value.toUpperCase(),
+            count: count(value),
+            selected: tags.includes(value),
+          }))
+          .filter((value) => value.count > 0),
       },
       {
-        id: "color",
-        name: "Färg",
-        values: [
-          { id: "black", name: "Svart" },
-          { id: "blue", name: "Blå" },
-          { id: "beige", name: "Beige" },
-        ],
+        id: "price-band",
+        name: "Prisklass",
+        type: 1,
+        options: [
+          { id: "band-low", name: "Under 1 000 kr" },
+          { id: "band-mid", name: "1 000–2 500 kr" },
+          { id: "band-high", name: "Över 2 500 kr" },
+        ]
+          .map((value) => ({
+            ...value,
+            count: count(value.id),
+            selected: tags.includes(value.id),
+          }))
+          .filter((value) => value.count > 0),
       },
-    ],
+    ].filter((filter) => filter.options.length > 0),
   };
 }
 
