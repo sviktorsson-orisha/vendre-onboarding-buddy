@@ -196,7 +196,7 @@ function recalcDemoCart() {
 const demoApi: VendreApi = {
   mode: "demo",
   getMenus: async () => mockMenus,
-  getCategory: async (id) => mockCategory(id),
+  getCategory: async (id, query) => mockCategory(id, query),
   getProduct: async (id) => mockProduct(id),
   getCart: async () => demoCart,
   addToCart: async (productId, quantity = 1) => {
