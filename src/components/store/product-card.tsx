@@ -33,12 +33,7 @@ export function ProductCard({ product }: { product: Product }) {
         >
           {product.name}
         </Link>
-        <p className="flex items-baseline gap-2">
-          <span className="text-base font-bold text-foreground">{formatPrice(product)}</span>
-          {onSale && (
-            <span className="text-xs text-muted-foreground line-through">{product.price_original}</span>
-          )}
-        </p>
+        <ProductPrice product={product} size="md" />
         <button
           type="button"
           className="brand-button mt-auto w-full justify-center"
