@@ -128,6 +128,7 @@ const dictionary = {
     "store.sort": "Sortera",
     "store.filters": "Filter",
     "store.clearFilters": "Rensa filter",
+    "store.showProducts": "Visa produkter",
     "store.priceFrom": "Från",
     "store.priceTo": "Till",
     "store.noResults": "Inga produkter matchar ditt urval.",
