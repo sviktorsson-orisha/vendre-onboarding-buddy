@@ -1,7 +1,8 @@
 import { Link } from "@tanstack/react-router";
 
+import { ProductPrice } from "@/components/store/product-price";
 import { StoreImage } from "@/components/store/store-image";
-import { formatPrice, useCartMutations } from "@/lib/vendre/api";
+import { useCartMutations } from "@/lib/vendre/api";
 import { useI18n } from "@/lib/i18n";
 import type { Product } from "@/types/vendre";
 
