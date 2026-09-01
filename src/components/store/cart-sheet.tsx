@@ -69,11 +69,13 @@ export function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
                       to="/produkt/$id"
                       params={{ id: String(line.productId) }}
                       onClick={() => onOpenChange(false)}
-                      className="text-sm font-semibold text-foreground transition-colors hover:text-primary"
+                      className="block text-sm font-semibold text-foreground transition-colors hover:text-primary"
                     >
                       {line.product_data?.name ?? `#${line.productId}`}
                     </Link>
-                    {line.product_data && <ProductPrice product={line.product_data} size="sm" />}
+                    {line.product_data && (
+                      <ProductPrice product={line.product_data} size="sm" className="mt-1 flex" />
+                    )}
 
                     <div className="mt-2 flex items-center gap-2">
                       <button
