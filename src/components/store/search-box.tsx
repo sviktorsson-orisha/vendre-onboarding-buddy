@@ -8,7 +8,6 @@ import { useI18n } from "@/lib/i18n";
 import {
   SEARCH_MIN_CHARS,
   SEARCH_SUGGESTION_LIMIT,
-  formatPrice,
   useProductSearch,
 } from "@/lib/vendre/api";
 import { cn } from "@/lib/utils";
