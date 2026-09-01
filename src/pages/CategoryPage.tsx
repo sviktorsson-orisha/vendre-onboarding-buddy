@@ -61,7 +61,14 @@ export default function CategoryPage({ id }: { id: number }) {
 
   return (
     <StoreShell>
-      {isLoading || !data ? (
+      {error && !data ? (
+        <div className="py-16 text-center">
+          <p className="text-sm text-muted-foreground">{t("store.loadError")}</p>
+          <Link to="/" className="brand-button mt-4 inline-flex">
+            {t("store.backToStore")}
+          </Link>
+        </div>
+      ) : isLoading || !data ? (
         <div className="space-y-6" aria-busy="true">
           <div className="h-8 w-56 animate-pulse rounded bg-muted" />
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
