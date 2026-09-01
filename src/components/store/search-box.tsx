@@ -2,12 +2,12 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 
+import { ProductPrice } from "@/components/store/product-price";
 import { StoreImage } from "@/components/store/store-image";
 import { useI18n } from "@/lib/i18n";
 import {
   SEARCH_MIN_CHARS,
   SEARCH_SUGGESTION_LIMIT,
-  formatPrice,
   useProductSearch,
 } from "@/lib/vendre/api";
 import { cn } from "@/lib/utils";
@@ -130,9 +130,7 @@ export function SearchBox({ className, autoFocus }: { className?: string; autoFo
                     <span className="min-w-0 grow truncate text-sm text-foreground">
                       {product.name}
                     </span>
-                    <span className="shrink-0 text-sm font-semibold text-foreground">
-                      {formatPrice(product)}
-                    </span>
+                    <ProductPrice product={product} size="sm" className="shrink-0" />
                   </Link>
                 </li>
               ))}
