@@ -136,6 +136,15 @@ const dictionary = {
     "store.prev": "Föregående",
     "store.next": "Nästa",
 
+    "search.title": "Sökresultat",
+    "search.for": "Träffar för “{q}”",
+    "search.hits": "{count} träffar",
+    "search.viewAll": "Visa alla resultat för “{q}”",
+    "search.minChars": "Skriv minst 3 tecken för att söka.",
+    "search.searching": "Söker…",
+    "search.noHits": "Inga produkter matchade “{q}”.",
+    "search.suggestions": "Produktförslag",
+
     "account.title": "Mitt konto",
     "account.signIn": "Logga in",
     "account.signUp": "Skapa konto",
