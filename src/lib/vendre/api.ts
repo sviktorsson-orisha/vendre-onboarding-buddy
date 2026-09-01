@@ -203,7 +203,88 @@ const liveApi: VendreApi = {
     storeBaseUrl = baseUrl;
     return `${baseUrl}/checkout`;
   },
+  searchProducts: async (query, options = {}) => {
+    const needle = query.trim().toLowerCase();
+    const limit = options.limit ?? 12;
+    const page = options.page ?? 1;
+    if (needle.length < SEARCH_MIN_CHARS) return paginate([], limit, 1);
+
+    // 1) VQL, when the install has it enabled.
+    if (!vqlDisabled) {
+      try {
+        const data = await guarded(() =>
+          surfaceJson<VqlProductsResponse>("vql", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              resource: "products",
+              query: needle,
+              search: needle,
+              page,
+              limit,
+            }),
+          }),
+        );
+        const list = data?.products ?? data?.product_list ?? data?.data?.products ?? null;
+        if (Array.isArray(list)) {
+          return {
+            products: list,
+            product_count: data?.product_count ?? list.length,
+            page_index: data?.page_index ?? page,
+            page_count: data?.page_count ?? Math.max(1, Math.ceil((data?.product_count ?? list.length) / limit)),
+          };
+        }
+        vqlDisabled = true;
+      } catch {
+        // VQL is off on this install (documented 500) — fall back for good.
+        vqlDisabled = true;
+      }
+    }
+
+    // 2) Fallback: match over the catalogue read from categories/{id}.
+    const all = await liveCatalogue();
+    return paginate(all.filter((p) => matchesQuery(p, needle)), limit, page);
+  },
 };
+
+type VqlProductsResponse = {
+  products?: Product[];
+  product_list?: Product[];
+  data?: { products?: Product[] };
+  product_count?: number;
+  page_index?: number;
+  page_count?: number;
+} | null;
+
+let vqlDisabled = false;
+let catalogueCache: { at: number; products: Promise<Product[]> } | null = null;
+
+/** Catalogue snapshot used by the search fallback; cached for 5 minutes. */
+function liveCatalogue(): Promise<Product[]> {
+  if (catalogueCache && Date.now() - catalogueCache.at < 5 * 60 * 1000) {
+    return catalogueCache.products;
+  }
+  const products = (async () => {
+    const menus = await liveApi.getMenus();
+    const leaves = menus.filter((item) => item.menu_type === "category" && !item.has_children);
+    const lists = await Promise.all(
+      leaves.map((item) =>
+        liveApi
+          .getCategory(item.id, { limit: 0 })
+          .then((data) => data.product_list ?? [])
+          .catch(() => [] as Product[]),
+      ),
+    );
+    const byId = new Map<string, Product>();
+    for (const product of lists.flat()) byId.set(String(product.id), product);
+    return [...byId.values()];
+  })().catch((error) => {
+    catalogueCache = null;
+    throw error;
+  });
+  catalogueCache = { at: Date.now(), products };
+  return products;
+}
 
 /* ------------------------------------------------------------------ demo -- */
 
