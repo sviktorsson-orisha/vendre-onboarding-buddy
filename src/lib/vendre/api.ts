@@ -293,15 +293,24 @@ function liveCatalogue(): Promise<Product[]> {
 let demoCart: Cart = { ...emptyCart, products: [] };
 
 function recalcDemoCart() {
+  // Demo mode plays the role of the store: it produces the totals, the UI never
+  // computes them.
   demoCart = {
     products: demoCart.products,
     cart_count: demoCart.products.reduce((sum, line) => sum + line.quantity, 0),
-    cart_total: demoCart.products.reduce(
-      (sum, line) => sum + (line.product_data?.price_raw ?? 0) * line.quantity,
-      0,
-    ),
+    cart_total: demoCart.products.reduce((sum, line) => {
+      const product = line.product_data;
+      const effective =
+        product?.price_special_raw != null &&
+        product?.price_raw != null &&
+        product.price_special_raw < product.price_raw
+          ? product.price_special_raw
+          : (product?.price_raw ?? 0);
+      return sum + effective * line.quantity;
+    }, 0),
   };
 }
+
 
 const demoApi: VendreApi = {
   mode: "demo",
