@@ -5,7 +5,8 @@ import { useState } from "react";
 import { StoreImage } from "@/components/store/store-image";
 import { StoreShell } from "@/components/store/store-shell";
 import { useI18n } from "@/lib/i18n";
-import { formatPrice, useCartMutations, useProduct } from "@/lib/vendre/api";
+import { ProductPrice } from "@/components/store/product-price";
+import { useCartMutations, useProduct } from "@/lib/vendre/api";
 import { cn } from "@/lib/utils";
 
 export default function ProductPage({ id }: { id: string }) {
@@ -54,7 +55,7 @@ export default function ProductPage({ id }: { id: string }) {
           {product.description_short && (
             <p className="mt-3 text-sm text-muted-foreground">{product.description_short}</p>
           )}
-          <p className="mt-5 text-2xl font-bold text-foreground">{formatPrice(product)}</p>
+          <ProductPrice product={product} size="lg" className="mt-5" />
           <p className={cn("mt-1 text-sm", soldOut ? "text-destructive" : "text-emerald-700")}>
             {soldOut ? t("store.outOfStock") : t("store.inStock")}
           </p>

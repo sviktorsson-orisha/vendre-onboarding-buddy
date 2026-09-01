@@ -1,5 +1,6 @@
 import { Loader2, Minus, Plus, Trash2 } from "lucide-react";
 
+import { ProductPrice } from "@/components/store/product-price";
 import { StoreImage } from "@/components/store/store-image";
 import {
   Sheet,
@@ -53,7 +54,7 @@ export function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
                     <p className="text-sm font-semibold text-foreground">
                       {line.product_data?.name ?? `#${line.productId}`}
                     </p>
-                    <p className="text-sm text-muted-foreground">{line.product_data?.price}</p>
+                    {line.product_data && <ProductPrice product={line.product_data} size="sm" />}
                     <div className="mt-2 flex items-center gap-2">
                       <button
                         type="button"
