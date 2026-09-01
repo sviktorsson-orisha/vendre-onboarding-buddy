@@ -267,9 +267,10 @@ function liveCatalogue(): Promise<Product[]> {
   }
   const products = (async () => {
     const menus = await liveApi.getMenus();
-    const leaves = menus.filter((item) => item.menu_type === "category" && !item.has_children);
+    // Every category, not just leaves: products can live directly on a parent.
+    const categories = menus.filter((item) => item.menu_type === "category");
     const lists = await Promise.all(
-      leaves.map((item) =>
+      categories.map((item) =>
         liveApi
           .getCategory(item.id, { limit: 0 })
           .then((data) => data.product_list ?? [])
