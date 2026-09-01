@@ -171,3 +171,15 @@ export type CategoryQuery = {
   pfrom?: number;
   pto?: number;
 };
+
+export type SearchQuery = {
+  page?: number;
+  limit?: number;
+};
+
+export type SearchResult = {
+  products: Product[];
+  product_count: number;
+  page_index: number;
+  page_count: number;
+};

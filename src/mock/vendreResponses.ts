@@ -264,3 +264,22 @@ export function mockFeaturedProducts(count = 4): Product[] {
 export const mockTopCategories = [90, 200, 210].map((id) => categoryHeaders[id]!);
 
 export const emptyCart: Cart = { products: [], cart_count: 0, cart_total: 0 };
+
+/** Demo search: free-text match on name and model, paginated like a live listing. */
+export function mockSearch(query: string, limit = 5, page = 1) {
+  const needle = query.trim().toLowerCase();
+  const list = needle
+    ? products.filter((p) =>
+        `${p.name} ${p.model ?? ""}`.toLowerCase().includes(needle),
+      )
+    : [];
+  const size = limit > 0 ? limit : 12;
+  const pageCount = Math.max(1, Math.ceil(list.length / size));
+  const pageIndex = Math.min(Math.max(page, 1), pageCount);
+  return {
+    products: list.slice((pageIndex - 1) * size, pageIndex * size),
+    product_count: list.length,
+    page_index: pageIndex,
+    page_count: pageCount,
+  };
+}
