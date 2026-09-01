@@ -39,7 +39,7 @@ export default function CategoryPage({ id }: { id: number }) {
     ...(search.pto != null ? { pto: search.pto } : {}),
   };
 
-  const { data, isLoading, isFetching } = useCategory(id, query);
+  const { data, isLoading, isFetching, error } = useCategory(id, query);
 
   const setSearch = (patch: Record<string, unknown>, resetPage = true) => {
     void navigate({
