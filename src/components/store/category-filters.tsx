@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { SlidersHorizontal } from "lucide-react";
 
+import { Slider } from "@/components/ui/slider";
 import { useI18n } from "@/lib/i18n";
 import type { CategoryFilter } from "@/types/vendre";
 
@@ -18,7 +19,7 @@ function isPriceFilter(filter: CategoryFilter) {
   return String(filter.type) === "2";
 }
 
-/** Price range (type 2) — sent to the store as pfrom/pto. */
+/** Price range (type 2) — dual-handle slider, sent to the store as pfrom/pto. */
 function PriceFilter({
   filter,
   from,
@@ -31,64 +32,49 @@ function PriceFilter({
   onApply: (from?: number, to?: number) => void;
 }) {
   const { t } = useI18n();
-  const min = filter.min ?? 0;
-  const max = filter.max ?? 0;
-  const [fromValue, setFromValue] = useState(from != null ? String(from) : "");
-  const [toValue, setToValue] = useState(to != null ? String(to) : "");
+  const min = Math.floor(filter.min ?? 0);
+  const max = Math.ceil(filter.max ?? 0);
+  const [range, setRange] = useState<[number, number]>([from ?? min, to ?? max]);
 
   useEffect(() => {
-    setFromValue(from != null ? String(from) : "");
-    setToValue(to != null ? String(to) : "");
-  }, [from, to]);
+    setRange([from ?? min, to ?? max]);
+  }, [from, to, min, max]);
 
-  const parse = (raw: string) => {
-    const value = Number(raw);
-    return raw.trim() !== "" && Number.isFinite(value) ? value : undefined;
+  const commit = (value: number[]) => {
+    const low = value[0] ?? min;
+    const high = value[1] ?? max;
+    onApply(low > min ? low : undefined, high < max ? high : undefined);
   };
 
+  if (max <= min) return null;
+
   return (
-    <fieldset className="space-y-2">
+    <fieldset className="space-y-3">
       <legend className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         {filter.name}
       </legend>
-      <div className="flex items-center gap-2">
-        <label className="grow text-xs text-muted-foreground">
-          {t("store.priceFrom")}
-          <input
-            type="number"
-            inputMode="numeric"
-            min={min}
-            max={max}
-            placeholder={String(min)}
-            value={fromValue}
-            onChange={(event) => setFromValue(event.target.value)}
-            className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground"
-          />
-        </label>
-        <label className="grow text-xs text-muted-foreground">
-          {t("store.priceTo")}
-          <input
-            type="number"
-            inputMode="numeric"
-            min={min}
-            max={max}
-            placeholder={String(max)}
-            value={toValue}
-            onChange={(event) => setToValue(event.target.value)}
-            className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground"
-          />
-        </label>
+      <Slider
+        min={min}
+        max={max}
+        step={1}
+        value={range}
+        minStepsBetweenThumbs={1}
+        onValueChange={(value) => setRange([value[0] ?? min, value[1] ?? max])}
+        onValueCommit={commit}
+        aria-label={filter.name}
+      />
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span>
+          {t("store.priceFrom")} {range[0]}
+        </span>
+        <span>
+          {t("store.priceTo")} {range[1]}
+        </span>
       </div>
-      <button
-        type="button"
-        className="brand-button-ghost w-full justify-center"
-        onClick={() => onApply(parse(fromValue), parse(toValue))}
-      >
-        {t("store.applyPrice")}
-      </button>
     </fieldset>
   );
 }
+
 
 export function CategoryFilters({
   filters,
