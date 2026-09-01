@@ -21,6 +21,11 @@ export function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
   const { data: cart, isLoading } = useCart();
   const { update, remove } = useCartMutations();
   const lines = cart?.products ?? [];
+  // The total always comes from the store — never summed in the frontend.
+  const cartTotal =
+    cart?.cart_total_formatted ??
+    (cart?.cart_total != null ? `${cart.cart_total} kr` : "—");
+
 
   const goToCheckout = async () => {
     // Checkout is a real browser navigation so the store session cookie follows.
