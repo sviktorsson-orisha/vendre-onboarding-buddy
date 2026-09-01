@@ -47,6 +47,9 @@ export type Product = {
   price_raw: number | null;
   price_original: string | null;
   price_original_raw: number | null;
+  /** Sale price. Set (and lower than price_raw) only when the product is discounted. */
+  price_special: string | null;
+  price_special_raw: number | null;
   /** Price excluding VAT (raw). */
   final_price_excl_raw: number | null;
   tax: number | null;
