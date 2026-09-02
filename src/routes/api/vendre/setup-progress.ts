@@ -14,6 +14,11 @@ export const Route = createFileRoute("/api/vendre/setup-progress")({
         return Response.json(progress, { headers: { "cache-control": "no-store" } });
       },
       POST: async ({ request }) => {
+        const requestOrigin = new URL(request.url).origin;
+        const callerOrigin = request.headers.get("origin");
+        if (callerOrigin !== requestOrigin) {
+          return Response.json({ error: "Invalid origin" }, { status: 403 });
+        }
         const { writeSetupProgress, resolveSetupProgress } = await import(
           "@/lib/vendre/setup-progress.server"
         );
