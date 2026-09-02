@@ -69,7 +69,7 @@ The store is rate limiting; wait a minute and retry. Do not mint tokens in a loo
 
 cors warning
 
-Print the exact origin and the ready-to-paste JSON, and point at Admin → Headless → CORS (/Admin/configuration?gID=232). Use the stable project--<project-id> hosts, never the ephemeral id-preview-- host.
+Print every origin verbatim and point at Admin → Apps & Integrations → Headless → CORS (/Admin/headless/cors) → "Tillåtna domäner". Add one row per origin (published, preview--, project--<id>, project--<id>-dev, id-preview--<id>, <id>.lovableproject.com, custom domains) and tick all feature checkboxes on each row.
 
 session failed
 
