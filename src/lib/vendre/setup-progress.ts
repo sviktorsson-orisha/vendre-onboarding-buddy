@@ -68,11 +68,26 @@ export function useSetupProgress() {
 
   useEffect(() => {
     let cancelled = false;
-    apply(readLocal());
+    const local = readLocal();
+    apply(local);
     fetch(ENDPOINT, { headers: { accept: "application/json" } })
       .then((response) => response.json() as Promise<Partial<SetupProgress>>)
-      .then((data) => {
-        if (!cancelled) apply(coerce(data));
+      .then(async (data) => {
+        const remote = coerce(data);
+        // One-time migration from the previous localStorage implementation.
+        // This preserves an already entered Step 3 domain when Cloud storage
+        // is first enabled, then makes it available to all domains/visitors.
+        if (!remote.publishedOrigin && local.publishedOrigin) {
+          const response = await fetch(ENDPOINT, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(local),
+          });
+          const migrated = coerce((await response.json()) as Partial<SetupProgress>);
+          if (!cancelled) apply(migrated);
+          return;
+        }
+        if (!cancelled) apply(remote);
       })
       .catch(() => undefined)
       .finally(() => {
