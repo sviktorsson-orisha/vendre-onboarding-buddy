@@ -79,35 +79,32 @@ read failed
 
 Check the navigation_menus policy and that a menu is published.
 
-For CORS, always print the origin verbatim and both Admin fields:
-Surface CORS Origins JSON and Surface CORS Policies JSON (the policies
-field wins on conflict), found under
-Admin → Headless → CORS (/Admin/configuration?gID=232).
+CORS is configured under Admin → Apps & Integrations → Headless → CORS
+(/Admin/headless/cors), in the "Tillåtna domäner" (Allowed domains) section.
+There is no JSON field any more: each origin is added as its own row via
+"Lägg till domän", with one checkbox per feature/policy on that row
+(Applikation, Bank id, Bootstrap, Categories, Checkout, Checkout get prices,
+Customer, Custom report, Default, Email / contact, Extended data field,
+Galleries, Internal, Login, Navigation menus, Oauth, Product, Product list,
+Session, Shopping cart, Sitemap, Store notification, Subscription,
+Vendre query language, Voucher). Tick them all, then press "Spara".
 
-{
-"https://your-project.lovable.app": [
-"oauth", "bootstrap", "session", "customer",
-"shopping_cart", "checkout",
-"vendre_query_language", "default"
-]
-}
+Add a row for EVERY origin the storefront is served from — they are separate
+origins and all of them are needed in practice:
 
-{
-"oauth": ["https://your-project.lovable.app"],
-"bootstrap": ["https://your-project.lovable.app"],
-"session": ["https://your-project.lovable.app"],
-"customer": ["https://your-project.lovable.app"],
-"shopping_cart": ["https://your-project.lovable.app"],
-"checkout": ["https://your-project.lovable.app"],
-"vendre_query_language": ["https://your-project.lovable.app"],
-"default": ["https://your-project.lovable.app"]
-}
+https://<published-name>.lovable.app
+https://preview--<published-name>.lovable.app
+https://project--<project-id>.lovable.app
+https://project--<project-id>-dev.lovable.app
+https://id-preview--<project-id>.lovable.app
+https://<project-id>.lovableproject.com
+any custom domain
 
 default is where all accounts\* calls and Twig rendering resolve — it is the
 one people forget. login-link has no CORS support at all and must always go
-through the server proxy. Preview and published addresses are different origins:
-allowlist both. /vendre-setup renders the
-same JSON pre-filled with the live origin, with a copy button.
+through the server proxy. /vendre-setup lists every origin with copy buttons
+and the exact click path in Admin.
+
 
 Optional, later: session TTL and rate limits under
 Menu → Apps & Integrations → Headless → Surface settings, and IS_HEADLESS
