@@ -442,33 +442,41 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
           onToggle={() => setOpen(open === 3 ? -1 : 3)}
           verdict={corsDone ? t("step4.verdictDone") : t("step4.verdict")}
         >
-          <p>
-            {t("step4.body1")} <code className="font-mono text-xs">id-preview--</code>
-            {t("step4.body1End")}
-          </p>
+          <p>{t("step4.intro")}</p>
           <div className="rounded-lg border border-border bg-muted/40 p-4">
             <p className="font-medium text-foreground">{t("step4.settings")}</p>
             <AdminLink path="/Admin/headless/cors" baseUrl={adminBaseUrl}>/Admin/headless/cors</AdminLink>
           </div>
-          {origins.map((origin) => (
-            <code key={origin} className="block break-all rounded-md border border-border bg-card p-3 text-xs text-foreground">
-              {origin}
-            </code>
-          ))}
-          {(
-            [
-              ["step4.originsJson", originsJson],
-              ["step4.policiesJson", policiesJson],
-            ] as [TranslationKey, string][]
-          ).map(([labelKey, json]) => (
-            <div key={labelKey}>
-              <div className="flex items-center justify-between gap-3">
-                <span className="brand-eyebrow text-muted-foreground">{t(labelKey)}</span>
-                <CopyButton value={json} />
-              </div>
-              <pre className="mt-2 max-h-64 overflow-auto rounded-md bg-muted p-3 text-xs text-foreground">{json}</pre>
+          <ol className="list-decimal space-y-1 pl-5">
+            <li>{t("step4.how1")}</li>
+            <li>{t("step4.how2")}</li>
+            <li>{t("step4.how3")}</li>
+            <li>{t("step4.how4")}</li>
+          </ol>
+          <div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="brand-eyebrow text-muted-foreground">{t("step4.originsLabel")}</span>
+              <CopyButton value={origins.join("\n")} />
             </div>
-          ))}
+            <ul className="mt-2 space-y-2">
+              {origins.map((origin) => (
+                <li
+                  key={origin}
+                  className="flex items-center justify-between gap-3 rounded-md border border-border bg-card p-3"
+                >
+                  <code className="break-all font-mono text-xs text-foreground">{origin}</code>
+                  <CopyButton value={origin} />
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 text-xs">{t("step4.originsHint")}</p>
+          </div>
+          <div className="rounded-lg border border-border bg-muted/40 p-4">
+            <p className="font-medium text-foreground">{t("step4.policiesLabel")}</p>
+            <p className="mt-1 text-xs">{t("step4.policiesHint")}</p>
+            <p className="mt-2 break-words font-mono text-xs text-foreground">{POLICIES.join(", ")}</p>
+          </div>
+
           <label className="flex items-start gap-3 rounded-lg border border-border bg-card p-4 text-foreground">
             <input
               type="checkbox"
