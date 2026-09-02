@@ -272,12 +272,20 @@ const dictionary = {
     "step4.title": "Configure CORS",
     "step4.verdictDone": "Origins and policies confirmed",
     "step4.verdict": "Allowlist the storefront addresses",
-    "step4.body1": "Paste the addresses under Apps & Integrations → Headless → CORS. Do not use the temporary",
-    "step4.body1End": "address.",
+    "step4.intro":
+      "CORS is configured under Apps & Integrations → Headless → CORS, in the \"Allowed domains\" section. Each domain is added as its own row with checkboxes for the features it may use.",
     "step4.settings": "CORS settings",
-    "step4.originsJson": "Surface CORS Origins JSON",
-    "step4.policiesJson": "Surface CORS Policies JSON",
-    "step4.check": "I have added origins and policies in Vendre Admin.",
+    "step4.how1": "Click \"Add domain\" and paste one of the addresses below (scheme + host, no trailing slash).",
+    "step4.how2": "Tick every feature on that row – Bootstrap, Session, Oauth, Customer, Shopping cart, Checkout, Default and the rest.",
+    "step4.how3": "Repeat for every address in the list below. Preview, published and lovableproject addresses are separate origins and all need a row.",
+    "step4.how4": "Click \"Save\" at the bottom, then reload this guide.",
+    "step4.originsLabel": "Addresses to add",
+    "step4.originsHint":
+      "Still seeing CORS errors in preview? Check that the address in your browser's address bar is in the list above, and add it if not.",
+    "step4.policiesLabel": "Features that must be ticked",
+    "step4.policiesHint": "Simplest is to tick every box on the row – \"Default\" is required for account calls and is often missed.",
+    "step4.check": "I have added every domain and ticked the features in Vendre Admin.",
+
 
     "step5.title": "Verify the connection",
     "step5.verdictDone": "Token, CORS, session and read access work",
