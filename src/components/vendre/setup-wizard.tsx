@@ -5,7 +5,6 @@ import { PublishOriginField } from "@/components/vendre/publish-origin-field";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useOnboarding } from "@/context/onboarding-context";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
-import { usePublishedOrigin } from "@/lib/vendre/published-origin";
 import { useSetupProgress } from "@/lib/vendre/setup-progress";
 import { testVendreConnection, type ConnectionResult, type ConnectionStep } from "@/lib/vendre";
 import { cn } from "@/lib/utils";
@@ -175,8 +174,10 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
   const { markConfigured } = useOnboarding();
   const preview = `https://project--${PROJECT_ID}-dev.lovable.app`;
   const published = `https://project--${PROJECT_ID}.lovable.app`;
-  const { origin: publishedOrigin, setOrigin: setPublishedOrigin } = usePublishedOrigin();
   const { progress, loaded, update } = useSetupProgress();
+  // Shared with every visitor/domain: the origin is stored server-side too.
+  const publishedOrigin = progress.publishedOrigin;
+  const setPublishedOrigin = (value: string) => update({ publishedOrigin: value });
   const [open, setOpen] = useState(0);
   const [checking, setChecking] = useState(false);
   const [secretStatus, setSecretStatus] = useState<{ ok: boolean; missing: string[] } | null>(null);
