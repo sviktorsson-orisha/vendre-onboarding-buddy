@@ -7,8 +7,7 @@
  * now lives on the server so every visitor, on every domain, sees the same
  * state after a reload.
  *
- * Persistence is best-effort: an in-memory cache plus a JSON file when the
- * runtime offers a writable filesystem. Verified facts (secrets present,
+ * Persistence lives in Lovable Cloud. Verified facts (secrets present,
  * connection working) are always re-derived from the live status so the guide
  * can never show a green step that is no longer true.
  */
@@ -28,10 +27,6 @@ const EMPTY: StoredSetupProgress = {
   publishedOrigin: "",
 };
 
-const FILE = "/tmp/vendre-setup-progress.json";
-
-let cache: StoredSetupProgress | null = null;
-
 function coerce(value: unknown): StoredSetupProgress {
   const raw = (value ?? {}) as Partial<StoredSetupProgress>;
   return {
@@ -43,27 +38,22 @@ function coerce(value: unknown): StoredSetupProgress {
   };
 }
 
-async function readFile(): Promise<StoredSetupProgress | null> {
-  try {
-    const { readFile: read } = await import("node:fs/promises");
-    return coerce(JSON.parse(await read(FILE, "utf8")));
-  } catch {
-    return null;
-  }
-}
-
-async function writeFile(value: StoredSetupProgress): Promise<void> {
-  try {
-    const { writeFile: write } = await import("node:fs/promises");
-    await write(FILE, JSON.stringify(value), "utf8");
-  } catch {
-    /* read-only runtime — the in-memory cache still serves this instance */
-  }
-}
-
 export async function readSetupProgress(): Promise<StoredSetupProgress> {
-  if (!cache) cache = (await readFile()) ?? { ...EMPTY };
-  return { ...cache };
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("vendre_setup_progress")
+    .select("admin_done,cors_done,secrets_ok,connection_ok,published_origin")
+    .eq("id", 1)
+    .maybeSingle();
+
+  if (error || !data) return { ...EMPTY };
+  return {
+    adminDone: data.admin_done,
+    corsDone: data.cors_done,
+    secretsOk: data.secrets_ok,
+    connectionOk: data.connection_ok,
+    publishedOrigin: data.published_origin,
+  };
 }
 
 export async function writeSetupProgress(
@@ -71,9 +61,17 @@ export async function writeSetupProgress(
 ): Promise<StoredSetupProgress> {
   const current = await readSetupProgress();
   const next = coerce({ ...current, ...patch });
-  cache = next;
-  await writeFile(next);
-  return { ...next };
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { error } = await supabaseAdmin.from("vendre_setup_progress").upsert({
+    id: 1,
+    admin_done: next.adminDone,
+    cors_done: next.corsDone,
+    secrets_ok: next.secretsOk,
+    connection_ok: next.connectionOk,
+    published_origin: next.publishedOrigin,
+  });
+  if (error) throw new Error(`Could not save setup progress: ${error.message}`);
+  return next;
 }
 
 /**
