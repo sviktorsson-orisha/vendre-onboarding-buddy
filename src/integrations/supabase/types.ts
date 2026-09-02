@@ -14,7 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      vendre_setup_progress: {
+        Row: {
+          admin_done: boolean
+          connection_ok: boolean
+          cors_done: boolean
+          id: number
+          published_origin: string
+          secrets_ok: boolean
+          updated_at: string
+        }
+        Insert: {
+          admin_done?: boolean
+          connection_ok?: boolean
+          cors_done?: boolean
+          id?: number
+          published_origin?: string
+          secrets_ok?: boolean
+          updated_at?: string
+        }
+        Update: {
+          admin_done?: boolean
+          connection_ok?: boolean
+          cors_done?: boolean
+          id?: number
+          published_origin?: string
+          secrets_ok?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
