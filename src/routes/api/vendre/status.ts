@@ -15,6 +15,7 @@ export const Route = createFileRoute("/api/vendre/status")({
             secretsOk: status.secretsOk,
             tokenOk: status.tokenOk,
             missing: status.missing,
+            baseUrl: baseUrl ?? null,
             present: {
               VENDRE_BASE_URL: Boolean(baseUrl),
               VENDRE_CLIENT_ID: Boolean(clientId),
