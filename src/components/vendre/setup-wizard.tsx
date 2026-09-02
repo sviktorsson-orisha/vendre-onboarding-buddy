@@ -152,10 +152,12 @@ function GuideStep({
   );
 }
 
-function AdminLink({ path, children }: { path: string; children: ReactNode }) {
+function AdminLink({ path, baseUrl, children }: { path: string; baseUrl?: string | null; children: ReactNode }) {
+  // With the store base URL known, link straight into the customer's own admin.
+  const href = baseUrl ? `${baseUrl.replace(/\/+$/, "")}${path}` : path;
   return (
     <a
-      href={path}
+      href={href}
       target="_blank"
       rel="noreferrer"
       className="inline-flex items-center gap-1 font-mono text-xs text-primary underline underline-offset-4"
@@ -165,6 +167,7 @@ function AdminLink({ path, children }: { path: string; children: ReactNode }) {
     </a>
   );
 }
+
 
 /** The setup guide body. Rendered inside the modal opened from the notice bar. */
 export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
