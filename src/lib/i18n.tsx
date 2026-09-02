@@ -64,12 +64,20 @@ const dictionary = {
     "step4.title": "Konfigurera CORS",
     "step4.verdictDone": "Origins och policyer bekräftade",
     "step4.verdict": "Allowlista storefrontens adresser",
-    "step4.body1": "Klistra in adresserna under Appar & Integrationer → Headless → CORS. Använd inte den tillfälliga",
-    "step4.body1End": "-adressen.",
+    "step4.intro":
+      "CORS ställs in under Appar & Integrationer → Headless → CORS, i rutan \"Tillåtna domäner\". Varje domän läggs till som en egen rad med kryssrutor för vilka funktioner den får använda.",
     "step4.settings": "CORS-inställningar",
-    "step4.originsJson": "Surface CORS Origins JSON",
-    "step4.policiesJson": "Surface CORS Policies JSON",
-    "step4.check": "Jag har lagt in origins och policyer i Vendre Admin.",
+    "step4.how1": "Klicka på \"Lägg till domän\" och klistra in en adress nedan (scheme + host, utan avslutande snedstreck).",
+    "step4.how2": "Kryssa i samtliga funktioner på raden – Bootstrap, Session, Oauth, Customer, Shopping cart, Checkout, Default med flera.",
+    "step4.how3": "Upprepa för varje adress i listan nedan. Preview, published och lovableproject-adresserna är olika origins och måste alla läggas in.",
+    "step4.how4": "Klicka på \"Spara\" längst ned och ladda om denna guide.",
+    "step4.originsLabel": "Adresser att lägga in",
+    "step4.originsHint":
+      "Får du CORS-fel i preview: kontrollera att adressen i webbläsarens adressfält finns med i listan ovan, annars lägg till den också.",
+    "step4.policiesLabel": "Funktioner som minst måste vara ikryssade",
+    "step4.policiesHint": "Enklast är att kryssa i alla rutor på raden – \"Default\" krävs för konto-anrop och glöms ofta bort.",
+    "step4.check": "Jag har lagt in alla domäner och kryssat i funktionerna i Vendre Admin.",
+
 
     "step5.title": "Verifiera anslutningen",
     "step5.verdictDone": "Token, CORS, session och läsrättigheter fungerar",
