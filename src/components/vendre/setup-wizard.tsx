@@ -152,10 +152,12 @@ function GuideStep({
   );
 }
 
-function AdminLink({ path, children }: { path: string; children: ReactNode }) {
+function AdminLink({ path, baseUrl, children }: { path: string; baseUrl?: string | null; children: ReactNode }) {
+  // With the store base URL known, link straight into the customer's own admin.
+  const href = baseUrl ? `${baseUrl.replace(/\/+$/, "")}${path}` : path;
   return (
     <a
-      href={path}
+      href={href}
       target="_blank"
       rel="noreferrer"
       className="inline-flex items-center gap-1 font-mono text-xs text-primary underline underline-offset-4"
@@ -165,6 +167,7 @@ function AdminLink({ path, children }: { path: string; children: ReactNode }) {
     </a>
   );
 }
+
 
 /** The setup guide body. Rendered inside the modal opened from the notice bar. */
 export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
@@ -177,6 +180,7 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
   const [open, setOpen] = useState(0);
   const [checking, setChecking] = useState(false);
   const [secretStatus, setSecretStatus] = useState<{ ok: boolean; missing: string[] } | null>(null);
+  const [adminBaseUrl, setAdminBaseUrl] = useState<string | null>(null);
   const [testing, setTesting] = useState(false);
   const [result, setResult] = useState<ConnectionResult | null>(null);
   const [testError, setTestError] = useState<string | null>(null);
@@ -215,11 +219,31 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
     setOpen(active);
   }, [loaded, resumed, active]);
 
+  // Read the stored base URL once so the admin deep links point at the right store.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/vendre/status", { headers: { accept: "application/json" } })
+      .then((response) => response.json() as Promise<{ baseUrl?: string | null }>)
+      .then((data) => {
+        if (!cancelled) setAdminBaseUrl(data.baseUrl ?? null);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const checkSecrets = async () => {
     setChecking(true);
     try {
       const response = await fetch("/api/vendre/status", { headers: { accept: "application/json" } });
-      const data = (await response.json()) as { secretsOk?: boolean; ok?: boolean; missing?: string[] };
+      const data = (await response.json()) as {
+        secretsOk?: boolean;
+        ok?: boolean;
+        missing?: string[];
+        baseUrl?: string | null;
+      };
+      setAdminBaseUrl(data.baseUrl ?? null);
       const ok = data.secretsOk ?? data.ok ?? false;
       setSecretStatus({ ok, missing: data.missing ?? [] });
       update({ secretsOk: ok });
@@ -333,7 +357,7 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
           </p>
           <div className="rounded-lg border border-border bg-muted/40 p-4">
             <p className="font-medium text-foreground">{t("step1.adminPath")}</p>
-            <AdminLink path="/Admin/headless/auth/oauth-clients">/Admin/headless/auth/oauth-clients</AdminLink>
+            <AdminLink path="/Admin/headless/auth/oauth-clients" baseUrl={adminBaseUrl}>/Admin/headless/auth/oauth-clients</AdminLink>
           </div>
           <label className="flex items-start gap-3 rounded-lg border border-border bg-card p-4 text-foreground">
             <input
@@ -423,7 +447,7 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
           </p>
           <div className="rounded-lg border border-border bg-muted/40 p-4">
             <p className="font-medium text-foreground">{t("step4.settings")}</p>
-            <AdminLink path="/Admin/configuration?gID=232">/Admin/configuration?gID=232</AdminLink>
+            <AdminLink path="/Admin/configuration?gID=232" baseUrl={adminBaseUrl}>/Admin/configuration?gID=232</AdminLink>
           </div>
           {origins.map((origin) => (
             <code key={origin} className="block break-all rounded-md border border-border bg-card p-3 text-xs text-foreground">
