@@ -14,17 +14,21 @@ Vendre Admin comes first: create the OAuth client, then allowlist the
 storefront origins under CORS, and only then collect the keys and run the test.
 Do not tell the user to run this skill before Admin is configured.
 
-The origins to allowlist are the STABLE Lovable hosts, not the ephemeral preview
-host (id-preview--<id>.lovable.app) shown in the preview tab:
+Allowlist every host the storefront can be served from — in practice all of
+these are needed, including the id-preview-- and lovableproject.com hosts:
 
-https://project--<project-id>-dev.lovable.app — preview
+https://project--<project-id>-dev.lovable.app — stable preview
 
-https://project--<project-id>.lovable.app — published
+https://project--<project-id>.lovable.app — stable published
+
+https://<published-name>.lovable.app and https://preview--<published-name>.lovable.app
+
+https://id-preview--<project-id>.lovable.app and https://<project-id>.lovableproject.com
 
 any custom domain, added later
 
-They exist before the project is published, so CORS can be configured up front.
-The setup screen prints the exact list and the ready-to-paste JSON.
+The stable hosts exist before publishing, so CORS can be configured up front.
+The setup screen lists every origin with copy buttons.
 
 Step 1 — Collect credentials
 
