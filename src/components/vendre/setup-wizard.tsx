@@ -192,18 +192,19 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
   const secretsOk = secretStatus ? secretStatus.ok : progress.secretsOk;
   const connectionOk = result ? result.ok : progress.connectionOk;
 
-  const origins = useMemo(
-    () => (publishedOrigin ? [publishedOrigin, preview, published] : [preview, published]),
-    [publishedOrigin, preview, published],
-  );
-  const originsJson = useMemo(
-    () => JSON.stringify(Object.fromEntries(origins.map((origin) => [origin, POLICIES])), null, 2),
-    [origins],
-  );
-  const policiesJson = useMemo(
-    () => JSON.stringify(Object.fromEntries(POLICIES.map((policy) => [policy, origins])), null, 2),
-    [origins],
-  );
+  const origins = useMemo(() => {
+    const list = [
+      publishedOrigin,
+      publishedOrigin ? publishedOrigin.replace("https://", "https://preview--") : "",
+      published,
+      preview,
+      `https://id-preview--${PROJECT_ID}.lovable.app`,
+      `https://${PROJECT_ID}.lovableproject.com`,
+      typeof window !== "undefined" ? window.location.origin : "",
+    ].filter(Boolean);
+    return Array.from(new Set(list));
+  }, [publishedOrigin, preview, published]);
+
   const done = [adminDone, secretsOk, publishedOrigin !== "", corsDone, connectionOk, connectionOk];
   const total = TITLE_KEYS.length;
   const active = Math.max(done.findIndex((value) => !value), 0);
