@@ -447,7 +447,7 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
           </p>
           <div className="rounded-lg border border-border bg-muted/40 p-4">
             <p className="font-medium text-foreground">{t("step4.settings")}</p>
-            <AdminLink path="/Admin/configuration?gID=232" baseUrl={adminBaseUrl}>/Admin/configuration?gID=232</AdminLink>
+            <AdminLink path="/Admin/headless/cors" baseUrl={adminBaseUrl}>/Admin/headless/cors</AdminLink>
           </div>
           {origins.map((origin) => (
             <code key={origin} className="block break-all rounded-md border border-border bg-card p-3 text-xs text-foreground">
