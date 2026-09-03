@@ -52,7 +52,7 @@ export function StoreFooter() {
           <PageColumn
             key={`${group.source}-${group.id}`}
             title={group.name}
-            items={[group, ...group.children]}
+            items={group.children}
           />
         ))}
 
