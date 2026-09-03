@@ -142,7 +142,7 @@ export function StoreHeader() {
         className="relative hidden border-t border-border lg:block"
         onMouseLeave={() => setOpenId(null)}
       >
-        <ul className="mx-auto flex w-full max-w-6xl items-center gap-1 px-5 sm:px-6">
+        <ul className="mx-auto flex w-full max-w-6xl items-center gap-1 px-2 sm:px-3">
           {tree.map((node) => {
             const hasChildren = node.children.length > 0;
             const isOpen = openId === node.id;
