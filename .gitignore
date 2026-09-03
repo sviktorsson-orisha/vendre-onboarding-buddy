@@ -32,5 +32,6 @@ dist-ssr
 *.sw?
 
 # Lovable plans
-.lovable/plan/
+.lovable/*plan*
+.lovable/*.md
 
