@@ -3,8 +3,19 @@ import { createFileRoute } from "@tanstack/react-router";
 export const Route = createFileRoute("/api/vendre/token")({
   server: {
     handlers: {
-      GET: async () => {
-        const { readVendreEnv, getVendreServerToken, TokenError } = await import("@/lib/vendre/token.server");
+      GET: async ({ request }) => {
+        const { isBrowserSameOrigin, rateLimit, tooManyRequests, forbidden } = await import(
+          "@/lib/vendre/request-guard.server"
+        );
+
+        // The access token must only be handed to our own storefront pages,
+        // never harvested by scripts calling the endpoint directly.
+        if (!isBrowserSameOrigin(request)) return forbidden();
+        if (!rateLimit(request, "token", 60, 60_000)) return tooManyRequests();
+
+        const { readVendreEnv, getVendreServerToken, TokenError } = await import(
+          "@/lib/vendre/token.server"
+        );
         const { missing, baseUrl } = readVendreEnv();
         if (missing.length) {
           return Response.json(
