@@ -77,7 +77,18 @@ export function StoreHeader() {
   const [cartOpen, setCartOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [openId, setOpenId] = useState<number | null>(null);
   const count = cart?.cart_count ?? 0;
+  const activeNode = tree.find((node) => node.id === openId && node.children.length > 0) ?? null;
+
+  useEffect(() => {
+    if (openId === null) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpenId(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [openId]);
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-card/90 backdrop-blur">
