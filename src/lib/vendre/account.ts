@@ -87,7 +87,7 @@ function isBag(value: unknown): value is Bag {
 function flatten(payload: unknown): Bag {
   if (!isBag(payload)) return {};
   const out: Bag = { ...payload };
-  for (const key of ["account", "customer", "address", "data", "attributes"]) {
+  for (const key of ["account", "customer", "address", "data", "attributes", "order"]) {
     const nested = payload[key];
     if (isBag(nested)) Object.assign(out, flatten(nested));
   }
@@ -166,16 +166,61 @@ function normalizeOrder(payload: unknown, index: number): OrderSummary {
   };
 }
 
+/** Pulls an image path out of the many shapes a store can use on an order line. */
+function pickLineImage(bag: Bag): string | null {
+  const direct = pick(bag, ["image", "image_url", "thumbnail", "thumb", "picture", "photo"]);
+  if (direct) return direct;
+  for (const key of ["image", "images", "media"]) {
+    const value = bag[key];
+    if (isBag(value)) {
+      const nested = pick(value, ["image", "path", "url", "src"]);
+      if (nested) return nested;
+    }
+    if (Array.isArray(value) && value.length > 0) {
+      const first = value[0];
+      if (typeof first === "string" && first.trim()) return first;
+      if (isBag(first)) {
+        const nested = pick(first, ["image", "path", "url", "src"]);
+        if (nested) return nested;
+      }
+    }
+  }
+  return null;
+}
+
+/** Total rows come either as a `totals` array or as single fields on the order. */
+function normalizeTotals(bag: Bag): { title: string; value: string }[] {
+  const raw = asArray(bag["totals"] ?? bag["order_totals"] ?? bag["summary"]);
+  return raw
+    .map((entry) => {
+      const totalBag = flatten(entry);
+      return {
+        title: pick(totalBag, ["title", "label", "name", "text"]),
+        value: pick(totalBag, ["text", "value", "value_formatted", "amount", "total"]),
+      };
+    })
+    .filter((row) => row.title || row.value);
+}
+
 function normalizeOrderDetail(payload: unknown, id: string): OrderDetail {
   const bag = flatten(payload);
   const summary = normalizeOrder(payload, 0);
-  const lines = asArray(bag["products"] ?? bag["lines"] ?? bag["items"]).map((line, index) => {
+  const lines = asArray(
+    bag["products"] ?? bag["order_products"] ?? bag["lines"] ?? bag["items"] ?? bag["rows"],
+  ).map((line, index) => {
     const lineBag = flatten(line);
     return {
       id: (lineBag["id"] as string | number) ?? index,
-      name: pick(lineBag, ["name", "title", "product_name"]),
+      name: pick(lineBag, ["name", "product_name", "title", "model"]),
       quantity: Number(lineBag["quantity"] ?? lineBag["qty"] ?? 1),
-      price: pick(lineBag, ["price", "total", "row_total", "final_price"]),
+      price: pick(lineBag, [
+        "total_final_price",
+        "final_price",
+        "row_total",
+        "total",
+        "price",
+      ]),
+      image: pickLineImage(lineBag),
     };
   });
   return {
@@ -183,6 +228,7 @@ function normalizeOrderDetail(payload: unknown, id: string): OrderDetail {
     id: summary.id || id,
     order_number: summary.order_number || id,
     lines,
+    totals: normalizeTotals(bag),
     shipping_total: pick(bag, ["shipping_total", "shipping"]),
     tax_total: pick(bag, ["tax_total", "tax"]),
     shipping_address: bag["shipping_address"]
