@@ -49,6 +49,8 @@ export type VendreApi = {
   getMenus: () => Promise<MenuItem[]>;
   getCategory: (id: number, query?: CategoryQuery) => Promise<CategoryResponse>;
   getProduct: (id: string, categoryId?: number) => Promise<Product | null>;
+  /** CMS page content for an information_page menu item (gallery id). */
+  getPageContent: (id: number) => Promise<PageContent>;
   getCart: () => Promise<Cart>;
   addToCart: (productId: string | number, quantity?: number) => Promise<void>;
   updateQty: (line: CartLine, quantity: number) => Promise<void>;
