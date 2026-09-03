@@ -68,6 +68,8 @@ export type OrderSummary = {
 
 export type OrderDetail = OrderSummary & {
   lines: OrderLine[];
+  /** Totals exactly as the store returns them; never computed in the frontend. */
+  totals: OrderTotal[];
   shipping_address?: Address | null;
   billing_address?: Address | null;
   shipping_total?: string;
