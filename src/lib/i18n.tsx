@@ -114,6 +114,7 @@ const dictionary = {
     "store.outOfStock": "Slut i lager",
     "store.inStock": "I lager",
     "store.viewAll": "Visa alla",
+    "store.viewAllIn": "Visa allt i {name}",
     "store.heroTitle": "Din butik, redo från dag ett",
     "store.heroBody":
       "Startsida, kategorier, produktsidor och kundvagn finns redan i templaten. Koppla Vendre så fylls allt med din egen katalog.",
@@ -321,6 +322,7 @@ const dictionary = {
     "store.outOfStock": "Out of stock",
     "store.inStock": "In stock",
     "store.viewAll": "View all",
+    "store.viewAllIn": "View all in {name}",
     "store.heroTitle": "Your store, ready from day one",
     "store.heroBody":
       "Home, categories, product pages and cart already ship with the template. Connect Vendre and it fills up with your own catalogue.",
