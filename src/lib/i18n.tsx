@@ -114,6 +114,7 @@ const dictionary = {
     "store.outOfStock": "Slut i lager",
     "store.inStock": "I lager",
     "store.viewAll": "Visa alla",
+    "store.viewAllIn": "Visa allt i {name}",
     "store.heroTitle": "Din butik, redo från dag ett",
     "store.heroBody":
       "Startsida, kategorier, produktsidor och kundvagn finns redan i templaten. Koppla Vendre så fylls allt med din egen katalog.",
