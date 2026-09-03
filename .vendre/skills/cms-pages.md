@@ -35,6 +35,13 @@ footer links.
 - Sanitise HTML coming from blocks before injecting it.
 - Give each CMS route its own `head()` title/description from the page data, and
   include CMS pages in the sitemap (`GET sitemap?type=galleries`).
+- **`pagetree` is the only source of page type.** It returns `tree` + flat
+  `pages` with `id`, `parent_id` (root = `0`), `title`, `href`, `is_menu`,
+  `children`. `is_menu: true` marks a real menu heading (Information,
+  Kundservice); `is_menu: false` is an ordinary content/listing page
+  (Inspiration). Footer groups = root nodes with `is_menu: true` and at least one
+  child. Never link to `href` — it is a legacy absolute storefront URL; use
+  `/sida/{id}`.
 
 ## Caching
 
