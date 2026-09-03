@@ -87,7 +87,7 @@ function isBag(value: unknown): value is Bag {
 function flatten(payload: unknown): Bag {
   if (!isBag(payload)) return {};
   const out: Bag = { ...payload };
-  for (const key of ["account", "customer", "address", "data", "attributes"]) {
+  for (const key of ["account", "customer", "address", "data", "attributes", "order"]) {
     const nested = payload[key];
     if (isBag(nested)) Object.assign(out, flatten(nested));
   }
