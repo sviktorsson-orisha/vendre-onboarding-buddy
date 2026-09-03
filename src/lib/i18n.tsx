@@ -106,6 +106,7 @@ const dictionary = {
 
     "store.search": "Sök produkter",
     "store.cart": "Kundvagn",
+    "store.menu": "Meny",
     "store.cartEmpty": "Kundvagnen är tom.",
     "store.checkout": "Till kassan",
     "store.checkoutDemo": "Kassan öppnas när butiken är kopplad.",
@@ -314,6 +315,7 @@ const dictionary = {
 
     "store.search": "Search products",
     "store.cart": "Cart",
+    "store.menu": "Menu",
     "store.cartEmpty": "Your cart is empty.",
     "store.checkout": "Go to checkout",
     "store.checkoutDemo": "Checkout opens once the store is connected.",
