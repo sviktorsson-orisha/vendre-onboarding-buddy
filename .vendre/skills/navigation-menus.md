@@ -12,12 +12,30 @@ description: Vendre Surface v2 navigation - navigation/menus for header, mega me
 
 ## Routing by menu item type
 
-Menu items carry a type. Route them accordingly:
+`GET navigation/menus` returns **both** product categories and CMS pages in one
+flat list. They are different entities and must not be treated alike:
 
-- category items → the PLP route (`vendre-category-plp`)
-- `information_page` items → the CMS page route (`vendre-cms-galleries`) —
-  never the category or product view
-- external/URL items → plain links
+| `menu_type`        | Entity            | Route                | Placement |
+| ------------------ | ----------------- | -------------------- | --------- |
+| `category`         | product category  | `/kategori/{id}`     | header    |
+| `information_page` | gallery (CMS page)| `/sida/{entity_id}`  | footer    |
+| external/URL       | link              | plain `<a>`          | anywhere  |
+
+Rules that this project implements:
+
+- **Header shows categories only** — `useCategoryMenu()` filters
+  `menu_type === "category"`.
+- **Footer shows CMS pages only** — `usePageMenu()` filters
+  `menu_type === "information_page"`. No hardcoded/dummy links.
+- For information pages the gallery id is `entity_id` (equal to `id` in current
+  payloads). `target` is a legacy absolute storefront URL
+  (`https://store.example/about-us/`) — never link to it; use the internal
+  `/sida/{entity_id}` route.
+- Nest with `parent_id` **and** `parent_source`: a category and an information
+  page can share the same numeric id, so tree keys are `source:id`
+  (`buildMenuTree` in `src/lib/vendre/api.ts`).
+- Page content comes from `GET galleries/{id}/content-blocks`
+  (`vendre-cms-pages`), never from `categories/{id}`.
 
 ## UX
 
