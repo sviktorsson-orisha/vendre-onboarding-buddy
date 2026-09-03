@@ -119,7 +119,17 @@ function OrdersView() {
                   <td className="py-2">
                     <div className="flex items-center gap-3">
                       <StoreImage
-                        image={line.image ? { image: line.image } : null}
+                        image={
+                          line.image
+                            ? {
+                                id: null,
+                                path: null,
+                                image: line.image,
+                                alt: line.name,
+                                alt_translated: null,
+                              }
+                            : null
+                        }
                         alt={line.name}
                         label={line.name}
                         className="h-12 w-12 shrink-0 rounded-md"
