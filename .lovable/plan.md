@@ -14,11 +14,12 @@ Dessa lämnas oförändrade.
 ### 1. `.vendre/skills/cms-pages.md`
 - Ta bort den dubblerade `galleries/{id}/pages`-punkten i endpointlistan.
 - Flytta ut förklaringen (att en sida ligger i sitt *förälder*-galleri, att parent hämtas ur `pagetree`, att endast `description` renderas) till ett eget avsnitt "Rendering" istället för mitt i endpointlistan.
-- Ersätt avsnittet om content-blocks-komponenter (hero, rich text, image grid, CTA) med den faktiska regeln: endast sidans `description` renderas, sanerad, med relativa bildvägar upplösta mot butikens bas-URL. `content-blocks` hämtas medvetet inte.
+- Gör description-only till standardregeln: endast sidans `description` renderas, sanerad, med relativa bildvägar upplösta mot butikens bas-URL.
+- Behåll content-blocks som ett tydligt märkt **opt-in-avsnitt**: hur `galleries/{id}/content-blocks` hämtas och hur blocktyper (hero, rich text, bild, bildrutnät, CTA) mappas till komponenter, med okända typer som rik text — men bara när användaren uttryckligen ber om content blocks på sidorna. Aldrig som standard.
 - Behåll routingreglerna, `pagetree`-avsnittet om sidtyp/`is_menu` och SEO/`head()`-punkten.
 
 ### 2. `.vendre/skills/cms-galleries.md`
-- Samma uppstädning: ta bort dubblerad endpointrad och ersätt content-block-renderingen med description-only-regeln.
+- Samma uppstädning: ta bort dubblerad endpointrad, gör description-only till standard och behåll content-blocks-beskrivningen som samma opt-in-avsnitt.
 - Behåll CORS-noteringen om `galleries`-policy och Twig.
 - Peka vidare till `cms-pages.md` som primär källa så filerna inte glider isär igen.
 
