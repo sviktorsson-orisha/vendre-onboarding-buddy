@@ -27,22 +27,22 @@ export const Route = createFileRoute("/api/vendre/setup-progress")({
           "@/lib/vendre/setup-progress.server"
         );
 
-        const current = await resolveSetupProgress();
-        const completed =
-          current.adminDone && current.corsDone && current.secretsOk && current.connectionOk;
-        if (completed) {
-          return Response.json(current, {
-            status: 409,
-            headers: { "cache-control": "no-store" },
-          });
-        }
-
         let patch: Record<string, unknown> = {};
         try {
           patch = (await request.json()) as Record<string, unknown>;
         } catch {
           patch = {};
         }
+
+        // Once the guide is finished, the only thing still editable is the
+        // published domain. Completed steps can no longer be rewritten.
+        const current = await resolveSetupProgress();
+        const completed =
+          current.adminDone && current.corsDone && current.secretsOk && current.connectionOk;
+        if (completed) {
+          patch = "publishedOrigin" in patch ? { publishedOrigin: patch["publishedOrigin"] } : {};
+        }
+
         await writeSetupProgress(patch);
         const progress = await resolveSetupProgress();
         return Response.json(progress, { headers: { "cache-control": "no-store" } });
