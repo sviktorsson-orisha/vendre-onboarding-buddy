@@ -22,10 +22,7 @@ function MegaPanel({ node, onNavigate }: { node: MenuNode; onNavigate: () => voi
       onClick={onNavigate}
     >
       <div className="mx-auto w-full max-w-6xl px-5 py-8 sm:px-6">
-        <div
-          className="grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3"
-          style={{ ["--mega-cols" as string]: String(columnCount) }}
-        >
+        <div className="grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
           {columns.map((child) => (
             <div key={`${child.source}:${child.id}`} className="min-w-0">
               <Link
