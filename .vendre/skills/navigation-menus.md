@@ -38,7 +38,7 @@ Rules that this project implements:
 - Nest with `parent_id` **and** `parent_source`: a category and an information
   page can share the same numeric id, so tree keys are `source:id`
   (`buildMenuTree` in `src/lib/vendre/api.ts`).
-- Page content comes from `GET galleries/{id}/content-blocks`
+- Page content comes from the page's own `description` in `GET galleries/{parent_id}/pages` — content blocks are NOT used
   (`vendre-cms-pages`), never from `categories/{id}`.
 
 ## UX

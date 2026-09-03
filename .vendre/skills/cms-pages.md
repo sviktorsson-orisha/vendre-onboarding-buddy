@@ -13,7 +13,13 @@ categories or products is a recurring, hard-to-spot bug.
 
 - `GET /surface/2/galleries/pagetree` — the CMS page tree (navigation/sitemap)
 - `GET /surface/2/galleries/{id}/pages` — pages in a gallery
-- `GET /surface/2/galleries/{id}/content-blocks` — the actual page content
+- `GET /surface/2/galleries/{id}/pages` — the pages in a gallery, including each
+  page's `title` and `description`
+
+The `/sida/{id}` route renders ONLY the page's `description`. Content blocks
+(`galleries/{id}/content-blocks`) are deliberately not fetched or rendered.
+A page is listed inside its *parent* gallery, so resolve the parent from
+`galleries/pagetree` and then read `galleries/{parent_id}/pages`.
 - `GET /surface/2/galleries/boxes` — reusable content boxes
 - `POST /surface/2/twig/render` — Twig block rendering (resolves to the
   `default` CORS policy)
