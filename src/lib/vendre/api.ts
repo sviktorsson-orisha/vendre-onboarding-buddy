@@ -378,16 +378,64 @@ export function useMenuTree() {
   return useMemo(() => buildMenuTree(data ?? []), [data]);
 }
 
+/** Header navigation: product categories only. */
+export function useCategoryMenu() {
+  const { data } = useMenus();
+  return useMemo(
+    () => buildMenuTree((data ?? []).filter((item) => item.menu_type === "category")),
+    [data],
+  );
+}
+
+/** Footer navigation: CMS pages (galleries) only. */
+export function usePageMenu() {
+  const { data } = useMenus();
+  return useMemo(
+    () => buildMenuTree((data ?? []).filter((item) => item.menu_type === "information_page")),
+    [data],
+  );
+}
+
+/**
+ * Nests menu items by parent. Keys include the source, because a category and
+ * an information_page can share the same numeric id in the same menu payload.
+ */
 export function buildMenuTree(items: MenuItem[]): MenuNode[] {
-  const nodes = new Map<number, MenuNode>();
-  for (const item of items) nodes.set(item.id, { ...item, children: [] });
+  const key = (source: string | null, id: number) => `${source ?? "category"}:${id}`;
+  const nodes = new Map<string, MenuNode>();
+  for (const item of items) nodes.set(key(item.source, item.id), { ...item, children: [] });
   const roots: MenuNode[] = [];
   for (const node of nodes.values()) {
-    const parent = node.parent_id != null ? nodes.get(node.parent_id) : undefined;
+    const parent =
+      node.parent_id != null
+        ? nodes.get(key(node.parent_source ?? node.source, node.parent_id))
+        : undefined;
     if (parent) parent.children.push(node);
     else roots.push(node);
   }
   return roots;
+}
+
+/** CMS page content; static and read-heavy, so cached like categories. */
+export function usePageContent(id: number) {
+  const api = useVendreApi();
+  return useQuery({
+    queryKey: ["vendre", api.mode, "page-content", id],
+    queryFn: () => api.getPageContent(id),
+    staleTime: 10 * 60 * 1000,
+  });
+}
+
+/** The menu item describing a CMS page (used for the title and breadcrumbs). */
+export function usePageMenuItem(id: number) {
+  const { data } = useMenus();
+  return useMemo(
+    () =>
+      (data ?? []).find(
+        (item) => item.menu_type === "information_page" && Number(item.entity_id) === id,
+      ) ?? null,
+    [data, id],
+  );
 }
 
 /**
