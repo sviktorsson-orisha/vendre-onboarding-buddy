@@ -39,3 +39,12 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+## Secrets och .env
+
+`.env` innehåller endast **publika** värden (projekt-URL, projekt-ID och den
+publicerbara nyckeln) och kan tryggt ligga i GitHub.
+
+Lägg **aldrig** in `VENDRE_BASE_URL`, `VENDRE_CLIENT_ID`, `VENDRE_CLIENT_SECRET`
+eller service role-nyckeln i `.env` – de lagras i Lovables secrets och läses
+bara server-side via `process.env`.
