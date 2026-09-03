@@ -47,6 +47,9 @@ export type Product = {
   price_raw: number | null;
   price_original: string | null;
   price_original_raw: number | null;
+  /** Sale price. Set (and lower than price_raw) only when the product is discounted. */
+  price_special: string | null;
+  price_special_raw: number | null;
   /** Price excluding VAT (raw). */
   final_price_excl_raw: number | null;
   tax: number | null;
@@ -140,10 +143,14 @@ export type CartLine = {
 export type Cart = {
   products: CartLine[];
   cart_count: number;
+  /** Store-calculated cart total (raw). The frontend never computes totals. */
   cart_total: number;
+  /** Some installs return the total already formatted in the session currency. */
+  cart_total_formatted?: string | null;
   /** Refreshed mutation protection token, when the store returns one. */
   mutationProtectionToken?: string;
 };
+
 
 export type SessionContext = {
   authenticated: boolean;
@@ -170,4 +177,16 @@ export type CategoryQuery = {
   /** Price range from the type 2 filter, sent as pfrom/pto. */
   pfrom?: number;
   pto?: number;
+};
+
+export type SearchQuery = {
+  page?: number;
+  limit?: number;
+};
+
+export type SearchResult = {
+  products: Product[];
+  product_count: number;
+  page_index: number;
+  page_count: number;
 };

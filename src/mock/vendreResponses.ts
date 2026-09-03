@@ -81,10 +81,13 @@ function product(
     model: `DEMO-${id}`,
     description: `<p>${name} från demosortimentet. Beskrivningen kommer från butikens produktdata när Vendre-kopplingen är aktiv.</p>`,
     description_short: opts.short ?? "Demoprodukt – ersätts av butikens riktiga sortiment.",
-    price: price(amount),
-    price_raw: amount,
+    // opts.original = ordinary price; amount then acts as the special (sale) price.
+    price: opts.original ? price(opts.original) : price(amount),
+    price_raw: opts.original ?? amount,
     price_original: opts.original ? price(opts.original) : price(amount),
     price_original_raw: opts.original ?? amount,
+    price_special: opts.original ? price(amount) : null,
+    price_special_raw: opts.original ? amount : null,
     final_price_excl_raw: Math.round((amount / 1.25) * 100) / 100,
     tax: 25,
     unit: "st",
@@ -264,3 +267,22 @@ export function mockFeaturedProducts(count = 4): Product[] {
 export const mockTopCategories = [90, 200, 210].map((id) => categoryHeaders[id]!);
 
 export const emptyCart: Cart = { products: [], cart_count: 0, cart_total: 0 };
+
+/** Demo search: free-text match on name and model, paginated like a live listing. */
+export function mockSearch(query: string, limit = 5, page = 1) {
+  const needle = query.trim().toLowerCase();
+  const list = needle
+    ? products.filter((p) =>
+        `${p.name} ${p.model ?? ""}`.toLowerCase().includes(needle),
+      )
+    : [];
+  const size = limit > 0 ? limit : 12;
+  const pageCount = Math.max(1, Math.ceil(list.length / size));
+  const pageIndex = Math.min(Math.max(page, 1), pageCount);
+  return {
+    products: list.slice((pageIndex - 1) * size, pageIndex * size),
+    product_count: list.length,
+    page_index: pageIndex,
+    page_count: pageCount,
+  };
+}

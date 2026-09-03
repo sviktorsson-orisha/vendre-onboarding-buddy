@@ -64,12 +64,20 @@ const dictionary = {
     "step4.title": "Konfigurera CORS",
     "step4.verdictDone": "Origins och policyer bekräftade",
     "step4.verdict": "Allowlista storefrontens adresser",
-    "step4.body1": "Klistra in adresserna under Appar & Integrationer → Headless → CORS. Använd inte den tillfälliga",
-    "step4.body1End": "-adressen.",
+    "step4.intro":
+      "CORS ställs in under Appar & Integrationer → Headless → CORS, i rutan \"Tillåtna domäner\". Varje domän läggs till som en egen rad med kryssrutor för vilka funktioner den får använda.",
     "step4.settings": "CORS-inställningar",
-    "step4.originsJson": "Surface CORS Origins JSON",
-    "step4.policiesJson": "Surface CORS Policies JSON",
-    "step4.check": "Jag har lagt in origins och policyer i Vendre Admin.",
+    "step4.how1": "Klicka på \"Lägg till domän\" och klistra in en adress nedan (scheme + host, utan avslutande snedstreck).",
+    "step4.how2": "Kryssa i samtliga funktioner på raden – Bootstrap, Session, Oauth, Customer, Shopping cart, Checkout, Default med flera.",
+    "step4.how3": "Upprepa för varje adress i listan nedan. Preview, published och lovableproject-adresserna är olika origins och måste alla läggas in.",
+    "step4.how4": "Klicka på \"Spara\" längst ned och ladda om denna guide.",
+    "step4.originsLabel": "Adresser att lägga in",
+    "step4.originsHint":
+      "Får du CORS-fel i preview: kontrollera att adressen i webbläsarens adressfält finns med i listan ovan, annars lägg till den också.",
+    "step4.policiesLabel": "Funktioner som minst måste vara ikryssade",
+    "step4.policiesHint": "Enklast är att kryssa i alla rutor på raden – \"Default\" krävs för konto-anrop och glöms ofta bort.",
+    "step4.check": "Jag har lagt in alla domäner och kryssat i funktionerna i Vendre Admin.",
+
 
     "step5.title": "Verifiera anslutningen",
     "step5.verdictDone": "Token, CORS, session och läsrättigheter fungerar",
@@ -135,6 +143,15 @@ const dictionary = {
     "store.loadError": "Kategorin kunde inte laddas. Kontrollera butiksanslutningen.",
     "store.prev": "Föregående",
     "store.next": "Nästa",
+
+    "search.title": "Sökresultat",
+    "search.for": "Träffar för “{q}”",
+    "search.hits": "{count} träffar",
+    "search.viewAll": "Visa alla resultat för “{q}”",
+    "search.minChars": "Skriv minst 3 tecken för att söka.",
+    "search.searching": "Söker…",
+    "search.noHits": "Inga produkter matchade “{q}”.",
+    "search.suggestions": "Produktförslag",
 
     "account.title": "Mitt konto",
     "account.signIn": "Logga in",
@@ -255,12 +272,20 @@ const dictionary = {
     "step4.title": "Configure CORS",
     "step4.verdictDone": "Origins and policies confirmed",
     "step4.verdict": "Allowlist the storefront addresses",
-    "step4.body1": "Paste the addresses under Apps & Integrations → Headless → CORS. Do not use the temporary",
-    "step4.body1End": "address.",
+    "step4.intro":
+      "CORS is configured under Apps & Integrations → Headless → CORS, in the \"Allowed domains\" section. Each domain is added as its own row with checkboxes for the features it may use.",
     "step4.settings": "CORS settings",
-    "step4.originsJson": "Surface CORS Origins JSON",
-    "step4.policiesJson": "Surface CORS Policies JSON",
-    "step4.check": "I have added origins and policies in Vendre Admin.",
+    "step4.how1": "Click \"Add domain\" and paste one of the addresses below (scheme + host, no trailing slash).",
+    "step4.how2": "Tick every feature on that row – Bootstrap, Session, Oauth, Customer, Shopping cart, Checkout, Default and the rest.",
+    "step4.how3": "Repeat for every address in the list below. Preview, published and lovableproject addresses are separate origins and all need a row.",
+    "step4.how4": "Click \"Save\" at the bottom, then reload this guide.",
+    "step4.originsLabel": "Addresses to add",
+    "step4.originsHint":
+      "Still seeing CORS errors in preview? Check that the address in your browser's address bar is in the list above, and add it if not.",
+    "step4.policiesLabel": "Features that must be ticked",
+    "step4.policiesHint": "Simplest is to tick every box on the row – \"Default\" is required for account calls and is often missed.",
+    "step4.check": "I have added every domain and ticked the features in Vendre Admin.",
+
 
     "step5.title": "Verify the connection",
     "step5.verdictDone": "Token, CORS, session and read access work",
@@ -325,6 +350,15 @@ const dictionary = {
     "store.loadError": "The category could not be loaded. Check the store connection.",
     "store.prev": "Previous",
     "store.next": "Next",
+
+    "search.title": "Search results",
+    "search.for": "Results for “{q}”",
+    "search.hits": "{count} results",
+    "search.viewAll": "Show all results for “{q}”",
+    "search.minChars": "Type at least 3 characters to search.",
+    "search.searching": "Searching…",
+    "search.noHits": "No products matched “{q}”.",
+    "search.suggestions": "Product suggestions",
 
     "account.title": "My account",
     "account.signIn": "Sign in",

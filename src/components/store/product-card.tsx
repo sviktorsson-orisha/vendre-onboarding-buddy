@@ -1,7 +1,8 @@
 import { Link } from "@tanstack/react-router";
 
+import { ProductPrice } from "@/components/store/product-price";
 import { StoreImage } from "@/components/store/store-image";
-import { formatPrice, useCartMutations } from "@/lib/vendre/api";
+import { useCartMutations } from "@/lib/vendre/api";
 import { useI18n } from "@/lib/i18n";
 import type { Product } from "@/types/vendre";
 
@@ -9,10 +10,6 @@ export function ProductCard({ product }: { product: Product }) {
   const { t } = useI18n();
   const { add } = useCartMutations();
   const soldOut = product.stock_total === 0 && product.stock_allow_checkout === false;
-  const onSale =
-    product.price_original_raw != null &&
-    product.price_raw != null &&
-    product.price_original_raw > product.price_raw;
 
   return (
     <article className="brand-card group flex flex-col overflow-hidden p-0">
@@ -36,12 +33,7 @@ export function ProductCard({ product }: { product: Product }) {
         >
           {product.name}
         </Link>
-        <p className="flex items-baseline gap-2">
-          <span className="text-base font-bold text-foreground">{formatPrice(product)}</span>
-          {onSale && (
-            <span className="text-xs text-muted-foreground line-through">{product.price_original}</span>
-          )}
-        </p>
+        <ProductPrice product={product} size="md" />
         <button
           type="button"
           className="brand-button mt-auto w-full justify-center"

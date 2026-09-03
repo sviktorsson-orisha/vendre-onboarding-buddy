@@ -5,7 +5,6 @@ import { PublishOriginField } from "@/components/vendre/publish-origin-field";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useOnboarding } from "@/context/onboarding-context";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
-import { usePublishedOrigin } from "@/lib/vendre/published-origin";
 import { useSetupProgress } from "@/lib/vendre/setup-progress";
 import { testVendreConnection, type ConnectionResult, type ConnectionStep } from "@/lib/vendre";
 import { cn } from "@/lib/utils";
@@ -152,10 +151,12 @@ function GuideStep({
   );
 }
 
-function AdminLink({ path, children }: { path: string; children: ReactNode }) {
+function AdminLink({ path, baseUrl, children }: { path: string; baseUrl?: string | null; children: ReactNode }) {
+  // With the store base URL known, link straight into the customer's own admin.
+  const href = baseUrl ? `${baseUrl.replace(/\/+$/, "")}${path}` : path;
   return (
     <a
-      href={path}
+      href={href}
       target="_blank"
       rel="noreferrer"
       className="inline-flex items-center gap-1 font-mono text-xs text-primary underline underline-offset-4"
@@ -166,17 +167,21 @@ function AdminLink({ path, children }: { path: string; children: ReactNode }) {
   );
 }
 
+
 /** The setup guide body. Rendered inside the modal opened from the notice bar. */
 export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
   const { t } = useI18n();
   const { markConfigured } = useOnboarding();
   const preview = `https://project--${PROJECT_ID}-dev.lovable.app`;
   const published = `https://project--${PROJECT_ID}.lovable.app`;
-  const { origin: publishedOrigin, setOrigin: setPublishedOrigin } = usePublishedOrigin();
   const { progress, loaded, update } = useSetupProgress();
+  // Shared with every visitor/domain: the origin is stored server-side too.
+  const publishedOrigin = progress.publishedOrigin;
+  const setPublishedOrigin = (value: string) => update({ publishedOrigin: value });
   const [open, setOpen] = useState(0);
   const [checking, setChecking] = useState(false);
   const [secretStatus, setSecretStatus] = useState<{ ok: boolean; missing: string[] } | null>(null);
+  const [adminBaseUrl, setAdminBaseUrl] = useState<string | null>(null);
   const [testing, setTesting] = useState(false);
   const [result, setResult] = useState<ConnectionResult | null>(null);
   const [testError, setTestError] = useState<string | null>(null);
@@ -188,18 +193,19 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
   const secretsOk = secretStatus ? secretStatus.ok : progress.secretsOk;
   const connectionOk = result ? result.ok : progress.connectionOk;
 
-  const origins = useMemo(
-    () => (publishedOrigin ? [publishedOrigin, preview, published] : [preview, published]),
-    [publishedOrigin, preview, published],
-  );
-  const originsJson = useMemo(
-    () => JSON.stringify(Object.fromEntries(origins.map((origin) => [origin, POLICIES])), null, 2),
-    [origins],
-  );
-  const policiesJson = useMemo(
-    () => JSON.stringify(Object.fromEntries(POLICIES.map((policy) => [policy, origins])), null, 2),
-    [origins],
-  );
+  const origins = useMemo(() => {
+    const list = [
+      publishedOrigin,
+      publishedOrigin ? publishedOrigin.replace("https://", "https://preview--") : "",
+      published,
+      preview,
+      `https://id-preview--${PROJECT_ID}.lovable.app`,
+      `https://${PROJECT_ID}.lovableproject.com`,
+      typeof window !== "undefined" ? window.location.origin : "",
+    ].filter(Boolean);
+    return Array.from(new Set(list));
+  }, [publishedOrigin, preview, published]);
+
   const done = [adminDone, secretsOk, publishedOrigin !== "", corsDone, connectionOk, connectionOk];
   const total = TITLE_KEYS.length;
   const active = Math.max(done.findIndex((value) => !value), 0);
@@ -215,11 +221,31 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
     setOpen(active);
   }, [loaded, resumed, active]);
 
+  // Read the stored base URL once so the admin deep links point at the right store.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/vendre/status", { headers: { accept: "application/json" } })
+      .then((response) => response.json() as Promise<{ baseUrl?: string | null }>)
+      .then((data) => {
+        if (!cancelled) setAdminBaseUrl(data.baseUrl ?? null);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const checkSecrets = async () => {
     setChecking(true);
     try {
       const response = await fetch("/api/vendre/status", { headers: { accept: "application/json" } });
-      const data = (await response.json()) as { secretsOk?: boolean; ok?: boolean; missing?: string[] };
+      const data = (await response.json()) as {
+        secretsOk?: boolean;
+        ok?: boolean;
+        missing?: string[];
+        baseUrl?: string | null;
+      };
+      setAdminBaseUrl(data.baseUrl ?? null);
       const ok = data.secretsOk ?? data.ok ?? false;
       setSecretStatus({ ok, missing: data.missing ?? [] });
       update({ secretsOk: ok });
@@ -333,7 +359,7 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
           </p>
           <div className="rounded-lg border border-border bg-muted/40 p-4">
             <p className="font-medium text-foreground">{t("step1.adminPath")}</p>
-            <AdminLink path="/Admin/headless/auth/oauth-clients">/Admin/headless/auth/oauth-clients</AdminLink>
+            <AdminLink path="/Admin/headless/auth/oauth-clients" baseUrl={adminBaseUrl}>/Admin/headless/auth/oauth-clients</AdminLink>
           </div>
           <label className="flex items-start gap-3 rounded-lg border border-border bg-card p-4 text-foreground">
             <input
@@ -417,33 +443,41 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
           onToggle={() => setOpen(open === 3 ? -1 : 3)}
           verdict={corsDone ? t("step4.verdictDone") : t("step4.verdict")}
         >
-          <p>
-            {t("step4.body1")} <code className="font-mono text-xs">id-preview--</code>
-            {t("step4.body1End")}
-          </p>
+          <p>{t("step4.intro")}</p>
           <div className="rounded-lg border border-border bg-muted/40 p-4">
             <p className="font-medium text-foreground">{t("step4.settings")}</p>
-            <AdminLink path="/Admin/configuration?gID=232">/Admin/configuration?gID=232</AdminLink>
+            <AdminLink path="/Admin/headless/cors" baseUrl={adminBaseUrl}>/Admin/headless/cors</AdminLink>
           </div>
-          {origins.map((origin) => (
-            <code key={origin} className="block break-all rounded-md border border-border bg-card p-3 text-xs text-foreground">
-              {origin}
-            </code>
-          ))}
-          {(
-            [
-              ["step4.originsJson", originsJson],
-              ["step4.policiesJson", policiesJson],
-            ] as [TranslationKey, string][]
-          ).map(([labelKey, json]) => (
-            <div key={labelKey}>
-              <div className="flex items-center justify-between gap-3">
-                <span className="brand-eyebrow text-muted-foreground">{t(labelKey)}</span>
-                <CopyButton value={json} />
-              </div>
-              <pre className="mt-2 max-h-64 overflow-auto rounded-md bg-muted p-3 text-xs text-foreground">{json}</pre>
+          <ol className="list-decimal space-y-1 pl-5">
+            <li>{t("step4.how1")}</li>
+            <li>{t("step4.how2")}</li>
+            <li>{t("step4.how3")}</li>
+            <li>{t("step4.how4")}</li>
+          </ol>
+          <div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="brand-eyebrow text-muted-foreground">{t("step4.originsLabel")}</span>
+              <CopyButton value={origins.join("\n")} />
             </div>
-          ))}
+            <ul className="mt-2 space-y-2">
+              {origins.map((origin) => (
+                <li
+                  key={origin}
+                  className="flex items-center justify-between gap-3 rounded-md border border-border bg-card p-3"
+                >
+                  <code className="break-all font-mono text-xs text-foreground">{origin}</code>
+                  <CopyButton value={origin} />
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 text-xs">{t("step4.originsHint")}</p>
+          </div>
+          <div className="rounded-lg border border-border bg-muted/40 p-4">
+            <p className="font-medium text-foreground">{t("step4.policiesLabel")}</p>
+            <p className="mt-1 text-xs">{t("step4.policiesHint")}</p>
+            <p className="mt-2 break-words font-mono text-xs text-foreground">{POLICIES.join(", ")}</p>
+          </div>
+
           <label className="flex items-start gap-3 rounded-lg border border-border bg-card p-4 text-foreground">
             <input
               type="checkbox"

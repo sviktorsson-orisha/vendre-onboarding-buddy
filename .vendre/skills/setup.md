@@ -14,17 +14,21 @@ Vendre Admin comes first: create the OAuth client, then allowlist the
 storefront origins under CORS, and only then collect the keys and run the test.
 Do not tell the user to run this skill before Admin is configured.
 
-The origins to allowlist are the STABLE Lovable hosts, not the ephemeral preview
-host (id-preview--<id>.lovable.app) shown in the preview tab:
+Allowlist every host the storefront can be served from — in practice all of
+these are needed, including the id-preview-- and lovableproject.com hosts:
 
-https://project--<project-id>-dev.lovable.app — preview
+https://project--<project-id>-dev.lovable.app — stable preview
 
-https://project--<project-id>.lovable.app — published
+https://project--<project-id>.lovable.app — stable published
+
+https://<published-name>.lovable.app and https://preview--<published-name>.lovable.app
+
+https://id-preview--<project-id>.lovable.app and https://<project-id>.lovableproject.com
 
 any custom domain, added later
 
-They exist before the project is published, so CORS can be configured up front.
-The setup screen prints the exact list and the ready-to-paste JSON.
+The stable hosts exist before publishing, so CORS can be configured up front.
+The setup screen lists every origin with copy buttons.
 
 Step 1 — Collect credentials
 
@@ -69,7 +73,7 @@ The store is rate limiting; wait a minute and retry. Do not mint tokens in a loo
 
 cors warning
 
-Print the exact origin and the ready-to-paste JSON, and point at Admin → Headless → CORS (/Admin/configuration?gID=232). Use the stable project--<project-id> hosts, never the ephemeral id-preview-- host.
+Print every origin verbatim and point at Admin → Apps & Integrations → Headless → CORS (/Admin/headless/cors) → "Tillåtna domäner". Add one row per origin (published, preview--, project--<id>, project--<id>-dev, id-preview--<id>, <id>.lovableproject.com, custom domains) and tick all feature checkboxes on each row.
 
 session failed
 
@@ -79,35 +83,32 @@ read failed
 
 Check the navigation_menus policy and that a menu is published.
 
-For CORS, always print the origin verbatim and both Admin fields:
-Surface CORS Origins JSON and Surface CORS Policies JSON (the policies
-field wins on conflict), found under
-Admin → Headless → CORS (/Admin/configuration?gID=232).
+CORS is configured under Admin → Apps & Integrations → Headless → CORS
+(/Admin/headless/cors), in the "Tillåtna domäner" (Allowed domains) section.
+There is no JSON field any more: each origin is added as its own row via
+"Lägg till domän", with one checkbox per feature/policy on that row
+(Applikation, Bank id, Bootstrap, Categories, Checkout, Checkout get prices,
+Customer, Custom report, Default, Email / contact, Extended data field,
+Galleries, Internal, Login, Navigation menus, Oauth, Product, Product list,
+Session, Shopping cart, Sitemap, Store notification, Subscription,
+Vendre query language, Voucher). Tick them all, then press "Spara".
 
-{
-"https://your-project.lovable.app": [
-"oauth", "bootstrap", "session", "customer",
-"shopping_cart", "checkout",
-"vendre_query_language", "default"
-]
-}
+Add a row for EVERY origin the storefront is served from — they are separate
+origins and all of them are needed in practice:
 
-{
-"oauth": ["https://your-project.lovable.app"],
-"bootstrap": ["https://your-project.lovable.app"],
-"session": ["https://your-project.lovable.app"],
-"customer": ["https://your-project.lovable.app"],
-"shopping_cart": ["https://your-project.lovable.app"],
-"checkout": ["https://your-project.lovable.app"],
-"vendre_query_language": ["https://your-project.lovable.app"],
-"default": ["https://your-project.lovable.app"]
-}
+https://<published-name>.lovable.app
+https://preview--<published-name>.lovable.app
+https://project--<project-id>.lovable.app
+https://project--<project-id>-dev.lovable.app
+https://id-preview--<project-id>.lovable.app
+https://<project-id>.lovableproject.com
+any custom domain
 
 default is where all accounts\* calls and Twig rendering resolve — it is the
 one people forget. login-link has no CORS support at all and must always go
-through the server proxy. Preview and published addresses are different origins:
-allowlist both. /vendre-setup renders the
-same JSON pre-filled with the live origin, with a copy button.
+through the server proxy. /vendre-setup lists every origin with copy buttons
+and the exact click path in Admin.
+
 
 Optional, later: session TTL and rate limits under
 Menu → Apps & Integrations → Headless → Surface settings, and IS_HEADLESS
