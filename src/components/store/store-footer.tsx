@@ -5,25 +5,40 @@ import { usePageMenu } from "@/lib/vendre/api";
 import type { MenuNode } from "@/types/vendre";
 
 /** CMS pages (information_page) route to /sida/$id — never to a category. */
-function PageLink({ node, muted }: { node: MenuNode; muted?: boolean }) {
+function PageLink({ node }: { node: MenuNode }) {
   return (
     <Link
       to="/sida/$id"
       params={{ id: String(node.entity_id) }}
-      className={
-        muted
-          ? "text-sm text-muted-foreground hover:text-primary"
-          : "text-sm text-foreground hover:text-primary"
-      }
+      className="text-sm text-muted-foreground hover:text-primary"
     >
       {node.name}
     </Link>
   );
 }
 
+function PageColumn({ title, items }: { title: string; items: MenuNode[] }) {
+  return (
+    <div>
+      <h2 className="brand-eyebrow text-muted-foreground">{title}</h2>
+      <ul className="mt-3 space-y-1.5">
+        {items.map((item) => (
+          <li key={`${item.source}-${item.id}`}>
+            <PageLink node={item} />
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export function StoreFooter() {
   const { t } = useI18n();
   const pages = usePageMenu();
+
+  // Top-level pages with children become columns; loose pages share one column.
+  const groups = pages.filter((node) => node.children.length > 0);
+  const loose = pages.filter((node) => node.children.length === 0);
 
   return (
     <footer className="border-t border-border bg-secondary">
@@ -33,26 +48,15 @@ export function StoreFooter() {
           <p className="mt-2 text-sm text-muted-foreground">{t("store.footerNote")}</p>
         </div>
 
-        {pages.map((group) => (
-          <div key={`${group.source}-${group.id}`}>
-            <h2 className="brand-eyebrow text-muted-foreground">
-              {group.children.length > 0 ? group.name : t("store.pages")}
-            </h2>
-            <ul className="mt-3 space-y-1.5">
-              {group.children.length > 0 ? (
-                group.children.map((child) => (
-                  <li key={`${child.source}-${child.id}`}>
-                    <PageLink node={child} muted />
-                  </li>
-                ))
-              ) : (
-                <li>
-                  <PageLink node={group} muted />
-                </li>
-              )}
-            </ul>
-          </div>
+        {groups.map((group) => (
+          <PageColumn
+            key={`${group.source}-${group.id}`}
+            title={group.name}
+            items={[group, ...group.children]}
+          />
         ))}
+
+        {loose.length > 0 && <PageColumn title={t("store.pages")} items={loose} />}
       </div>
     </footer>
   );
