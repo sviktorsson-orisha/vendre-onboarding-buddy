@@ -7,7 +7,7 @@ import { CartSheet } from "@/components/store/cart-sheet";
 import { SearchBox } from "@/components/store/search-box";
 import { LanguagePicker } from "@/components/vendre/language-picker";
 import { useI18n } from "@/lib/i18n";
-import { useCart, useMenuTree } from "@/lib/vendre/api";
+import { useCart, useCategoryMenu } from "@/lib/vendre/api";
 import { cn } from "@/lib/utils";
 import type { MenuNode } from "@/types/vendre";
 
@@ -64,7 +64,7 @@ function DesktopMenuItem({ node }: { node: MenuNode }) {
 
 export function StoreHeader() {
   const { t } = useI18n();
-  const tree = useMenuTree();
+  const tree = useCategoryMenu();
   const { data: cart } = useCart();
   const [cartOpen, setCartOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);

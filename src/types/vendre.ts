@@ -36,6 +36,23 @@ export type MenusResponse = { menus: MenuItem[] };
 /** Menu items nested by parent_id for multi-level dropdowns. */
 export type MenuNode = MenuItem & { children: MenuNode[] };
 
+/**
+ * CMS content block (GET /surface/2/galleries/{id}/content-blocks).
+ * `key` is the block layout ("2col-text-img", "text", …) and `fields` holds
+ * HTML fragments authored in the store. Image paths inside them are relative.
+ */
+export type ContentBlock = {
+  id: number;
+  key: string;
+  sort_order: number;
+  fields: Record<string, string | null>;
+};
+
+export type PageContent = {
+  gallery_id: number;
+  content_blocks: ContentBlock[];
+};
+
 export type Product = {
   id: string;
   name: string;

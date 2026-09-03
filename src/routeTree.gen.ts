@@ -17,6 +17,7 @@ import { Route as KategoriIdRouteImport } from './routes/kategori.$id'
 import { Route as MittKontoIndexRouteImport } from './routes/mitt-konto.index'
 import { Route as MittKontoViewRouteImport } from './routes/mitt-konto.$view'
 import { Route as ProduktIdRouteImport } from './routes/produkt.$id'
+import { Route as SidaIdRouteImport } from './routes/sida.$id'
 import { Route as ApiVendreSetupProgressRouteImport } from './routes/api/vendre/setup-progress'
 import { Route as ApiVendreStatusRouteImport } from './routes/api/vendre/status'
 import { Route as ApiVendreTokenRouteImport } from './routes/api/vendre/token'
@@ -61,6 +62,11 @@ const ProduktIdRoute = ProduktIdRouteImport.update({
   path: '/produkt/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SidaIdRoute = SidaIdRouteImport.update({
+  id: '/sida/$id',
+  path: '/sida/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiVendreSetupProgressRoute = ApiVendreSetupProgressRouteImport.update({
   id: '/api/vendre/setup-progress',
   path: '/api/vendre/setup-progress',
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/kategori/$id': typeof KategoriIdRoute
   '/mitt-konto/$view': typeof MittKontoViewRoute
   '/produkt/$id': typeof ProduktIdRoute
+  '/sida/$id': typeof SidaIdRoute
   '/mitt-konto/': typeof MittKontoIndexRoute
   '/api/vendre/setup-progress': typeof ApiVendreSetupProgressRoute
   '/api/vendre/status': typeof ApiVendreStatusRoute
@@ -97,6 +104,7 @@ export interface FileRoutesByTo {
   '/kategori/$id': typeof KategoriIdRoute
   '/mitt-konto/$view': typeof MittKontoViewRoute
   '/produkt/$id': typeof ProduktIdRoute
+  '/sida/$id': typeof SidaIdRoute
   '/mitt-konto': typeof MittKontoIndexRoute
   '/api/vendre/setup-progress': typeof ApiVendreSetupProgressRoute
   '/api/vendre/status': typeof ApiVendreStatusRoute
@@ -111,6 +119,7 @@ export interface FileRoutesById {
   '/kategori/$id': typeof KategoriIdRoute
   '/mitt-konto/$view': typeof MittKontoViewRoute
   '/produkt/$id': typeof ProduktIdRoute
+  '/sida/$id': typeof SidaIdRoute
   '/mitt-konto/': typeof MittKontoIndexRoute
   '/api/vendre/setup-progress': typeof ApiVendreSetupProgressRoute
   '/api/vendre/status': typeof ApiVendreStatusRoute
@@ -126,6 +135,7 @@ export interface FileRouteTypes {
     | '/kategori/$id'
     | '/mitt-konto/$view'
     | '/produkt/$id'
+    | '/sida/$id'
     | '/mitt-konto/'
     | '/api/vendre/setup-progress'
     | '/api/vendre/status'
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/kategori/$id'
     | '/mitt-konto/$view'
     | '/produkt/$id'
+    | '/sida/$id'
     | '/mitt-konto'
     | '/api/vendre/setup-progress'
     | '/api/vendre/status'
@@ -151,6 +162,7 @@ export interface FileRouteTypes {
     | '/kategori/$id'
     | '/mitt-konto/$view'
     | '/produkt/$id'
+    | '/sida/$id'
     | '/mitt-konto/'
     | '/api/vendre/setup-progress'
     | '/api/vendre/status'
@@ -164,6 +176,7 @@ export interface RootRouteChildren {
   SokRoute: typeof SokRoute
   KategoriIdRoute: typeof KategoriIdRoute
   ProduktIdRoute: typeof ProduktIdRoute
+  SidaIdRoute: typeof SidaIdRoute
   ApiVendreSetupProgressRoute: typeof ApiVendreSetupProgressRoute
   ApiVendreStatusRoute: typeof ApiVendreStatusRoute
   ApiVendreTokenRoute: typeof ApiVendreTokenRoute
@@ -227,6 +240,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProduktIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sida/$id': {
+      id: '/sida/$id'
+      path: '/sida/$id'
+      fullPath: '/sida/$id'
+      preLoaderRoute: typeof SidaIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/vendre/setup-progress': {
       id: '/api/vendre/setup-progress'
       path: '/api/vendre/setup-progress'
@@ -272,6 +292,7 @@ const rootRouteChildren: RootRouteChildren = {
   SokRoute: SokRoute,
   KategoriIdRoute: KategoriIdRoute,
   ProduktIdRoute: ProduktIdRoute,
+  SidaIdRoute: SidaIdRoute,
   ApiVendreSetupProgressRoute: ApiVendreSetupProgressRoute,
   ApiVendreStatusRoute: ApiVendreStatusRoute,
   ApiVendreTokenRoute: ApiVendreTokenRoute,

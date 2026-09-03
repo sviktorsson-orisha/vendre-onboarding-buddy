@@ -12,6 +12,7 @@ import type {
   CategoryQuery,
   CategoryResponse,
   MenuItem,
+  PageContent,
   Product,
   SessionContext,
 } from "@/types/vendre";
@@ -39,7 +40,56 @@ export const mockMenus: MenuItem[] = [
   m(120, 164, "Toppar", "toppar/", false),
   m(200, null, "Skor", "skor/", false),
   m(210, null, "Accessoarer", "accessoarer/", false),
+  // information_page items are CMS pages (galleries) — footer only.
+  p(17, null, "Information", true),
+  p(25, 17, "Om oss", false),
+  p(30, 17, "Villkor", false),
+  p(16, null, "Kundservice", true),
+  p(81, 16, "Kontakta oss", false),
+  p(84, 16, "Frakt och leverans", false),
+  p(80, 16, "Integritetspolicy", false),
 ];
+
+function p(id: number, parent: number | null, name: string, hasChildren: boolean): MenuItem {
+  return {
+    id,
+    entity_id: id,
+    source: "information_page",
+    parent_id: parent,
+    parent_source: parent ? "information_page" : null,
+    menu_type: "information_page",
+    name,
+    icon: null,
+    target: null,
+    route: null,
+    has_children: hasChildren,
+  };
+}
+
+const mockPages: Record<number, string[]> = {
+  17: ["<h2>Information</h2><p>Samlad information om butiken. I demoläge visas exempeltext – när Vendre-kopplingen är aktiv hämtas innehållsblocken från butikens CMS-sidor.</p>"],
+  25: ["<h2>Om oss</h2><p>Vi är en demobutik byggd på Vendre Surface API v2. Den här texten kommer från ett innehållsblock (galleries/{id}/content-blocks).</p>"],
+  30: ["<h2>Villkor</h2><p>Köpvillkor, ångerrätt och returer beskrivs här. Innehållet redigeras i Vendre-administrationen.</p>"],
+  16: ["<h2>Kundservice</h2><p>Här hittar du hjälp med order, leverans och retur.</p>"],
+  81: ["<h2>Kontakta oss</h2><p>Mejla support@example.com eller ring 08-000 00 00.</p>"],
+  84: ["<h2>Frakt och leverans</h2><p>Leveranstid 2–4 arbetsdagar. Fri frakt över 999 kr.</p>"],
+  80: ["<h2>Integritetspolicy</h2><p>Vi behandlar personuppgifter enligt GDPR.</p>"],
+};
+
+export function mockPageContent(id: number): PageContent {
+  const texts = mockPages[id] ?? [
+    "<h2>Innehållssida</h2><p>Den här sidan finns inte i demodatan. När butiken är kopplad hämtas innehållet från Vendre.</p>",
+  ];
+  return {
+    gallery_id: id,
+    content_blocks: texts.map((text, index) => ({
+      id: id * 100 + index,
+      key: "text",
+      sort_order: index,
+      fields: { text },
+    })),
+  };
+}
 
 function m(
   id: number,
