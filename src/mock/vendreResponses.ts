@@ -111,19 +111,16 @@ export function mockPageTree(): PageTreeResponse {
 }
 
 export function mockPageContent(id: number): PageContent {
-  const texts = mockPages[id] ?? [
-    "<h2>Innehållssida</h2><p>Den här sidan finns inte i demodatan. När butiken är kopplad hämtas innehållet från Vendre.</p>",
-  ];
+  const page = mockPages[id];
   return {
-    gallery_id: id,
-    content_blocks: texts.map((text, index) => ({
-      id: id * 100 + index,
-      key: "text",
-      sort_order: index,
-      fields: { text },
-    })),
+    id,
+    title: page?.title ?? null,
+    description:
+      page?.description ??
+      "<p>Den här sidan finns inte i demodatan. När butiken är kopplad hämtas sidans description från Vendre.</p>",
   };
 }
+
 
 function m(
   id: number,
