@@ -29,6 +29,8 @@ import type {
   CartLine,
   CategoryQuery,
   CategoryResponse,
+  GalleryPage,
+  GalleryPagesResponse,
   MenuItem,
   MenuNode,
   PageContent,
@@ -39,6 +41,7 @@ import type {
   SearchResult,
   SessionContext,
 } from "@/types/vendre";
+
 
 import {
   getVendreToken,
