@@ -53,6 +53,8 @@ export type VendreApi = {
   getProduct: (id: string, categoryId?: number) => Promise<Product | null>;
   /** CMS page content for an information_page menu item (gallery id). */
   getPageContent: (id: number) => Promise<PageContent>;
+  /** CMS page tree; the only source of `is_menu` for footer groups. */
+  getPageTree: () => Promise<PageTreeResponse>;
   getCart: () => Promise<Cart>;
   addToCart: (productId: string | number, quantity?: number) => Promise<void>;
   updateQty: (line: CartLine, quantity: number) => Promise<void>;
