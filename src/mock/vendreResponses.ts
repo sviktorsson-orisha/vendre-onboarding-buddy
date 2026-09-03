@@ -12,6 +12,9 @@ import type {
   CategoryQuery,
   CategoryResponse,
   MenuItem,
+  PageContent,
+  PageTreeNode,
+  PageTreeResponse,
   Product,
   SessionContext,
 } from "@/types/vendre";
@@ -39,7 +42,85 @@ export const mockMenus: MenuItem[] = [
   m(120, 164, "Toppar", "toppar/", false),
   m(200, null, "Skor", "skor/", false),
   m(210, null, "Accessoarer", "accessoarer/", false),
+  // information_page items are CMS pages (galleries) — footer only.
+  p(17, null, "Information", true),
+  p(25, 17, "Om oss", false),
+  p(30, 17, "Villkor", false),
+  p(16, null, "Kundservice", true),
+  p(81, 16, "Kontakta oss", false),
+  p(84, 16, "Frakt och leverans", false),
+  p(80, 16, "Integritetspolicy", false),
 ];
+
+function p(id: number, parent: number | null, name: string, hasChildren: boolean): MenuItem {
+  return {
+    id,
+    entity_id: id,
+    source: "information_page",
+    parent_id: parent,
+    parent_source: parent ? "information_page" : null,
+    menu_type: "information_page",
+    name,
+    icon: null,
+    target: null,
+    route: null,
+    has_children: hasChildren,
+  };
+}
+
+/** Demo page descriptions (mirrors `description` from galleries/{id}/pages). */
+const mockPages: Record<number, { title: string; description: string }> = {
+  17: { title: "Information", description: "<p>Samlad information om butiken. I demoläge visas exempeltext – när Vendre-kopplingen är aktiv hämtas sidans description från butikens CMS-sidor.</p>" },
+  25: { title: "Om oss", description: "<p>Vi är en demobutik byggd på Vendre Surface API v2. Den här texten kommer från sidans description (galleries/{id}/pages).</p>" },
+  30: { title: "Villkor", description: "<p>Köpvillkor, ångerrätt och returer beskrivs här. Innehållet redigeras i Vendre-administrationen.</p>" },
+  16: { title: "Kundservice", description: "<p>Här hittar du hjälp med order, leverans och retur.</p>" },
+  81: { title: "Kontakta oss", description: "<p>Mejla support@example.com eller ring 08-000 00 00.</p>" },
+  84: { title: "Frakt och leverans", description: "<p>Leveranstid 2–4 arbetsdagar. Fri frakt över 999 kr.</p>" },
+  80: { title: "Integritetspolicy", description: "<p>Vi behandlar personuppgifter enligt GDPR.</p>" },
+};
+
+
+/**
+ * Demo page tree (GET galleries/pagetree). Mirrors a live store: two real menu
+ * headings with children plus a content page ("Inspiration") that is not a menu
+ * heading and therefore must not appear in the footer.
+ */
+export function mockPageTree(): PageTreeResponse {
+  const node = (
+    id: number,
+    parent: number,
+    title: string,
+    isMenu: boolean,
+    children: PageTreeNode[] = [],
+  ): PageTreeNode => ({ id, parent_id: parent, title, href: null, is_menu: isMenu, children });
+
+  const tree: PageTreeNode[] = [
+    node(17, 0, "Information", true, [node(25, 17, "Om oss", false), node(30, 17, "Villkor", false)]),
+    node(16, 0, "Kundservice", true, [
+      node(81, 16, "Kontakta oss", false),
+      node(84, 16, "Frakt och leverans", false),
+      node(80, 16, "Integritetspolicy", false),
+    ]),
+    node(76, 0, "Inspiration", false, [node(77, 76, "Stilguide", false)]),
+  ];
+
+  const flatten = (nodes: PageTreeNode[]): PageTreeNode[] =>
+    nodes.flatMap((n) => [n, ...flatten(n.children ?? [])]);
+
+  return { tree, pages: flatten(tree) };
+}
+
+export function mockPageContent(id: number): PageContent {
+  const page = mockPages[id];
+  return {
+    id,
+    title: page?.title ?? null,
+    description:
+      page?.description ??
+      "<p>Den här sidan finns inte i demodatan. När butiken är kopplad hämtas sidans description från Vendre.</p>",
+  };
+}
+
 
 function m(
   id: number,

@@ -18,6 +18,8 @@ import {
   mockCategory,
   mockFeaturedProducts,
   mockMenus,
+  mockPageContent,
+  mockPageTree,
   mockProduct,
   mockSearch,
   mockSessionContext,
@@ -27,13 +29,19 @@ import type {
   CartLine,
   CategoryQuery,
   CategoryResponse,
+  GalleryPage,
+  GalleryPagesResponse,
   MenuItem,
   MenuNode,
+  PageContent,
+  PageTreeNode,
+  PageTreeResponse,
   Product,
   SearchQuery,
   SearchResult,
   SessionContext,
 } from "@/types/vendre";
+
 
 import {
   getVendreToken,
@@ -49,6 +57,10 @@ export type VendreApi = {
   getMenus: () => Promise<MenuItem[]>;
   getCategory: (id: number, query?: CategoryQuery) => Promise<CategoryResponse>;
   getProduct: (id: string, categoryId?: number) => Promise<Product | null>;
+  /** CMS page content for an information_page menu item (gallery id). */
+  getPageContent: (id: number) => Promise<PageContent>;
+  /** CMS page tree; the only source of `is_menu` for footer groups. */
+  getPageTree: () => Promise<PageTreeResponse>;
   getCart: () => Promise<Cart>;
   addToCart: (productId: string | number, quantity?: number) => Promise<void>;
   updateQty: (line: CartLine, quantity: number) => Promise<void>;
@@ -168,6 +180,34 @@ const liveApi: VendreApi = {
     }
     return null;
   },
+  // Only the page's own description is rendered — content blocks are not used.
+  // GET galleries/{id}/pages lists the pages *inside* a gallery, so the page
+  // itself is found in its parent gallery's list (pagetree gives the parent).
+  getPageContent: async (id) => {
+    const readPages = (galleryId: number) =>
+      guarded(() => surfaceJson<GalleryPagesResponse>(`galleries/${galleryId}/pages`))
+        .then((data) => data?.pages ?? [])
+        .catch(() => [] as GalleryPage[]);
+
+    const tree = await liveApi.getPageTree().catch(() => ({ tree: [], pages: [] }));
+    const node = tree.pages.find((page) => page.id === id);
+    const parentId = node?.parent_id ?? 0;
+
+    let page = (await readPages(parentId)).find((item) => item.id === id);
+    if (!page) page = (await readPages(id)).find((item) => item.id === id);
+
+    return {
+      id,
+      title: page?.title ?? node?.title ?? null,
+      description: page?.description || page?.short_description || null,
+    };
+  },
+
+  getPageTree: () =>
+    guarded(() => surfaceJson<PageTreeResponse>("galleries/pagetree")).then((data) => ({
+      tree: data?.tree ?? [],
+      pages: data?.pages ?? [],
+    })),
   getCart: () => guarded(() => surfaceJson<Cart>("shopping-cart")),
   addToCart: async (productId, quantity = 1) => {
     await guarded(() =>
@@ -317,6 +357,8 @@ const demoApi: VendreApi = {
   getMenus: async () => mockMenus,
   getCategory: async (id, query) => mockCategory(id, query),
   getProduct: async (id) => mockProduct(id),
+  getPageContent: async (id) => mockPageContent(id),
+  getPageTree: async () => mockPageTree(),
   getCart: async () => demoCart,
   addToCart: async (productId, quantity = 1) => {
     const id = String(productId);
@@ -378,16 +420,94 @@ export function useMenuTree() {
   return useMemo(() => buildMenuTree(data ?? []), [data]);
 }
 
+/** Header navigation: product categories only. */
+export function useCategoryMenu() {
+  const { data } = useMenus();
+  return useMemo(
+    () => buildMenuTree((data ?? []).filter((item) => item.menu_type === "category")),
+    [data],
+  );
+}
+
+/** CMS page tree; static and read-heavy, so cached like menus. */
+export function usePageTree() {
+  const api = useVendreApi();
+  return useQuery({
+    queryKey: ["vendre", api.mode, "page-tree"],
+    queryFn: () => api.getPageTree(),
+    staleTime: 10 * 60 * 1000,
+  });
+}
+
+export type PageGroup = { id: number; title: string; children: PageTreeNode[] };
+
+/**
+ * Footer navigation: only top-level pages that are real menu headings
+ * (`is_menu: true`) AND have active child pages. Ordinary content pages such as
+ * "Inspiration" are excluded even though navigation/menus lists them.
+ */
+export function usePageMenu(): PageGroup[] {
+  const { data } = usePageTree();
+  return useMemo(() => {
+    if (!data) return [];
+    const nodes = data.tree?.length ? data.tree : (data.pages ?? []);
+    const flat = data.pages?.length ? data.pages : flattenTree(nodes);
+    const childrenOf = (id: number) =>
+      (nodes.find((node) => node.id === id)?.children ?? []).length
+        ? (nodes.find((node) => node.id === id)?.children ?? [])
+        : flat.filter((page) => page.parent_id === id);
+
+    return nodes
+      .filter((node) => (node.parent_id ?? 0) === 0 && node.is_menu)
+      .map((node) => ({ id: node.id, title: node.title, children: childrenOf(node.id) }))
+      .filter((group) => group.children.length > 0);
+  }, [data]);
+}
+
+function flattenTree(nodes: PageTreeNode[]): PageTreeNode[] {
+  return nodes.flatMap((node) => [node, ...flattenTree(node.children ?? [])]);
+}
+
+/**
+ * Nests menu items by parent. Keys include the source, because a category and
+ * an information_page can share the same numeric id in the same menu payload.
+ */
 export function buildMenuTree(items: MenuItem[]): MenuNode[] {
-  const nodes = new Map<number, MenuNode>();
-  for (const item of items) nodes.set(item.id, { ...item, children: [] });
+  const key = (source: string | null, id: number) => `${source ?? "category"}:${id}`;
+  const nodes = new Map<string, MenuNode>();
+  for (const item of items) nodes.set(key(item.source, item.id), { ...item, children: [] });
   const roots: MenuNode[] = [];
   for (const node of nodes.values()) {
-    const parent = node.parent_id != null ? nodes.get(node.parent_id) : undefined;
+    const parent =
+      node.parent_id != null
+        ? nodes.get(key(node.parent_source ?? node.source, node.parent_id))
+        : undefined;
     if (parent) parent.children.push(node);
     else roots.push(node);
   }
   return roots;
+}
+
+/** CMS page content; static and read-heavy, so cached like categories. */
+export function usePageContent(id: number) {
+  const api = useVendreApi();
+  return useQuery({
+    queryKey: ["vendre", api.mode, "page-content", id],
+    queryFn: () => api.getPageContent(id),
+    staleTime: 10 * 60 * 1000,
+  });
+}
+
+/** The menu item describing a CMS page (used for the title and breadcrumbs). */
+export function usePageMenuItem(id: number) {
+  const { data } = useMenus();
+  return useMemo(
+    () =>
+      (data ?? []).find(
+        (item) => item.menu_type === "information_page" && Number(item.entity_id) === id,
+      ) ?? null,
+    [data, id],
+  );
 }
 
 /**

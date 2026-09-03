@@ -36,6 +36,53 @@ export type MenusResponse = { menus: MenuItem[] };
 /** Menu items nested by parent_id for multi-level dropdowns. */
 export type MenuNode = MenuItem & { children: MenuNode[] };
 
+/**
+ * A CMS page as returned by GET /surface/2/galleries/{id}/pages — the endpoint
+ * lists the pages that live inside a gallery, with their authored HTML.
+ * Content blocks are deliberately NOT used; only `description` is rendered.
+ */
+export type GalleryPage = {
+  id: number;
+  parent_id: number | null;
+  title: string;
+  short_description: string | null;
+  description: string | null;
+  seo_link?: string | null;
+};
+
+export type GalleryPagesResponse = {
+  gallery_id: number;
+  pages: GalleryPage[];
+};
+
+/** Resolved content for /sida/{id}: the page's own title and description. */
+export type PageContent = {
+  id: number;
+  title: string | null;
+  description: string | null;
+};
+
+
+/**
+ * CMS page tree (GET /surface/2/galleries/pagetree).
+ * `is_menu` marks a real menu heading; ordinary content pages have `is_menu: false`.
+ * Root nodes have `parent_id: 0`. `href` is a legacy absolute storefront URL —
+ * never link to it, use the internal /sida/{id} route.
+ */
+export type PageTreeNode = {
+  id: number;
+  parent_id: number | null;
+  title: string;
+  href: string | null;
+  is_menu: boolean;
+  children?: PageTreeNode[];
+};
+
+export type PageTreeResponse = {
+  tree: PageTreeNode[];
+  pages: PageTreeNode[];
+};
+
 export type Product = {
   id: string;
   name: string;

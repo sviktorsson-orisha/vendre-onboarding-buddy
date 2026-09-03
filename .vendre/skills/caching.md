@@ -9,7 +9,7 @@ description: What to cache and what never to cache in a Vendre Surface v2 storef
 
 - `GET navigation/menus` — header, mega menu, footer
 - `GET categories/{id}` category trees and listings
-- CMS: `galleries/pagetree`, `galleries/{id}/content-blocks`, `galleries/boxes`
+- CMS: `galleries/pagetree`, `galleries/{id}/pages`, `galleries/boxes`
 - Product data and `POST vql` results
 - `GET sitemap`
 
