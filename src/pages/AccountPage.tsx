@@ -101,41 +101,72 @@ function OrdersView() {
         >
           {t("account.back")}
         </button>
-        <table className="mt-4 w-full text-sm">
-          <thead>
-            <tr className="border-b border-border text-left text-xs uppercase text-muted-foreground">
-              <th className="py-2">{t("account.name")}</th>
-              <th className="py-2">{t("account.quantity")}</th>
-              <th className="py-2 text-right">{t("account.price")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {order.lines.map((line) => (
-              <tr key={line.id} className="border-b border-border/60">
-                <td className="py-2 text-foreground">{line.name}</td>
-                <td className="py-2 text-muted-foreground">{line.quantity}</td>
-                <td className="py-2 text-right text-foreground">{line.price}</td>
+        {order.lines.length === 0 ? (
+          <p className="mt-4 text-sm text-muted-foreground">{t("account.noOrderLines")}</p>
+        ) : (
+          <table className="mt-4 w-full text-sm">
+            <thead>
+              <tr className="border-b border-border text-left text-xs uppercase text-muted-foreground">
+                <th className="py-2">{t("account.name")}</th>
+                <th className="py-2">{t("account.quantity")}</th>
+                <th className="py-2 text-right">{t("account.price")}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {order.lines.map((line) => (
+                <tr key={line.id} className="border-b border-border/60">
+                  <td className="py-2">
+                    <div className="flex items-center gap-3">
+                      <StoreImage
+                        image={line.image ? { image: line.image } : null}
+                        alt={line.name}
+                        label={line.name}
+                        className="h-12 w-12 shrink-0 rounded-md"
+                      />
+                      <span className="text-foreground">{line.name}</span>
+                    </div>
+                  </td>
+                  <td className="py-2 text-muted-foreground">{line.quantity}</td>
+                  <td className="py-2 text-right text-foreground">{line.price}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
         <dl className="mt-4 space-y-1 text-sm">
-          {order.shipping_total && (
-            <div className="flex justify-between">
-              <dt className="text-muted-foreground">{t("account.shipping")}</dt>
-              <dd>{order.shipping_total}</dd>
-            </div>
+          {order.totals.length > 0 ? (
+            order.totals.map((row, index) => (
+              <div
+                key={`${row.title}-${index}`}
+                className={cn(
+                  "flex justify-between",
+                  index === order.totals.length - 1 && "font-semibold text-foreground",
+                )}
+              >
+                <dt className="text-muted-foreground">{row.title}</dt>
+                <dd>{row.value}</dd>
+              </div>
+            ))
+          ) : (
+            <>
+              {order.shipping_total && (
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">{t("account.shipping")}</dt>
+                  <dd>{order.shipping_total}</dd>
+                </div>
+              )}
+              {order.tax_total && (
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">{t("account.tax")}</dt>
+                  <dd>{order.tax_total}</dd>
+                </div>
+              )}
+              <div className="flex justify-between font-semibold">
+                <dt>{t("account.total")}</dt>
+                <dd>{order.total}</dd>
+              </div>
+            </>
           )}
-          {order.tax_total && (
-            <div className="flex justify-between">
-              <dt className="text-muted-foreground">{t("account.tax")}</dt>
-              <dd>{order.tax_total}</dd>
-            </div>
-          )}
-          <div className="flex justify-between font-semibold">
-            <dt>{t("account.total")}</dt>
-            <dd>{order.total}</dd>
-          </div>
         </dl>
       </Section>
     );
