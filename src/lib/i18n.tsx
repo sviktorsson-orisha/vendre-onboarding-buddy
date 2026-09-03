@@ -322,6 +322,7 @@ const dictionary = {
     "store.outOfStock": "Out of stock",
     "store.inStock": "In stock",
     "store.viewAll": "View all",
+    "store.viewAllIn": "View all in {name}",
     "store.heroTitle": "Your store, ready from day one",
     "store.heroBody":
       "Home, categories, product pages and cart already ship with the template. Connect Vendre and it fills up with your own catalogue.",
