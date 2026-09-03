@@ -131,12 +131,42 @@ export function StoreHeader() {
         </div>
       )}
 
-      <nav className="hidden border-t border-border lg:block">
+      <nav
+        className="relative hidden border-t border-border lg:block"
+        onMouseLeave={() => setOpenId(null)}
+      >
         <ul className="mx-auto flex w-full max-w-6xl items-center gap-1 px-5 sm:px-6">
-          {tree.map((node) => (
-            <DesktopMenuItem key={node.id} node={node} />
-          ))}
+          {tree.map((node) => {
+            const hasChildren = node.children.length > 0;
+            const isOpen = openId === node.id;
+            return (
+              <li key={node.id} onMouseEnter={() => setOpenId(hasChildren ? node.id : null)}>
+                <Link
+                  to="/kategori/$id"
+                  params={{ id: String(node.id) }}
+                  className="flex items-center gap-1 px-3 py-2 text-sm font-semibold text-foreground transition-colors hover:text-primary"
+                  aria-haspopup={hasChildren ? "true" : undefined}
+                  aria-expanded={hasChildren ? isOpen : undefined}
+                  onFocus={() => setOpenId(hasChildren ? node.id : null)}
+                  onClick={() => setOpenId(null)}
+                >
+                  {node.name}
+                  {hasChildren && (
+                    <ChevronDown
+                      className={cn(
+                        "size-3.5 text-muted-foreground transition-transform",
+                        isOpen && "rotate-180",
+                      )}
+                      aria-hidden
+                    />
+                  )}
+                </Link>
+              </li>
+            );
+          })}
         </ul>
+
+        {activeNode && <MegaPanel node={activeNode} onNavigate={() => setOpenId(null)} />}
       </nav>
 
       <nav className={cn("border-t border-border lg:hidden", mobileOpen ? "block" : "hidden")}>
