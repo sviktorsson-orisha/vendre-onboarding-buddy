@@ -1,42 +1,37 @@
-# Sidtyper i Vendre – vad datan faktiskt säger
+# Footern: bara riktiga menyrubriker med undersidor
 
-## Vad jag hittade (live mot butiken)
+## Problem
 
-**1. På menynivå (`navigation/menus`)**
-Alla CMS-sidor kommer som `menu_type: "information_page"` / `source: "information_page"`.
-Det finns alltså ingen undertyp här — skillnaden mellan sidtyper syns först i sidträdet och i innehållsblocken.
+Footern byggs idag enbart från `navigation/menus` (`menu_type === "information_page"`).
+Den payloaden saknar fältet `is_menu`, så "Inspiration" (id 76) — som är en vanlig
+listningssida och inte en menyrubrik — hamnar i footern tillsammans med sina
+undersidor 77/78.
 
-**2. I sidträdet (`galleries/pagetree`)**
-Svaret har två nycklar: `tree` (nästlad) och `pages` (platt). Varje nod:
-`id`, `parent_id`, `title`, `href`, `is_menu`, `children`.
+Informationen finns i `GET /surface/2/galleries/pagetree`, som returnerar
+`tree` + platt `pages` med `id`, `parent_id`, `title`, `href`, `is_menu`, `children`.
+Där är 17 (Information) och 16 (Kundservice) `is_menu: true`, medan 76 (Inspiration)
+är `is_menu: false`.
 
-Tre tydliga sidtyper framträder:
+## Lösning
 
-| Typ | Kännetecken | Exempel |
-| --- | --- | --- |
-| Rubrik-/samlingssida | `is_menu: true`, `href` = `gallery.php?id=X`, har barn, **noll content-blocks** | Information (17), Kundservice (16) |
-| Vanlig innehållssida | `is_menu: false`, pretty href, innehållsblock av text-typ | Om oss (25), Köpvillkor (79) |
-| Listnings-/blogg-sida | Har blocket `list-pages-in-cards` som listar andra sidor | Inspiration (76) med barnen 77, 78 |
+Footern får hämta sin struktur från `pagetree` istället för menypayloaden och visa
+**endast** grupper som uppfyller alla tre villkor:
 
-**3. I innehållsblocken (`galleries/{id}/content-blocks`)**
-Blocktyperna (`key`) i butiken just nu: `margin`, `text`, `large-text`, `columns`,
-`list-pages-in-cards`, `flex1`, `2col-text-img`.
-Alla block har utöver sina egna fält en uppsättning styr-fält:
-`background`, `_date_from`, `_date_to`, `_show_desktop`, `_show_phone`, `_show_tablet`, `_viewport_label`.
-Sidan 17 returnerar `content_blocks: []` — en ren rubriksida utan eget innehåll.
+1. toppsida (`parent_id` saknas eller är `0`),
+2. `is_menu === true`,
+3. har minst en undersida som finns i sidträdet (aktiva undersidor).
 
-## Konsekvenser för frontend (förslag)
+Undersidorna länkas som idag till den interna rutten `/sida/{id}` — aldrig till
+`href`/`target` (gammal absolut storefront-URL). Sidor utan sådan grupp visas inte,
+så "Inspiration" försvinner ur footern. Headern påverkas inte.
 
-1. **Rubriksidor får inte rendera tomt.** Sidor utan block (t.ex. 17) ska istället visa titel + länklista över sina barnsidor från `pagetree`.
-2. **Blockrenderare per `key`** i stället för dagens generella HTML-utskrift: `text`/`large-text` (rik text), `columns` (content1–4 i kolumnrutnät), `2col-text-img`, `flex1` (hero), `margin` (avstånd), `list-pages-in-cards` (kortlista med underliggande sidor). Okänd `key` faller tillbaka till rik text.
-3. **Respektera styr-fälten:** hoppa över block utanför `_date_from`/`_date_to`, och göm block där `_show_desktop`/`_show_phone`/`_show_tablet` är av (via CSS-klasser).
-4. **Använd `pagetree`** som källa för sidtitel, förälder/barn och brödsmulor på `/sida/$id` — den datan finns inte i content-blocks.
-5. **Länka aldrig till `href`/`target`** (absolut gammal storefront-URL) — använd `/sida/{id}`.
+## Teknisk omfattning
 
-## Teknisk omfattning om vi bygger det
-
-- `src/types/vendre.ts`: typer för pagetree (`tree`/`pages`) och block-styrfält.
-- `src/lib/vendre/api.ts`: `getPageTree()` (cachad, statisk data) + mock.
-- `src/pages/ContentPage.tsx`: block-mappning per `key`, barnsidelista för tomma sidor, brödsmulor.
-- `src/mock/vendreResponses.ts`: demo-data för de tre sidtyperna.
-- `.vendre/skills/cms-pages.md`: dokumentera sidtyperna och blocklistan.
+- `src/types/vendre.ts`: typer `PageTreeNode` (`id`, `parent_id`, `title`, `href`, `is_menu`, `children`) och `PageTreeResponse` (`tree`, `pages`).
+- `src/lib/vendre/api.ts`:
+  - `getPageTree()` i `VendreApi`, live via `guarded(() => surfaceJson("galleries/pagetree"))`, demo via mock.
+  - `usePageTree()` med samma cachning som andra statiska reads (staleTime ~10 min).
+  - `usePageMenu()` skrivs om att bygga grupperna ur sidträdet med filtret ovan (fallback till tom lista om trädet saknas).
+- `src/mock/vendreResponses.ts`: `mockPageTree` som speglar strukturen — två menyrubriker med barn plus en icke-meny-sida med barn, så demoläget visar samma filtrering.
+- `src/components/store/store-footer.tsx`: rendera bara grupperna; ta bort "loose"-kolumnen som annars skulle visa lösryckta sidor.
+- `.vendre/skills/navigation-menus.md` och `.vendre/skills/cms-pages.md`: dokumentera att footern styrs av `pagetree` + `is_menu`, inte av `navigation/menus`.
