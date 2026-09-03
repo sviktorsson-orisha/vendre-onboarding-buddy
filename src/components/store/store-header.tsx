@@ -15,7 +15,6 @@ import type { MenuNode } from "@/types/vendre";
 function MegaPanel({ node, onNavigate }: { node: MenuNode; onNavigate: () => void }) {
   const { t } = useI18n();
   const columns = node.children;
-  const columnCount = Math.min(Math.max(columns.length, 1), 5);
 
   return (
     <div
