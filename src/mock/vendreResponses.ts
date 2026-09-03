@@ -68,15 +68,17 @@ function p(id: number, parent: number | null, name: string, hasChildren: boolean
   };
 }
 
-const mockPages: Record<number, string[]> = {
-  17: ["<h2>Information</h2><p>Samlad information om butiken. I demoläge visas exempeltext – när Vendre-kopplingen är aktiv hämtas innehållsblocken från butikens CMS-sidor.</p>"],
-  25: ["<h2>Om oss</h2><p>Vi är en demobutik byggd på Vendre Surface API v2. Den här texten kommer från ett innehållsblock (galleries/{id}/content-blocks).</p>"],
-  30: ["<h2>Villkor</h2><p>Köpvillkor, ångerrätt och returer beskrivs här. Innehållet redigeras i Vendre-administrationen.</p>"],
-  16: ["<h2>Kundservice</h2><p>Här hittar du hjälp med order, leverans och retur.</p>"],
-  81: ["<h2>Kontakta oss</h2><p>Mejla support@example.com eller ring 08-000 00 00.</p>"],
-  84: ["<h2>Frakt och leverans</h2><p>Leveranstid 2–4 arbetsdagar. Fri frakt över 999 kr.</p>"],
-  80: ["<h2>Integritetspolicy</h2><p>Vi behandlar personuppgifter enligt GDPR.</p>"],
+/** Demo page descriptions (mirrors `description` from galleries/{id}/pages). */
+const mockPages: Record<number, { title: string; description: string }> = {
+  17: { title: "Information", description: "<p>Samlad information om butiken. I demoläge visas exempeltext – när Vendre-kopplingen är aktiv hämtas sidans description från butikens CMS-sidor.</p>" },
+  25: { title: "Om oss", description: "<p>Vi är en demobutik byggd på Vendre Surface API v2. Den här texten kommer från sidans description (galleries/{id}/pages).</p>" },
+  30: { title: "Villkor", description: "<p>Köpvillkor, ångerrätt och returer beskrivs här. Innehållet redigeras i Vendre-administrationen.</p>" },
+  16: { title: "Kundservice", description: "<p>Här hittar du hjälp med order, leverans och retur.</p>" },
+  81: { title: "Kontakta oss", description: "<p>Mejla support@example.com eller ring 08-000 00 00.</p>" },
+  84: { title: "Frakt och leverans", description: "<p>Leveranstid 2–4 arbetsdagar. Fri frakt över 999 kr.</p>" },
+  80: { title: "Integritetspolicy", description: "<p>Vi behandlar personuppgifter enligt GDPR.</p>" },
 };
+
 
 /**
  * Demo page tree (GET galleries/pagetree). Mirrors a live store: two real menu
@@ -109,19 +111,16 @@ export function mockPageTree(): PageTreeResponse {
 }
 
 export function mockPageContent(id: number): PageContent {
-  const texts = mockPages[id] ?? [
-    "<h2>Innehållssida</h2><p>Den här sidan finns inte i demodatan. När butiken är kopplad hämtas innehållet från Vendre.</p>",
-  ];
+  const page = mockPages[id];
   return {
-    gallery_id: id,
-    content_blocks: texts.map((text, index) => ({
-      id: id * 100 + index,
-      key: "text",
-      sort_order: index,
-      fields: { text },
-    })),
+    id,
+    title: page?.title ?? null,
+    description:
+      page?.description ??
+      "<p>Den här sidan finns inte i demodatan. När butiken är kopplad hämtas sidans description från Vendre.</p>",
   };
 }
+
 
 function m(
   id: number,

@@ -13,7 +13,9 @@ categories or products is a recurring, hard-to-spot bug.
 
 - `GET /surface/2/galleries/pagetree` — the CMS page tree (navigation/sitemap)
 - `GET /surface/2/galleries/{id}/pages` — pages in a gallery
-- `GET /surface/2/galleries/{id}/content-blocks` — the actual page content
+- `GET /surface/2/galleries/{id}/pages` — the pages in a gallery, including each
+  page's `title` and `description` (this is the rendered content; content blocks
+  are NOT used in this project)
 - `GET /surface/2/galleries/boxes` — reusable content boxes and banners
 - `POST /surface/2/galleries/twig/render` — Twig block rendering
 

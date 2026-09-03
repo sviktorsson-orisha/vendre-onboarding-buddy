@@ -29,6 +29,8 @@ import type {
   CartLine,
   CategoryQuery,
   CategoryResponse,
+  GalleryPage,
+  GalleryPagesResponse,
   MenuItem,
   MenuNode,
   PageContent,
@@ -39,6 +41,7 @@ import type {
   SearchResult,
   SessionContext,
 } from "@/types/vendre";
+
 
 import {
   getVendreToken,
@@ -177,11 +180,29 @@ const liveApi: VendreApi = {
     }
     return null;
   },
-  getPageContent: (id) =>
-    guarded(() => surfaceJson<PageContent>(`galleries/${id}/content-blocks`)).then((data) => ({
-      gallery_id: data?.gallery_id ?? id,
-      content_blocks: data?.content_blocks ?? [],
-    })),
+  // Only the page's own description is rendered — content blocks are not used.
+  // GET galleries/{id}/pages lists the pages *inside* a gallery, so the page
+  // itself is found in its parent gallery's list (pagetree gives the parent).
+  getPageContent: async (id) => {
+    const readPages = (galleryId: number) =>
+      guarded(() => surfaceJson<GalleryPagesResponse>(`galleries/${galleryId}/pages`))
+        .then((data) => data?.pages ?? [])
+        .catch(() => [] as GalleryPage[]);
+
+    const tree = await liveApi.getPageTree().catch(() => ({ tree: [], pages: [] }));
+    const node = tree.pages.find((page) => page.id === id);
+    const parentId = node?.parent_id ?? 0;
+
+    let page = (await readPages(parentId)).find((item) => item.id === id);
+    if (!page) page = (await readPages(id)).find((item) => item.id === id);
+
+    return {
+      id,
+      title: page?.title ?? node?.title ?? null,
+      description: page?.description || page?.short_description || null,
+    };
+  },
+
   getPageTree: () =>
     guarded(() => surfaceJson<PageTreeResponse>("galleries/pagetree")).then((data) => ({
       tree: data?.tree ?? [],

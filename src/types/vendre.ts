@@ -37,21 +37,31 @@ export type MenusResponse = { menus: MenuItem[] };
 export type MenuNode = MenuItem & { children: MenuNode[] };
 
 /**
- * CMS content block (GET /surface/2/galleries/{id}/content-blocks).
- * `key` is the block layout ("2col-text-img", "text", …) and `fields` holds
- * HTML fragments authored in the store. Image paths inside them are relative.
+ * A CMS page as returned by GET /surface/2/galleries/{id}/pages — the endpoint
+ * lists the pages that live inside a gallery, with their authored HTML.
+ * Content blocks are deliberately NOT used; only `description` is rendered.
  */
-export type ContentBlock = {
+export type GalleryPage = {
   id: number;
-  key: string;
-  sort_order: number;
-  fields: Record<string, string | null>;
+  parent_id: number | null;
+  title: string;
+  short_description: string | null;
+  description: string | null;
+  seo_link?: string | null;
 };
 
-export type PageContent = {
+export type GalleryPagesResponse = {
   gallery_id: number;
-  content_blocks: ContentBlock[];
+  pages: GalleryPage[];
 };
+
+/** Resolved content for /sida/{id}: the page's own title and description. */
+export type PageContent = {
+  id: number;
+  title: string | null;
+  description: string | null;
+};
+
 
 /**
  * CMS page tree (GET /surface/2/galleries/pagetree).
