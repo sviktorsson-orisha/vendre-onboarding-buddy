@@ -5,32 +5,11 @@ import { StoreShell } from "@/components/store/store-shell";
 import { useI18n } from "@/lib/i18n";
 import { usePageContent, usePageMenuItem } from "@/lib/vendre/api";
 import { prepareCmsHtml } from "@/lib/vendre/html";
-import type { ContentBlock } from "@/types/vendre";
 
 /**
- * CMS page (Vendre gallery). Content comes from
- * GET /surface/2/galleries/{id}/content-blocks — never from categories.
+ * CMS page (Vendre gallery page). Only the page's own `description` from
+ * GET /surface/2/galleries/{id}/pages is rendered — content blocks are not used.
  */
-function Block({ block }: { block: ContentBlock }) {
-  const fields = block.fields ?? {};
-  const image = prepareCmsHtml(fields["img"] ?? fields["image"]);
-  const text = prepareCmsHtml(fields["text"] ?? fields["body"] ?? fields["html"]);
-
-  // Two-column layouts get an image column; unknown block keys degrade to text.
-  if (image && text) {
-    return (
-      <div className="grid gap-8 md:grid-cols-2 md:items-center">
-        <div className="cms-media [&_img]:w-full [&_img]:rounded-2xl" dangerouslySetInnerHTML={{ __html: image }} />
-        <div className="cms-prose" dangerouslySetInnerHTML={{ __html: text }} />
-      </div>
-    );
-  }
-
-  const html = text || image || prepareCmsHtml(Object.values(fields).filter(Boolean).join(""));
-  if (!html) return null;
-  return <div className="cms-prose" dangerouslySetInnerHTML={{ __html: html }} />;
-}
-
 export default function ContentPage({ id }: { id: number }) {
   const { t } = useI18n();
   const { data, isLoading, isError } = usePageContent(id);
@@ -57,19 +36,16 @@ export default function ContentPage({ id }: { id: number }) {
     );
   }
 
-  const blocks = [...(data.content_blocks ?? [])].sort(
-    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
-  );
+  const title = data.title ?? menuItem?.name ?? null;
+  const description = prepareCmsHtml(data.description);
 
   return (
     <StoreShell>
       <article className="mx-auto w-full max-w-3xl">
-        {menuItem && (
-          <h1 className="text-3xl font-extrabold text-foreground">{menuItem.name}</h1>
-        )}
-        <div className="mt-6 space-y-10 text-sm leading-relaxed text-muted-foreground [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-foreground [&_h3]:font-semibold [&_h3]:text-foreground [&_a]:text-primary [&_a]:underline [&_p]:mt-3 [&_ul]:mt-3 [&_ul]:list-disc [&_ul]:pl-5">
-          {blocks.length > 0 ? (
-            blocks.map((block) => <Block key={block.id} block={block} />)
+        {title && <h1 className="text-3xl font-extrabold text-foreground">{title}</h1>}
+        <div className="mt-6 space-y-6 text-sm leading-relaxed text-muted-foreground [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-foreground [&_h3]:font-semibold [&_h3]:text-foreground [&_a]:text-primary [&_a]:underline [&_p]:mt-3 [&_ul]:mt-3 [&_ul]:list-disc [&_ul]:pl-5">
+          {description ? (
+            <div className="cms-prose" dangerouslySetInnerHTML={{ __html: description }} />
           ) : (
             <p>{t("store.pageEmpty")}</p>
           )}
