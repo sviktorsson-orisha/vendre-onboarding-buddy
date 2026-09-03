@@ -19,6 +19,7 @@ import {
   mockFeaturedProducts,
   mockMenus,
   mockPageContent,
+  mockPageTree,
   mockProduct,
   mockSearch,
   mockSessionContext,
@@ -31,6 +32,8 @@ import type {
   MenuItem,
   MenuNode,
   PageContent,
+  PageTreeNode,
+  PageTreeResponse,
   Product,
   SearchQuery,
   SearchResult,
@@ -53,6 +56,8 @@ export type VendreApi = {
   getProduct: (id: string, categoryId?: number) => Promise<Product | null>;
   /** CMS page content for an information_page menu item (gallery id). */
   getPageContent: (id: number) => Promise<PageContent>;
+  /** CMS page tree; the only source of `is_menu` for footer groups. */
+  getPageTree: () => Promise<PageTreeResponse>;
   getCart: () => Promise<Cart>;
   addToCart: (productId: string | number, quantity?: number) => Promise<void>;
   updateQty: (line: CartLine, quantity: number) => Promise<void>;
@@ -176,6 +181,11 @@ const liveApi: VendreApi = {
     guarded(() => surfaceJson<PageContent>(`galleries/${id}/content-blocks`)).then((data) => ({
       gallery_id: data?.gallery_id ?? id,
       content_blocks: data?.content_blocks ?? [],
+    })),
+  getPageTree: () =>
+    guarded(() => surfaceJson<PageTreeResponse>("galleries/pagetree")).then((data) => ({
+      tree: data?.tree ?? [],
+      pages: data?.pages ?? [],
     })),
   getCart: () => guarded(() => surfaceJson<Cart>("shopping-cart")),
   addToCart: async (productId, quantity = 1) => {
@@ -327,6 +337,7 @@ const demoApi: VendreApi = {
   getCategory: async (id, query) => mockCategory(id, query),
   getProduct: async (id) => mockProduct(id),
   getPageContent: async (id) => mockPageContent(id),
+  getPageTree: async () => mockPageTree(),
   getCart: async () => demoCart,
   addToCart: async (productId, quantity = 1) => {
     const id = String(productId);
@@ -397,13 +408,43 @@ export function useCategoryMenu() {
   );
 }
 
-/** Footer navigation: CMS pages (galleries) only. */
-export function usePageMenu() {
-  const { data } = useMenus();
-  return useMemo(
-    () => buildMenuTree((data ?? []).filter((item) => item.menu_type === "information_page")),
-    [data],
-  );
+/** CMS page tree; static and read-heavy, so cached like menus. */
+export function usePageTree() {
+  const api = useVendreApi();
+  return useQuery({
+    queryKey: ["vendre", api.mode, "page-tree"],
+    queryFn: () => api.getPageTree(),
+    staleTime: 10 * 60 * 1000,
+  });
+}
+
+export type PageGroup = { id: number; title: string; children: PageTreeNode[] };
+
+/**
+ * Footer navigation: only top-level pages that are real menu headings
+ * (`is_menu: true`) AND have active child pages. Ordinary content pages such as
+ * "Inspiration" are excluded even though navigation/menus lists them.
+ */
+export function usePageMenu(): PageGroup[] {
+  const { data } = usePageTree();
+  return useMemo(() => {
+    if (!data) return [];
+    const nodes = data.tree?.length ? data.tree : (data.pages ?? []);
+    const flat = data.pages?.length ? data.pages : flattenTree(nodes);
+    const childrenOf = (id: number) =>
+      (nodes.find((node) => node.id === id)?.children ?? []).length
+        ? (nodes.find((node) => node.id === id)?.children ?? [])
+        : flat.filter((page) => page.parent_id === id);
+
+    return nodes
+      .filter((node) => (node.parent_id ?? 0) === 0 && node.is_menu)
+      .map((node) => ({ id: node.id, title: node.title, children: childrenOf(node.id) }))
+      .filter((group) => group.children.length > 0);
+  }, [data]);
+}
+
+function flattenTree(nodes: PageTreeNode[]): PageTreeNode[] {
+  return nodes.flatMap((node) => [node, ...flattenTree(node.children ?? [])]);
 }
 
 /**

@@ -13,6 +13,8 @@ import type {
   CategoryResponse,
   MenuItem,
   PageContent,
+  PageTreeNode,
+  PageTreeResponse,
   Product,
   SessionContext,
 } from "@/types/vendre";
@@ -75,6 +77,36 @@ const mockPages: Record<number, string[]> = {
   84: ["<h2>Frakt och leverans</h2><p>Leveranstid 2–4 arbetsdagar. Fri frakt över 999 kr.</p>"],
   80: ["<h2>Integritetspolicy</h2><p>Vi behandlar personuppgifter enligt GDPR.</p>"],
 };
+
+/**
+ * Demo page tree (GET galleries/pagetree). Mirrors a live store: two real menu
+ * headings with children plus a content page ("Inspiration") that is not a menu
+ * heading and therefore must not appear in the footer.
+ */
+export function mockPageTree(): PageTreeResponse {
+  const node = (
+    id: number,
+    parent: number,
+    title: string,
+    isMenu: boolean,
+    children: PageTreeNode[] = [],
+  ): PageTreeNode => ({ id, parent_id: parent, title, href: null, is_menu: isMenu, children });
+
+  const tree: PageTreeNode[] = [
+    node(17, 0, "Information", true, [node(25, 17, "Om oss", false), node(30, 17, "Villkor", false)]),
+    node(16, 0, "Kundservice", true, [
+      node(81, 16, "Kontakta oss", false),
+      node(84, 16, "Frakt och leverans", false),
+      node(80, 16, "Integritetspolicy", false),
+    ]),
+    node(76, 0, "Inspiration", false, [node(77, 76, "Stilguide", false)]),
+  ];
+
+  const flatten = (nodes: PageTreeNode[]): PageTreeNode[] =>
+    nodes.flatMap((n) => [n, ...flatten(n.children ?? [])]);
+
+  return { tree, pages: flatten(tree) };
+}
 
 export function mockPageContent(id: number): PageContent {
   const texts = mockPages[id] ?? [

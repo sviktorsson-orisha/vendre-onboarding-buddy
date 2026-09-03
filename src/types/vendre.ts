@@ -53,6 +53,26 @@ export type PageContent = {
   content_blocks: ContentBlock[];
 };
 
+/**
+ * CMS page tree (GET /surface/2/galleries/pagetree).
+ * `is_menu` marks a real menu heading; ordinary content pages have `is_menu: false`.
+ * Root nodes have `parent_id: 0`. `href` is a legacy absolute storefront URL —
+ * never link to it, use the internal /sida/{id} route.
+ */
+export type PageTreeNode = {
+  id: number;
+  parent_id: number | null;
+  title: string;
+  href: string | null;
+  is_menu: boolean;
+  children?: PageTreeNode[];
+};
+
+export type PageTreeResponse = {
+  tree: PageTreeNode[];
+  pages: PageTreeNode[];
+};
+
 export type Product = {
   id: string;
   name: string;

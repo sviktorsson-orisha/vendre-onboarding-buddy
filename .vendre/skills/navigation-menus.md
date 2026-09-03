@@ -25,8 +25,12 @@ Rules that this project implements:
 
 - **Header shows categories only** — `useCategoryMenu()` filters
   `menu_type === "category"`.
-- **Footer shows CMS pages only** — `usePageMenu()` filters
-  `menu_type === "information_page"`. No hardcoded/dummy links.
+- **Footer shows CMS pages only, and is built from `GET galleries/pagetree`** —
+  not from `navigation/menus`, which has no `is_menu` field. `usePageMenu()`
+  keeps only top-level nodes (`parent_id` 0/null) with `is_menu: true` **and** at
+  least one active child page. Ordinary content pages such as "Inspiration"
+  (`is_menu: false`) are therefore never rendered in the footer, even though
+  `navigation/menus` lists them as `information_page`. No hardcoded/dummy links.
 - For information pages the gallery id is `entity_id` (equal to `id` in current
   payloads). `target` is a legacy absolute storefront URL
   (`https://store.example/about-us/`) — never link to it; use the internal
