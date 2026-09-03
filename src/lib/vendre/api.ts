@@ -19,6 +19,7 @@ import {
   mockFeaturedProducts,
   mockMenus,
   mockPageContent,
+  mockPageTree,
   mockProduct,
   mockSearch,
   mockSessionContext,
@@ -31,6 +32,8 @@ import type {
   MenuItem,
   MenuNode,
   PageContent,
+  PageTreeNode,
+  PageTreeResponse,
   Product,
   SearchQuery,
   SearchResult,
@@ -178,6 +181,11 @@ const liveApi: VendreApi = {
     guarded(() => surfaceJson<PageContent>(`galleries/${id}/content-blocks`)).then((data) => ({
       gallery_id: data?.gallery_id ?? id,
       content_blocks: data?.content_blocks ?? [],
+    })),
+  getPageTree: () =>
+    guarded(() => surfaceJson<PageTreeResponse>("galleries/pagetree")).then((data) => ({
+      tree: data?.tree ?? [],
+      pages: data?.pages ?? [],
     })),
   getCart: () => guarded(() => surfaceJson<Cart>("shopping-cart")),
   addToCart: async (productId, quantity = 1) => {
