@@ -176,38 +176,46 @@ export function StoreHeader() {
         {activeNode && <MegaPanel node={activeNode} onNavigate={() => setOpenId(null)} />}
       </nav>
 
-      <nav className={cn("border-t border-border lg:hidden", mobileOpen ? "block" : "hidden")}>
-        <ul className="mx-auto w-full max-w-6xl space-y-1 px-5 py-3 sm:px-6">
-          {tree.map((node) => (
-            <li key={node.id}>
-              <Link
-                to="/kategori/$id"
-                params={{ id: String(node.id) }}
-                onClick={() => setMobileOpen(false)}
-                className="block rounded-md px-2 py-1.5 text-sm font-semibold text-foreground hover:bg-accent"
-              >
-                {node.name}
-              </Link>
-              {node.children.length > 0 && (
-                <ul className="ml-3 border-l border-border pl-3">
-                  {node.children.map((child) => (
-                    <li key={child.id}>
-                      <Link
-                        to="/kategori/$id"
-                        params={{ id: String(child.id) }}
-                        onClick={() => setMobileOpen(false)}
-                        className="block rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent"
-                      >
-                        {child.name}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </li>
-          ))}
-        </ul>
-      </nav>
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetContent side="left" className="flex w-full flex-col gap-0 sm:max-w-sm lg:hidden">
+          <SheetHeader>
+            <SheetTitle>{t("store.menu")}</SheetTitle>
+          </SheetHeader>
+          <nav className="-mx-2 mt-4 flex-1 overflow-y-auto px-2 pb-6">
+            <ul className="space-y-1">
+              {tree.map((node) => (
+                <li key={node.id}>
+                  <Link
+                    to="/kategori/$id"
+                    params={{ id: String(node.id) }}
+                    onClick={() => setMobileOpen(false)}
+                    className="block rounded-md px-2 py-2 text-sm font-semibold text-foreground hover:bg-accent"
+                  >
+                    {node.name}
+                  </Link>
+                  {node.children.length > 0 && (
+                    <ul className="ml-3 border-l border-border pl-3">
+                      {node.children.map((child) => (
+                        <li key={child.id}>
+                          <Link
+                            to="/kategori/$id"
+                            params={{ id: String(child.id) }}
+                            onClick={() => setMobileOpen(false)}
+                            className="block rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent"
+                          >
+                            {child.name}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </SheetContent>
+      </Sheet>
+
 
       <CartSheet open={cartOpen} onOpenChange={setCartOpen} />
     </header>
