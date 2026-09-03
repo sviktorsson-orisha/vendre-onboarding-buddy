@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ChevronDown, Menu, Search, ShoppingBag } from "lucide-react";
+import { ArrowRight, ChevronDown, Menu, Search, ShoppingBag } from "lucide-react";
 
 import { AccountMenu } from "@/components/store/account-menu";
 import { CartSheet } from "@/components/store/cart-sheet";
@@ -11,54 +11,62 @@ import { useCart, useCategoryMenu } from "@/lib/vendre/api";
 import { cn } from "@/lib/utils";
 import type { MenuNode } from "@/types/vendre";
 
-function DesktopMenuItem({ node }: { node: MenuNode }) {
-  const hasChildren = node.children.length > 0;
+/** Full-viewport-width mega menu panel for one top-level category. */
+function MegaPanel({ node, onNavigate }: { node: MenuNode; onNavigate: () => void }) {
+  const { t } = useI18n();
+  const columns = node.children;
+  const columnCount = Math.min(Math.max(columns.length, 1), 5);
+
   return (
-    <li className="group relative">
-      <Link
-        to="/kategori/$id"
-        params={{ id: String(node.id) }}
-        className="flex items-center gap-1 px-3 py-2 text-sm font-semibold text-foreground transition-colors hover:text-primary"
-      >
-        {node.name}
-        {hasChildren && <ChevronDown className="size-3.5 text-muted-foreground" aria-hidden />}
-      </Link>
-      {hasChildren && (
-        <div className="invisible absolute left-0 top-full z-40 min-w-56 rounded-xl border border-border bg-card p-3 opacity-0 shadow-xl transition-all group-hover:visible group-hover:opacity-100">
-          <ul className="space-y-1">
-            {node.children.map((child) => (
-              <li key={child.id} className="group/sub relative">
-                <Link
-                  to="/kategori/$id"
-                  params={{ id: String(child.id) }}
-                  className="flex items-center justify-between rounded-md px-3 py-1.5 text-sm text-foreground hover:bg-accent"
-                >
-                  {child.name}
-                  {child.children.length > 0 && <ChevronDown className="size-3 -rotate-90" aria-hidden />}
-                </Link>
-                {child.children.length > 0 && (
-                  <div className="invisible absolute left-full top-0 z-50 min-w-52 rounded-xl border border-border bg-card p-3 opacity-0 shadow-xl transition-all group-hover/sub:visible group-hover/sub:opacity-100">
-                    <ul className="space-y-1">
-                      {child.children.map((leaf) => (
-                        <li key={leaf.id}>
-                          <Link
-                            to="/kategori/$id"
-                            params={{ id: String(leaf.id) }}
-                            className="block rounded-md px-3 py-1.5 text-sm text-foreground hover:bg-accent"
-                          >
-                            {leaf.name}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
+    <div
+      className="absolute inset-x-0 top-full z-40 max-h-[70vh] overflow-y-auto border-b border-border bg-card shadow-xl"
+      onClick={onNavigate}
+    >
+      <div className="mx-auto w-full max-w-6xl px-5 py-8 sm:px-6">
+        <div
+          className="grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3"
+          style={{ ["--mega-cols" as string]: String(columnCount) }}
+        >
+          {columns.map((child) => (
+            <div key={`${child.source}:${child.id}`} className="min-w-0">
+              <Link
+                to="/kategori/$id"
+                params={{ id: String(child.id) }}
+                className="block truncate text-sm font-bold text-foreground hover:text-primary"
+              >
+                {child.name}
+              </Link>
+              {child.children.length > 0 && (
+                <ul className="mt-2 space-y-1">
+                  {child.children.map((leaf) => (
+                    <li key={`${leaf.source}:${leaf.id}`}>
+                      <Link
+                        to="/kategori/$id"
+                        params={{ id: String(leaf.id) }}
+                        className="block truncate rounded-md py-1 text-sm text-muted-foreground hover:text-primary"
+                      >
+                        {leaf.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ))}
         </div>
-      )}
-    </li>
+
+        <div className="mt-8 border-t border-border pt-4">
+          <Link
+            to="/kategori/$id"
+            params={{ id: String(node.id) }}
+            className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
+          >
+            {t("store.viewAllIn", { name: node.name })}
+            <ArrowRight className="size-4 shrink-0" aria-hidden />
+          </Link>
+        </div>
+      </div>
+    </div>
   );
 }
 
