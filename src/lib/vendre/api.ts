@@ -18,6 +18,7 @@ import {
   mockCategory,
   mockFeaturedProducts,
   mockMenus,
+  mockPageContent,
   mockProduct,
   mockSearch,
   mockSessionContext,
@@ -29,6 +30,7 @@ import type {
   CategoryResponse,
   MenuItem,
   MenuNode,
+  PageContent,
   Product,
   SearchQuery,
   SearchResult,
@@ -170,6 +172,11 @@ const liveApi: VendreApi = {
     }
     return null;
   },
+  getPageContent: (id) =>
+    guarded(() => surfaceJson<PageContent>(`galleries/${id}/content-blocks`)).then((data) => ({
+      gallery_id: data?.gallery_id ?? id,
+      content_blocks: data?.content_blocks ?? [],
+    })),
   getCart: () => guarded(() => surfaceJson<Cart>("shopping-cart")),
   addToCart: async (productId, quantity = 1) => {
     await guarded(() =>
@@ -319,6 +326,7 @@ const demoApi: VendreApi = {
   getMenus: async () => mockMenus,
   getCategory: async (id, query) => mockCategory(id, query),
   getProduct: async (id) => mockProduct(id),
+  getPageContent: async (id) => mockPageContent(id),
   getCart: async () => demoCart,
   addToCart: async (productId, quantity = 1) => {
     const id = String(productId);
