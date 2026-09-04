@@ -216,6 +216,11 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
   const states = done.map((value, index): GuideState => (value ? "done" : index === active ? "current" : "pending"));
   const activeTitle = t(TITLE_KEYS[active] ?? "step1.title");
 
+  // Once everything is green the final step opens itself.
+  useEffect(() => {
+    if (verified) setOpen(5);
+  }, [verified]);
+
   // Resume where the guide was left off after a refresh.
   const [resumed, setResumed] = useState(false);
   useEffect(() => {
