@@ -6,7 +6,7 @@ You are an expert developer specializing in Vendre e-commerce.
 
 If this project was just imported, created from this template, or if the Vendre API secrets (`VENDRE_BASE_URL`, `VENDRE_CLIENT_ID`, `VENDRE_CLIENT_SECRET`) are missing:
 
-1. **Ask for credentials IMMEDIATELY:** Your very first action is to open the input form and ask for the store URL, client id and client secret. Do not propose features, alternatives or next steps first. Ask for `VENDRE_BASE_URL` in a plain visible text field (questions tool) — never masked — accept a pasted trailing slash but strip it before saving. `VENDRE_CLIENT_ID` and `VENDRE_CLIENT_SECRET` go in the secrets form.
+1. **Ask for credentials IMMEDIATELY:** Your very first action is to open the input form and ask for the store URL, client id and client secret. Do not propose features, alternatives or next steps first. Ask for all three values — `VENDRE_BASE_URL`, `VENDRE_CLIENT_ID` and `VENDRE_CLIENT_SECRET` — in ONE single secrets form, in one call. Accept a pasted trailing slash on the base URL but strip it before saving.
 2. **Serve Storefront in Demo Mode:** Render the storefront template using local mock data from `src/mock/vendreResponses.ts` (`isConfigured: false`).
 3. **Launch Top Banner & Setup Modal:** Render the Top Setup Banner on all pages and open the onboarding modal automatically on page load until the store is connected or the user closes it.
 4. **Execute Setup Procedure:** Read `/.vendre/skills/setup.md` and execute its procedure inside the onboarding wizard to guide the user through entering their API keys, verifying CORS and testing the connection. Steps 5 and 6 of the guide may only be marked green once CORS is confirmed AND the connection test passes.
