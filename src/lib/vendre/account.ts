@@ -467,13 +467,32 @@ const liveAccountApi: AccountApi = {
       }),
     );
   },
-  getAddresses: () =>
-    guarded(() => call<unknown>("accounts/me/addresses")).then((data) => {
-      if (import.meta.env.DEV) {
-        console.debug("[vendre] accounts/me/addresses raw response", data);
+  getAddresses: async () => {
+    /** Fetches one candidate endpoint, logging the raw shape in dev. */
+    const probe = async (path: string): Promise<Address[]> => {
+      try {
+        const data = await guarded(() => call<unknown>(path));
+        if (import.meta.env.DEV) {
+          console.debug(`[vendre] ${path} raw response`, data);
+        }
+        return dedupeAddresses(extractAddressList(data).map(normalizeAddress));
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.debug(`[vendre] ${path} failed`, error);
+        }
+        return [];
       }
-      return dedupeAddresses(extractAddressList(data).map(normalizeAddress));
-    }),
+    };
+
+    // Some stores expose the full address book on `address-book`; older ones
+    // only on `addresses`. Prefer whichever returns the most entries.
+    const [book, legacy] = await Promise.all([
+      probe("accounts/me/address-book"),
+      probe("accounts/me/addresses"),
+    ]);
+    return book.length >= legacy.length ? (book.length ? book : legacy) : legacy;
+  },
+
 
   updateAddress: async (address) => {
     await guarded(() =>
