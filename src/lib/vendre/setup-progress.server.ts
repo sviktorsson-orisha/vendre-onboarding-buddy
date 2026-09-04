@@ -17,6 +17,8 @@ export type StoredSetupProgress = {
   secretsOk: boolean;
   connectionOk: boolean;
   publishedOrigin: string;
+  /** false when the Cloud table is missing/unreachable and we fall back to memory. */
+  storageOk: boolean;
 };
 
 const EMPTY: StoredSetupProgress = {
@@ -25,6 +27,7 @@ const EMPTY: StoredSetupProgress = {
   secretsOk: false,
   connectionOk: false,
   publishedOrigin: "",
+  storageOk: true,
 };
 
 function coerce(value: unknown): StoredSetupProgress {
@@ -35,43 +38,68 @@ function coerce(value: unknown): StoredSetupProgress {
     secretsOk: Boolean(raw.secretsOk),
     connectionOk: Boolean(raw.connectionOk),
     publishedOrigin: typeof raw.publishedOrigin === "string" ? raw.publishedOrigin : "",
+    storageOk: raw.storageOk !== false,
   };
 }
 
-export async function readSetupProgress(): Promise<StoredSetupProgress> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await supabaseAdmin
-    .from("vendre_setup_progress")
-    .select("admin_done,cors_done,secrets_ok,connection_ok,published_origin")
-    .eq("id", 1)
-    .maybeSingle();
+/**
+ * Fallback store used when the Cloud table does not exist yet (a freshly
+ * imported copy of this template). Without it the guide could never reach
+ * "done" and the storefront stayed on demo data for good.
+ */
+type MemoryStore = { value: StoredSetupProgress | null };
+const mg = globalThis as typeof globalThis & { __vendreSetupProgress?: MemoryStore };
+const memory = (mg.__vendreSetupProgress ??= { value: null });
 
-  if (error || !data) return { ...EMPTY };
-  return {
-    adminDone: data.admin_done,
-    corsDone: data.cors_done,
-    secretsOk: data.secrets_ok,
-    connectionOk: data.connection_ok,
-    publishedOrigin: data.published_origin,
-  };
+export async function readSetupProgress(): Promise<StoredSetupProgress> {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
+      .from("vendre_setup_progress")
+      .select("admin_done,cors_done,secrets_ok,connection_ok,published_origin")
+      .eq("id", 1)
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    if (!data) return { ...EMPTY, ...(memory.value ?? {}), storageOk: true };
+    return {
+      adminDone: data.admin_done,
+      corsDone: data.cors_done,
+      secretsOk: data.secrets_ok,
+      connectionOk: data.connection_ok,
+      publishedOrigin: data.published_origin,
+      storageOk: true,
+    };
+  } catch {
+    return { ...EMPTY, ...(memory.value ?? {}), storageOk: false };
+  }
 }
 
 export async function writeSetupProgress(
   patch: Partial<StoredSetupProgress>,
 ): Promise<StoredSetupProgress> {
   const current = await readSetupProgress();
-  const next = coerce({ ...current, ...patch });
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { error } = await supabaseAdmin.from("vendre_setup_progress").upsert({
-    id: 1,
-    admin_done: next.adminDone,
-    cors_done: next.corsDone,
-    secrets_ok: next.secretsOk,
-    connection_ok: next.connectionOk,
-    published_origin: next.publishedOrigin,
-  });
-  if (error) throw new Error(`Could not save setup progress: ${error.message}`);
-  return next;
+  const next = coerce({ ...current, ...patch, storageOk: true });
+
+  // Always keep the in-memory copy so progress survives even when the
+  // database write below fails.
+  memory.value = next;
+
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("vendre_setup_progress").upsert({
+      id: 1,
+      admin_done: next.adminDone,
+      cors_done: next.corsDone,
+      secrets_ok: next.secretsOk,
+      connection_ok: next.connectionOk,
+      published_origin: next.publishedOrigin,
+    });
+    if (error) throw new Error(error.message);
+    return next;
+  } catch {
+    return { ...next, storageOk: false };
+  }
 }
 
 /**
@@ -96,3 +124,4 @@ export async function resolveSetupProgress(force = false): Promise<StoredSetupPr
     return stored;
   }
 }
+
