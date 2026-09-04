@@ -112,7 +112,10 @@ export async function resolveSetupProgress(force = false): Promise<StoredSetupPr
     const { getVendreStatus } = await import("./token.server");
     const status = await getVendreStatus(force);
     const secretsOk = status.secretsOk;
-    const connectionOk = secretsOk && (status.tokenOk || stored.connectionOk);
+    // A valid OAuth token is only the credentials check. It must never stand
+    // in for the browser connection test, which also verifies CORS, session
+    // bootstrap and a live Surface read. Only that test writes connectionOk.
+    const connectionOk = status.ok && stored.connectionOk;
     return {
       ...stored,
       // Credentials in place implies the admin OAuth client exists.

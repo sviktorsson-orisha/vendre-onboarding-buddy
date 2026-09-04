@@ -170,3 +170,11 @@ so the progress survives reloads and other domains.
 The storefront switches from demo data to live data as soon as the guide is
 fully verified — the guide refreshes the storefront state itself, so no manual
 page reload is needed.
+
+The OAuth/token status and the completed browser connection test are different
+facts. A valid token may mark the credentials step green, but it must never set
+`connection_ok`: only a successful browser test of CORS, session bootstrap and
+the live Surface read may persist that flag. Persist the test result first,
+then invalidate the root loader. The storefront and guide must both use
+`resolveSetupProgress()` as their shared resolved status source so their mode
+cannot disagree.
