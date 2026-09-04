@@ -10,7 +10,7 @@ If this project was just imported, created from this template, or if the Vendre 
 2. **Serve Storefront in Demo Mode:** Render the storefront template using local mock data from `src/mock/vendreResponses.ts` (`isConfigured: false`).
 3. **Launch Top Banner & Setup Modal:** Render the Top Setup Banner on all pages and open the onboarding modal automatically on page load until the store is connected or the user closes it.
 4. **Execute Setup Procedure:** Read `/.vendre/skills/setup.md` and execute its procedure inside the onboarding wizard to guide the user through entering their API keys, verifying CORS and testing the connection. Steps 5 and 6 of the guide may only be marked green once CORS is confirmed AND the connection test passes.
-4. **Transition to Live Mode:** Only switch `isConfigured` to `true` and begin fetching live Vendre Surface API data once the connection test returns `ok: true`.
+5. **Transition to Live Mode:** Only switch `isConfigured` to `true` and begin fetching live Vendre Surface API data once the connection test returns `ok: true`.
 
 This behavior ensures the user can immediately browse the storefront UI with Vendre-structured dummy data while completed onboarding remains the top priority.
 
