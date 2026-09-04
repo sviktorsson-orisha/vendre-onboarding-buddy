@@ -176,6 +176,7 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
   const preview = `https://project--${PROJECT_ID}-dev.lovable.app`;
   const published = `https://project--${PROJECT_ID}.lovable.app`;
   const { progress, loaded, update } = useSetupProgress();
+  const router = useRouter();
   // Shared with every visitor/domain: the origin is stored server-side too.
   const publishedOrigin = progress.publishedOrigin;
   const setPublishedOrigin = (value: string) => update({ publishedOrigin: value });
@@ -273,8 +274,11 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
     try {
       const next = await testVendreConnection();
       setResult(next);
-      update({ connectionOk: next.ok });
+      await update({ connectionOk: next.ok });
       if (next.ok) setOpen(5);
+      // The storefront mode is decided by the root loader — refresh it now so
+      // demo data is replaced immediately, without a manual reload.
+      await router.invalidate();
 
     } catch (error) {
       setTestError((error as Error).message);
@@ -310,6 +314,11 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
             <p className="mt-1 text-sm text-muted-foreground">
               {verified ? t("panel.verified") : t("panel.progress", { done: completedCount, total })}
             </p>
+            {progress.storageOk === false && (
+              <p className="mt-3 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                {t("panel.storageWarning")}
+              </p>
+            )}
             {!verified && (
               <p className="mt-3 inline-flex rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-accent-foreground">
                 {t("panel.next")} {active + 1}. {activeTitle}
@@ -490,8 +499,9 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
               type="checkbox"
               checked={corsDone}
               onChange={(event) => {
-                setCorsDone(event.target.checked);
-                if (event.target.checked) setOpen(4);
+                const checked = event.target.checked;
+                void Promise.resolve(setCorsDone(checked)).then(() => router.invalidate());
+                if (checked) setOpen(4);
               }}
               disabled={!publishedOrigin}
               className="mt-0.5 size-4 accent-primary"
