@@ -155,6 +155,78 @@ function asArray(payload: unknown, ...keys: string[]): unknown[] {
   return [];
 }
 
+const ADDRESS_LIST_KEYS = [
+  "addresses",
+  "address_book",
+  "addressbook",
+  "address_list",
+  "items",
+  "entries",
+  "results",
+  "rows",
+  "data",
+];
+
+function looksLikeAddress(value: unknown): boolean {
+  if (!isBag(value)) return false;
+  const bag = flatten(value);
+  return ["street_address", "street", "postcode", "zip", "city", "address_1"].some(
+    (key) => typeof bag[key] === "string" && (bag[key] as string).trim(),
+  );
+}
+
+/**
+ * The address book comes back as an array, as an object wrapping one of many
+ * list keys (sometimes one level deeper), or as an object keyed by address id.
+ */
+function extractAddressList(payload: unknown, depth = 0): unknown[] {
+  if (Array.isArray(payload)) return payload;
+  if (!isBag(payload) || depth > 2) return [];
+
+  for (const key of ADDRESS_LIST_KEYS) {
+    const value = payload[key];
+    if (Array.isArray(value)) return value;
+    if (isBag(value)) {
+      const nested = extractAddressList(value, depth + 1);
+      if (nested.length) return nested;
+    }
+  }
+
+  // Object keyed by id: { "12": {...}, "13": {...} }
+  const values = Object.values(payload);
+  if (values.length && values.every(looksLikeAddress)) return values;
+
+  // Single address object returned bare.
+  if (looksLikeAddress(payload)) return [payload];
+
+  for (const value of values) {
+    if (isBag(value) || Array.isArray(value)) {
+      const nested = extractAddressList(value, depth + 1);
+      if (nested.length) return nested;
+    }
+  }
+
+  return [];
+}
+
+function dedupeAddresses(list: Address[]): Address[] {
+  const seen = new Set<string>();
+  return list.filter((address) => {
+    const key = [
+      address.id,
+      address.street_address,
+      address.postcode,
+      address.city,
+    ]
+      .join("|")
+      .toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+
 function normalizeOrder(payload: unknown, index: number): OrderSummary {
   const bag = flatten(payload);
   return {
