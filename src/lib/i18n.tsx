@@ -91,8 +91,6 @@ const dictionary = {
     "step6.verdictDone": "Butiksanslutningen är verifierad",
     "step6.verdict": "Låst tills anslutningen är grön",
     "step6.done": "Setupen är klar. Projektet är redo för storefront-arbete.",
-    "step6.baseUrl": "Base URL",
-    "step6.origin": "Allowlistad origin",
     "step6.pending": "Slutför föregående steg och kör anslutningstestet.",
 
     "complete.title": "Allt är klart!",
@@ -303,8 +301,6 @@ const dictionary = {
     "step6.verdictDone": "The store connection is verified",
     "step6.verdict": "Locked until the connection is green",
     "step6.done": "Setup is complete. The project is ready for storefront work.",
-    "step6.baseUrl": "Base URL",
-    "step6.origin": "Allowlisted origin",
     "step6.pending": "Complete the previous steps and run the connection test.",
 
     "complete.title": "Everything is ready!",
