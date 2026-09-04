@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 
 import { ProductCard } from "@/components/store/product-card";
-import { StoreImage } from "@/components/store/store-image";
+
 import { StoreShell } from "@/components/store/store-shell";
 import { useI18n } from "@/lib/i18n";
 import { useFeaturedProducts, useMenuTree } from "@/lib/vendre/api";
