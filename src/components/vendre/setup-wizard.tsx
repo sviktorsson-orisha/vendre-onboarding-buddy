@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Check, ChevronDown, Copy, ExternalLink, Loader2, Lock, PartyPopper } from "lucide-react";
+import { useRouter } from "@tanstack/react-router";
 
 import { PublishOriginField } from "@/components/vendre/publish-origin-field";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
