@@ -529,16 +529,6 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
           {verified ? (
             <>
               <p className="rounded-md bg-emerald-500/10 p-3 font-medium text-emerald-700">{t("step6.done")}</p>
-              <dl className="space-y-2">
-                <div className="rounded-lg border border-border bg-card p-3">
-                  <dt className="brand-eyebrow">{t("step6.baseUrl")}</dt>
-                  <dd className="mt-1 break-all font-mono text-xs text-foreground">{result?.baseUrl ?? "—"}</dd>
-                </div>
-                <div className="rounded-lg border border-border bg-card p-3">
-                  <dt className="brand-eyebrow">{t("step6.origin")}</dt>
-                  <dd className="mt-1 break-all font-mono text-xs text-foreground">{publishedOrigin || result?.origin || "—"}</dd>
-                </div>
-              </dl>
               <button type="button" className="brand-button" onClick={startBuilding}>
                 {t("complete.cta")}
               </button>
