@@ -8,7 +8,7 @@ import { SearchBox } from "@/components/store/search-box";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { LanguagePicker } from "@/components/vendre/language-picker";
 import { useI18n } from "@/lib/i18n";
-import { useCart, useCategoryMenu } from "@/lib/vendre/api";
+import { resolveImageUrl, useCart, useCategoryMenu, useSessionContext } from "@/lib/vendre/api";
 import { cn } from "@/lib/utils";
 import type { MenuNode } from "@/types/vendre";
 
@@ -71,6 +71,9 @@ export function StoreHeader() {
   const { t } = useI18n();
   const tree = useCategoryMenu();
   const { data: cart } = useCart();
+  const { data: session } = useSessionContext();
+  const storeName = session?.STORE_NAME ?? "Vendre";
+  const logoUrl = resolveImageUrl(session?.SHOP_LOGO);
   const [cartOpen, setCartOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -99,8 +102,12 @@ export function StoreHeader() {
           <Menu className="size-4" />
         </button>
 
-        <Link to="/" className="brand-wordmark text-2xl text-foreground">
-          vendre
+        <Link to="/" className="flex items-center" aria-label={storeName}>
+          {logoUrl ? (
+            <img src={logoUrl} alt={storeName} className="h-8 w-auto max-w-[180px] object-contain" />
+          ) : (
+            <span className="brand-wordmark text-2xl text-foreground">vendre</span>
+          )}
         </Link>
 
         <SearchBox className="ml-2 hidden grow md:block" />
