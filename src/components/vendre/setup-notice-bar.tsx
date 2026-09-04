@@ -11,13 +11,10 @@ export function SetupNoticeBar() {
   const { isConfigured, guideDismissed } = useOnboarding();
   const [open, setOpen] = useState(false);
 
-  // The guide is the first thing to do in a fresh project: open it on load
-  // until the store is connected or the developer closed it themselves.
-  const autoOpened = useRef(false);
+  // The guide is the first thing to do in a fresh project: keep it open while
+  // the store is unconnected, unless the developer closed it themselves.
   useEffect(() => {
-    if (autoOpened.current) return;
     if (isConfigured || guideDismissed) return;
-    autoOpened.current = true;
     setOpen(true);
   }, [isConfigured, guideDismissed]);
 
