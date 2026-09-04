@@ -41,6 +41,12 @@ the masked secrets form — the user must be able to read and check it:
 
 VENDRE_BASE_URL — store URL, scheme + host. A pasted value with a trailing
 slash is accepted, but strip the trailing slash before saving it.
+Never put VENDRE_BASE_URL in the secrets/masked form and never mark it as
+sensitive — it is a public URL and must stay readable while typing.
+
+The storefront keeps rendering demo data, and the setup modal stays open,
+until the guide is fully verified (credentials + CORS confirmed + green
+connection test). Saving credentials alone must not switch the store to live.
 
 Then open the secrets form for the two sensitive values:
 
