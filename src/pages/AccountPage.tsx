@@ -8,6 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import {
@@ -461,6 +468,9 @@ export default function AccountPage({ view = "oversikt" }: { view?: AccountView 
           </nav>
 
           <div>
+            <h2 className="brand-heading mb-4 text-2xl text-foreground lg:hidden">
+              {t(NAV.find((i) => i.view === view)?.label ?? "account.overview")}
+            </h2>
             {view === "oversikt" && <OverviewView />}
             {view === "ordrar" && <OrdersView />}
             {view === "adresser" && <AddressesView />}
