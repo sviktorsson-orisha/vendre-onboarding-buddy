@@ -303,15 +303,15 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
               </span>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              {connectionOk ? t("panel.verified") : t("panel.progress", { done: completedCount, total })}
+              {verified ? t("panel.verified") : t("panel.progress", { done: completedCount, total })}
             </p>
-            {!connectionOk && (
+            {!verified && (
               <p className="mt-3 inline-flex rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-accent-foreground">
                 {t("panel.next")} {active + 1}. {activeTitle}
               </p>
             )}
           </div>
-          <button type="button" onClick={runTest} disabled={testing || !secretStatus?.ok} className="brand-button">
+          <button type="button" onClick={runTest} disabled={testing || !corsDone} className="brand-button">
             {testing && <Loader2 className="size-4 animate-spin" />}
             {testing ? t("panel.testing") : t("panel.retest")}
           </button>
@@ -333,7 +333,7 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
         </div>
       </section>
 
-      {connectionOk && (
+      {verified && (
         <section className="brand-card mt-6 border-emerald-500/40 bg-emerald-500/5 p-5">
           <div className="flex items-start gap-3">
             <PartyPopper className="mt-0.5 size-5 text-emerald-600" aria-hidden />
@@ -460,7 +460,6 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
           <div>
             <div className="flex items-center justify-between gap-3">
               <span className="brand-eyebrow text-muted-foreground">{t("step4.originsLabel")}</span>
-              <CopyButton value={origins.join("\n")} />
             </div>
             <ul className="mt-2 space-y-2">
               {origins.map((origin) => (
@@ -502,7 +501,7 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
           state={states[4] ?? "pending"}
           open={open === 4}
           onToggle={() => setOpen(open === 4 ? -1 : 4)}
-          verdict={connectionOk ? t("step5.verdictDone") : t("step5.verdict")}
+          verdict={verified ? t("step5.verdictDone") : t("step5.verdict")}
         >
           <p>{t("step5.body")}</p>
           <button type="button" className="brand-button" disabled={testing || !corsDone} onClick={runTest}>
@@ -525,9 +524,9 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
           state={states[5] ?? "pending"}
           open={open === 5}
           onToggle={() => setOpen(open === 5 ? -1 : 5)}
-          verdict={connectionOk ? t("step6.verdictDone") : t("step6.verdict")}
+          verdict={verified ? t("step6.verdictDone") : t("step6.verdict")}
         >
-          {connectionOk ? (
+          {verified ? (
             <>
               <p className="rounded-md bg-emerald-500/10 p-3 font-medium text-emerald-700">{t("step6.done")}</p>
               <dl className="space-y-2">
