@@ -468,9 +468,13 @@ const liveAccountApi: AccountApi = {
     );
   },
   getAddresses: () =>
-    guarded(() => call<unknown>("accounts/me/addresses")).then((data) =>
-      asArray(data, "addresses", "address_list", "data").map(normalizeAddress),
-    ),
+    guarded(() => call<unknown>("accounts/me/addresses")).then((data) => {
+      if (import.meta.env.DEV) {
+        console.debug("[vendre] accounts/me/addresses raw response", data);
+      }
+      return dedupeAddresses(extractAddressList(data).map(normalizeAddress));
+    }),
+
   updateAddress: async (address) => {
     await guarded(() =>
       call("accounts/me/addresses", {
