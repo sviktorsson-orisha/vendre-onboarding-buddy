@@ -8,7 +8,7 @@ import { useI18n } from "@/lib/i18n";
 /** Top banner: demo-mode warning + entry point to the setup guide modal. */
 export function SetupNoticeBar() {
   const { t } = useI18n();
-  const { isConfigured, verified, guideDismissed } = useOnboarding();
+  const { verified, guideDismissed } = useOnboarding();
   const [open, setOpen] = useState(false);
 
   // The guide is the first thing to do in a fresh project: keep it open while
@@ -18,24 +18,24 @@ export function SetupNoticeBar() {
     setOpen(true);
   }, [verified, guideDismissed]);
 
-  // Once the guide is fully verified and finished, the banner disappears.
-  if (verified && guideDismissed) return null;
+  // "Start building the store" removes the banner for good.
+  if (guideDismissed) return null;
 
   return (
 
     <>
       <div className="border-b border-border bg-linear-to-r from-primary/10 via-brand-pink/10 to-brand-blue/10">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-3 gap-y-2 px-5 py-2.5 sm:px-6">
-          {isConfigured ? (
+          {verified ? (
             <Rocket className="size-4 text-primary" aria-hidden />
           ) : (
             <Settings2 className="size-4 text-primary" aria-hidden />
           )}
           <span className="brand-eyebrow rounded-md bg-primary/10 px-2 py-0.5 text-primary">
-            {isConfigured ? "Vendre" : t("notice.title")}
+            {verified ? "Vendre" : t("notice.title")}
           </span>
           <p className="text-sm text-muted-foreground">
-            {isConfigured ? t("panel.verified") : t("notice.body")}
+            {verified ? t("panel.verified") : t("notice.body")}
           </p>
           <button type="button" className="brand-button-ghost ml-auto" onClick={() => setOpen(true)}>
             {t("notice.cta")}
