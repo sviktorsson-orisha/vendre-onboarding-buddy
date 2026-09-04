@@ -216,6 +216,11 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
   const states = done.map((value, index): GuideState => (value ? "done" : index === active ? "current" : "pending"));
   const activeTitle = t(TITLE_KEYS[active] ?? "step1.title");
 
+  // Once everything is green the final step opens itself.
+  useEffect(() => {
+    if (verified) setOpen(5);
+  }, [verified]);
+
   // Resume where the guide was left off after a refresh.
   const [resumed, setResumed] = useState(false);
   useEffect(() => {
@@ -529,16 +534,6 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
           {verified ? (
             <>
               <p className="rounded-md bg-emerald-500/10 p-3 font-medium text-emerald-700">{t("step6.done")}</p>
-              <dl className="space-y-2">
-                <div className="rounded-lg border border-border bg-card p-3">
-                  <dt className="brand-eyebrow">{t("step6.baseUrl")}</dt>
-                  <dd className="mt-1 break-all font-mono text-xs text-foreground">{result?.baseUrl ?? "—"}</dd>
-                </div>
-                <div className="rounded-lg border border-border bg-card p-3">
-                  <dt className="brand-eyebrow">{t("step6.origin")}</dt>
-                  <dd className="mt-1 break-all font-mono text-xs text-foreground">{publishedOrigin || result?.origin || "—"}</dd>
-                </div>
-              </dl>
               <button type="button" className="brand-button" onClick={startBuilding}>
                 {t("complete.cta")}
               </button>

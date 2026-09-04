@@ -80,7 +80,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     try {
       return await getStorefrontStatus();
     } catch {
-      return { ok: false, secretsOk: false, tokenOk: false, missing: [] };
+      return {
+        ok: false,
+        secretsOk: false,
+        tokenOk: false,
+        missing: [],
+        corsDone: false,
+        connectionOk: false,
+        verified: false,
+      };
     }
   },
   head: () => ({
@@ -127,7 +135,8 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const status = Route.useLoaderData();
   // Server-decided storefront mode: same answer for every visitor, on SSR and client.
-  setServerConfigured(status?.ok === true);
+  // Demo data stays until the guide is fully verified (credentials + CORS + test).
+  setServerConfigured(status?.verified === true);
 
 
 
