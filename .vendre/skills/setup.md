@@ -30,11 +30,19 @@ any custom domain, added later
 The stable hosts exist before publishing, so CORS can be configured up front.
 The setup screen lists every origin with copy buttons.
 
-Step 1 — Collect credentials
+Step 1 — Collect credentials (do this immediately)
 
-Ask the user for all three at once (use the questions tool if available):
+This is the FIRST thing to do in a new project. Do not suggest alternatives,
+do not offer to build anything, do not ask what the user wants to do — open the
+input form for the credentials right away and ask for the values.
 
-VENDRE_BASE_URL — store URL, scheme + host, no trailing slash
+Ask for the store URL in a PLAIN VISIBLE text field (questions tool), never in
+the masked secrets form — the user must be able to read and check it:
+
+VENDRE_BASE_URL — store URL, scheme + host. A pasted value with a trailing
+slash is accepted, but strip the trailing slash before saving it.
+
+Then open the secrets form for the two sensitive values:
 
 VENDRE_CLIENT_ID
 
