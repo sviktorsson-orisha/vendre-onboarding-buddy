@@ -37,21 +37,18 @@ const TITLE_KEYS: TranslationKey[] = [
 
 type GuideState = "done" | "current" | "pending";
 
+/** Once an origin is copied the label stays on "Copied" so the user can keep track. */
 function CopyButton({ value }: { value: string }) {
   const { t } = useI18n();
   const [copied, setCopied] = useState(false);
   return (
     <button
       type="button"
-      className="brand-button-ghost"
-      onClick={() =>
-        void navigator.clipboard.writeText(value).then(() => {
-          setCopied(true);
-          window.setTimeout(() => setCopied(false), 1500);
-        })
-      }
+      className={cn("brand-button-ghost", copied && "text-emerald-700")}
+      onClick={() => void navigator.clipboard.writeText(value).then(() => setCopied(true))}
     >
-      <Copy className="size-3.5" aria-hidden /> {copied ? t("action.copied") : t("action.copy")}
+      {copied ? <Check className="size-3.5" aria-hidden /> : <Copy className="size-3.5" aria-hidden />}{" "}
+      {copied ? t("action.copied") : t("action.copy")}
     </button>
   );
 }
@@ -152,8 +149,12 @@ function GuideStep({
 }
 
 function AdminLink({ path, baseUrl, children }: { path: string; baseUrl?: string | null; children: ReactNode }) {
-  // With the store base URL known, link straight into the customer's own admin.
-  const href = baseUrl ? `${baseUrl.replace(/\/+$/, "")}${path}` : path;
+  // Until the store URL is known there is nothing to link to — show the path
+  // as plain text and turn it into a real link once the credentials are saved.
+  if (!baseUrl) {
+    return <span className="font-mono text-xs text-muted-foreground">{children}</span>;
+  }
+  const href = `${baseUrl.replace(/\/+$/, "")}${path}`;
   return (
     <a
       href={href}
@@ -206,7 +207,9 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
     return Array.from(new Set(list));
   }, [publishedOrigin, preview, published]);
 
-  const done = [adminDone, secretsOk, publishedOrigin !== "", corsDone, connectionOk, connectionOk];
+  // Steps 5 and 6 must never go green before CORS has been confirmed.
+  const verified = corsDone && connectionOk;
+  const done = [adminDone, secretsOk, publishedOrigin !== "", corsDone, verified, verified];
   const total = TITLE_KEYS.length;
   const active = Math.max(done.findIndex((value) => !value), 0);
   const completedCount = done.filter(Boolean).length;
@@ -300,15 +303,15 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
               </span>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              {connectionOk ? t("panel.verified") : t("panel.progress", { done: completedCount, total })}
+              {verified ? t("panel.verified") : t("panel.progress", { done: completedCount, total })}
             </p>
-            {!connectionOk && (
+            {!verified && (
               <p className="mt-3 inline-flex rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-accent-foreground">
                 {t("panel.next")} {active + 1}. {activeTitle}
               </p>
             )}
           </div>
-          <button type="button" onClick={runTest} disabled={testing || !secretStatus?.ok} className="brand-button">
+          <button type="button" onClick={runTest} disabled={testing || !corsDone} className="brand-button">
             {testing && <Loader2 className="size-4 animate-spin" />}
             {testing ? t("panel.testing") : t("panel.retest")}
           </button>
@@ -330,7 +333,7 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
         </div>
       </section>
 
-      {connectionOk && (
+      {verified && (
         <section className="brand-card mt-6 border-emerald-500/40 bg-emerald-500/5 p-5">
           <div className="flex items-start gap-3">
             <PartyPopper className="mt-0.5 size-5 text-emerald-600" aria-hidden />
@@ -457,7 +460,6 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
           <div>
             <div className="flex items-center justify-between gap-3">
               <span className="brand-eyebrow text-muted-foreground">{t("step4.originsLabel")}</span>
-              <CopyButton value={origins.join("\n")} />
             </div>
             <ul className="mt-2 space-y-2">
               {origins.map((origin) => (
@@ -499,7 +501,7 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
           state={states[4] ?? "pending"}
           open={open === 4}
           onToggle={() => setOpen(open === 4 ? -1 : 4)}
-          verdict={connectionOk ? t("step5.verdictDone") : t("step5.verdict")}
+          verdict={verified ? t("step5.verdictDone") : t("step5.verdict")}
         >
           <p>{t("step5.body")}</p>
           <button type="button" className="brand-button" disabled={testing || !corsDone} onClick={runTest}>
@@ -522,9 +524,9 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
           state={states[5] ?? "pending"}
           open={open === 5}
           onToggle={() => setOpen(open === 5 ? -1 : 5)}
-          verdict={connectionOk ? t("step6.verdictDone") : t("step6.verdict")}
+          verdict={verified ? t("step6.verdictDone") : t("step6.verdict")}
         >
-          {connectionOk ? (
+          {verified ? (
             <>
               <p className="rounded-md bg-emerald-500/10 p-3 font-medium text-emerald-700">{t("step6.done")}</p>
               <dl className="space-y-2">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Rocket, Settings2 } from "lucide-react";
 
 import { SetupWizardDialog } from "@/components/vendre/setup-wizard";
@@ -8,8 +8,18 @@ import { useI18n } from "@/lib/i18n";
 /** Top banner: demo-mode warning + entry point to the setup guide modal. */
 export function SetupNoticeBar() {
   const { t } = useI18n();
-  const { isConfigured } = useOnboarding();
+  const { isConfigured, guideDismissed } = useOnboarding();
   const [open, setOpen] = useState(false);
+
+  // The guide is the first thing to do in a fresh project: open it on load
+  // until the store is connected or the developer closed it themselves.
+  const autoOpened = useRef(false);
+  useEffect(() => {
+    if (autoOpened.current) return;
+    if (isConfigured || guideDismissed) return;
+    autoOpened.current = true;
+    setOpen(true);
+  }, [isConfigured, guideDismissed]);
 
   return (
     <>
