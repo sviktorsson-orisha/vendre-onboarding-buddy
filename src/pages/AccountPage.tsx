@@ -17,17 +17,15 @@ import {
   useAuth,
   useOrder,
   useOrders,
-  useSubUsers,
 } from "@/lib/vendre/account";
 import type { Account, Address } from "@/types/vendre-account";
 
-export type AccountView = "oversikt" | "ordrar" | "adresser" | "anvandare" | "konto";
+export type AccountView = "oversikt" | "ordrar" | "adresser" | "konto";
 
 const NAV: { view: AccountView; label: TranslationKey; icon: typeof User }[] = [
   { view: "oversikt", label: "account.overview", icon: User },
   { view: "ordrar", label: "account.orders", icon: Package },
   { view: "adresser", label: "account.addresses", icon: MapPin },
-  { view: "anvandare", label: "account.users", icon: UserCog },
   { view: "konto", label: "account.profile", icon: UserCog },
 ];
 
@@ -274,38 +272,6 @@ function AddressesView() {
   );
 }
 
-/* --------------------------------------------------------------- users -- */
-
-function UsersView() {
-  const { t } = useI18n();
-  const { data: users } = useSubUsers();
-  return (
-    <Section title={t("account.users")}>
-      {(users?.length ?? 0) === 0 ? (
-        <p className="text-sm text-muted-foreground">{t("account.noUsers")}</p>
-      ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border text-left text-xs uppercase text-muted-foreground">
-              <th className="py-2">{t("account.name")}</th>
-              <th className="py-2">{t("account.email")}</th>
-              <th className="py-2">{t("account.role")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users?.map((user) => (
-              <tr key={user.id} className="border-b border-border/60">
-                <td className="py-2 text-foreground">{user.name}</td>
-                <td className="py-2 text-muted-foreground">{user.email}</td>
-                <td className="py-2 text-muted-foreground">{user.role}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </Section>
-  );
-}
 
 /* ------------------------------------------------------------- profile -- */
 
@@ -465,7 +431,6 @@ export default function AccountPage({ view = "oversikt" }: { view?: AccountView 
             {view === "oversikt" && <OverviewView />}
             {view === "ordrar" && <OrdersView />}
             {view === "adresser" && <AddressesView />}
-            {view === "anvandare" && <UsersView />}
             {view === "konto" && <ProfileView />}
           </div>
         </div>
