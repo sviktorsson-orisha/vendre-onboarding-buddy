@@ -80,7 +80,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     try {
       return await getStorefrontStatus();
     } catch {
-      return { ok: false, secretsOk: false, tokenOk: false, missing: [] };
+      return {
+        ok: false,
+        secretsOk: false,
+        tokenOk: false,
+        missing: [],
+        corsDone: false,
+        connectionOk: false,
+        verified: false,
+      };
     }
   },
   head: () => ({
