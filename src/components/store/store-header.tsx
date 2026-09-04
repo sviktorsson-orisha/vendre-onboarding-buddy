@@ -72,8 +72,8 @@ export function StoreHeader() {
   const tree = useCategoryMenu();
   const { data: cart } = useCart();
   const { data: session } = useSessionContext();
-  const storeName = session?.STORE_NAME ?? "Vendre";
-  const logoUrl = resolveImageUrl(session?.SHOP_LOGO);
+  const storeName = session?.configuration?.STORE_NAME ?? session?.STORE_NAME ?? "Vendre";
+  const logoUrl = resolveImageUrl(session?.configuration?.SHOP_LOGO ?? session?.SHOP_LOGO);
   const [cartOpen, setCartOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
