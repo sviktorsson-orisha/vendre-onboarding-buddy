@@ -8,6 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import {
@@ -378,7 +385,40 @@ export default function AccountPage({ view = "oversikt" }: { view?: AccountView 
         </p>
 
         <div className="mt-8 grid gap-8 lg:grid-cols-[220px_1fr]">
-          <nav>
+          <div className="lg:hidden">
+            <Label className="text-xs text-muted-foreground">{t("account.title")}</Label>
+            <Select
+              value={view}
+              onValueChange={(next) => {
+                if (next === "oversikt") void navigate({ to: "/mitt-konto" });
+                else void navigate({ to: "/mitt-konto/$view", params: { view: next as AccountView } });
+              }}
+            >
+              <SelectTrigger className="mt-1 w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {NAV.map((item) => (
+                  <SelectItem key={item.view} value={item.view}>
+                    {t(item.label)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <button
+              type="button"
+              className="mt-3 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+              onClick={() => {
+                void logout.mutateAsync().then(() => navigate({ to: "/" }));
+              }}
+            >
+              <LogOut className="size-4" />
+              {t("account.signOut")}
+            </button>
+          </div>
+
+          <nav className="hidden lg:block">
+
             <ul className="space-y-1">
               {NAV.map((item) => {
                 const Icon = item.icon;
@@ -428,6 +468,9 @@ export default function AccountPage({ view = "oversikt" }: { view?: AccountView 
           </nav>
 
           <div>
+            <h2 className="brand-heading mb-4 text-2xl text-foreground lg:hidden">
+              {t(NAV.find((i) => i.view === view)?.label ?? "account.overview")}
+            </h2>
             {view === "oversikt" && <OverviewView />}
             {view === "ordrar" && <OrdersView />}
             {view === "adresser" && <AddressesView />}
