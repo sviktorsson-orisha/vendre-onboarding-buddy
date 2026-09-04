@@ -4,9 +4,10 @@ Jag hittade felet i koden — jag behöver ingen data från ditt nya projekt.
 
 ## Vad som händer
 
-Butiken byter från dummydata till riktig data först när servern svarar "allt är verifierat". Det svaret hämtas **en enda gång, när sidan laddas**. När du blir klar i guiden (CORS ibockat + grönt anslutningstest) uppdateras aldrig det svaret — sidan fortsätter därför visa dummydata tills något annat tvingar fram en omladdning. Ber du chatten köra testet igen så laddas sidan om i samband med det, och då slår riktig data på. Det är därför det ser ut som att chatten "fixar" något.
+Att en omladdning inte hjälpte pekar direkt på huvudorsaken: guidens bockar (CORS ibockat + godkänt anslutningstest) sparas i en databastabell som följer med templaten som en migreringsfil. I ett nyimporterat projekt finns den tabellen inte i den nya backenden, så sparandet misslyckas **tyst**. Butiken frågar servern "är guiden helt klar?" och får alltid nej — därför blir det dummydata för alltid, även efter omladdning. När du sedan bad chatten verifiera igen sattes lagringen upp/skrevs om, och då slog riktig data på.
 
-Dessutom finns en andra fälla i ett nyimporterat projekt: guidens bockar sparas i en databastabell som följer med templaten som en migreringsfil. Om den tabellen inte finns i det nya projektets backend misslyckas sparandet tyst, och då kan guiden aldrig bli "helt klar" — oavsett hur många gånger man klickar. Butiken fastnar då permanent i dummyläge.
+Ovanpå det finns ett andra fel: även när lagringen fungerar hämtas svaret "är guiden klar?" bara när sidan laddas. Blir testet grönt i guiden uppdateras inte butiken förrän man laddar om.
+
 
 ## Vad som ska ändras
 
