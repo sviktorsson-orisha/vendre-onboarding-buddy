@@ -210,6 +210,8 @@ export type SessionContext = {
   prices_include_vat: boolean;
   STORE_NAME?: string;
   SHOP_LOGO?: string;
+  /** Store settings live here in Surface v2: { SHOP_LOGO, STORE_NAME }. */
+  configuration?: { SHOP_LOGO?: string | null; STORE_NAME?: string | null } | null;
 };
 
 export type CategoryQuery = {
