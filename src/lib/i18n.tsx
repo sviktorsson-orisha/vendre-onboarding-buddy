@@ -169,6 +169,8 @@ const dictionary = {
     "account.overview": "Översikt",
     "account.orders": "Ordrar",
     "account.addresses": "Adresser",
+    "account.mainAddress": "Huvudadress",
+    "account.noAddresses": "Inga adresser finns registrerade.",
     "account.users": "Användare",
     "account.profile": "Redigera konto",
     "account.save": "Spara",
