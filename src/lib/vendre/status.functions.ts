@@ -5,6 +5,12 @@ export type StorefrontStatus = {
   secretsOk: boolean;
   tokenOk: boolean;
   missing: string[];
+  /** CORS confirmed in the setup guide. */
+  corsDone: boolean;
+  /** Connection test returned ok in the setup guide. */
+  connectionOk: boolean;
+  /** Demo data is replaced only when the guide is fully verified. */
+  verified: boolean;
 };
 
 /**
