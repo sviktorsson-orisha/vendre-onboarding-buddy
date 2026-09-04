@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 
 import { ProductCard } from "@/components/store/product-card";
-import { StoreImage } from "@/components/store/store-image";
+
 import { StoreShell } from "@/components/store/store-shell";
 import { useI18n } from "@/lib/i18n";
 import { useFeaturedProducts, useMenuTree } from "@/lib/vendre/api";
@@ -24,30 +24,6 @@ export default function Index() {
             {t("store.heroCta")}
           </Link>
         )}
-      </section>
-
-      <section className="mt-12">
-        <h2 className="text-2xl font-bold text-foreground">{t("store.categories")}</h2>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {tree.map((node) => (
-            <Link
-              key={node.id}
-              to="/kategori/$id"
-              params={{ id: String(node.id) }}
-              className="brand-card group flex items-center gap-4 overflow-hidden p-0"
-            >
-              <StoreImage image={null} alt={node.name} label={node.name} className="size-24 shrink-0" />
-              <div className="py-4 pr-4">
-                <h3 className="text-base font-bold text-foreground group-hover:text-primary">{node.name}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {node.children.length > 0
-                    ? `${node.children.length} ${t("store.subcategories").toLowerCase()}`
-                    : t("store.viewAll")}
-                </p>
-              </div>
-            </Link>
-          ))}
-        </div>
       </section>
 
       <section className="mt-12">
