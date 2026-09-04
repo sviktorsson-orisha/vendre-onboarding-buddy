@@ -149,8 +149,12 @@ function GuideStep({
 }
 
 function AdminLink({ path, baseUrl, children }: { path: string; baseUrl?: string | null; children: ReactNode }) {
-  // With the store base URL known, link straight into the customer's own admin.
-  const href = baseUrl ? `${baseUrl.replace(/\/+$/, "")}${path}` : path;
+  // Until the store URL is known there is nothing to link to — show the path
+  // as plain text and turn it into a real link once the credentials are saved.
+  if (!baseUrl) {
+    return <span className="font-mono text-xs text-muted-foreground">{children}</span>;
+  }
+  const href = `${baseUrl.replace(/\/+$/, "")}${path}`;
   return (
     <a
       href={href}
