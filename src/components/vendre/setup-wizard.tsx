@@ -37,21 +37,18 @@ const TITLE_KEYS: TranslationKey[] = [
 
 type GuideState = "done" | "current" | "pending";
 
+/** Once an origin is copied the label stays on "Copied" so the user can keep track. */
 function CopyButton({ value }: { value: string }) {
   const { t } = useI18n();
   const [copied, setCopied] = useState(false);
   return (
     <button
       type="button"
-      className="brand-button-ghost"
-      onClick={() =>
-        void navigator.clipboard.writeText(value).then(() => {
-          setCopied(true);
-          window.setTimeout(() => setCopied(false), 1500);
-        })
-      }
+      className={cn("brand-button-ghost", copied && "text-emerald-700")}
+      onClick={() => void navigator.clipboard.writeText(value).then(() => setCopied(true))}
     >
-      <Copy className="size-3.5" aria-hidden /> {copied ? t("action.copied") : t("action.copy")}
+      {copied ? <Check className="size-3.5" aria-hidden /> : <Copy className="size-3.5" aria-hidden />}{" "}
+      {copied ? t("action.copied") : t("action.copy")}
     </button>
   );
 }
