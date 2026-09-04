@@ -20,12 +20,25 @@ export type StorefrontStatus = {
 export const getStorefrontStatus = createServerFn({ method: "GET" }).handler(
   async (): Promise<StorefrontStatus> => {
     const { getVendreStatus } = await import("./token.server");
+    const { readSetupProgress } = await import("./setup-progress.server");
     const status = await getVendreStatus();
+    let corsDone = false;
+    let connectionOk = false;
+    try {
+      const progress = await readSetupProgress();
+      corsDone = progress.corsDone;
+      connectionOk = progress.connectionOk;
+    } catch {
+      /* progress store unavailable — stay in demo mode */
+    }
     return {
       ok: status.ok,
       secretsOk: status.secretsOk,
       tokenOk: status.tokenOk,
       missing: status.missing,
+      corsDone,
+      connectionOk,
+      verified: status.ok && corsDone && connectionOk,
     };
   },
 );
