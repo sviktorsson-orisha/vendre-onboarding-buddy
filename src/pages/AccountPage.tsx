@@ -274,38 +274,6 @@ function AddressesView() {
   );
 }
 
-/* --------------------------------------------------------------- users -- */
-
-function UsersView() {
-  const { t } = useI18n();
-  const { data: users } = useSubUsers();
-  return (
-    <Section title={t("account.users")}>
-      {(users?.length ?? 0) === 0 ? (
-        <p className="text-sm text-muted-foreground">{t("account.noUsers")}</p>
-      ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border text-left text-xs uppercase text-muted-foreground">
-              <th className="py-2">{t("account.name")}</th>
-              <th className="py-2">{t("account.email")}</th>
-              <th className="py-2">{t("account.role")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users?.map((user) => (
-              <tr key={user.id} className="border-b border-border/60">
-                <td className="py-2 text-foreground">{user.name}</td>
-                <td className="py-2 text-muted-foreground">{user.email}</td>
-                <td className="py-2 text-muted-foreground">{user.role}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </Section>
-  );
-}
 
 /* ------------------------------------------------------------- profile -- */
 
