@@ -20,17 +20,16 @@ export type StorefrontStatus = {
 export const getStorefrontStatus = createServerFn({ method: "GET" }).handler(
   async (): Promise<StorefrontStatus> => {
     const { getVendreStatus } = await import("./token.server");
-    const { readSetupProgress } = await import("./setup-progress.server");
-    const status = await getVendreStatus();
-    let corsDone = false;
-    let connectionOk = false;
-    try {
-      const progress = await readSetupProgress();
-      corsDone = progress.corsDone;
-      connectionOk = progress.connectionOk;
-    } catch {
-      /* progress store unavailable — stay in demo mode */
-    }
+    const { resolveSetupProgress } = await import("./setup-progress.server");
+    // Use the same resolved status source as the setup guide. Force the live
+    // credential check so a just-completed setup cannot be held back by the
+    // 60-second status cache.
+    const [status, progress] = await Promise.all([
+      getVendreStatus(true),
+      resolveSetupProgress(true),
+    ]);
+    const corsDone = progress.corsDone;
+    const connectionOk = progress.connectionOk;
     return {
       ok: status.ok,
       secretsOk: status.secretsOk,
@@ -38,7 +37,7 @@ export const getStorefrontStatus = createServerFn({ method: "GET" }).handler(
       missing: status.missing,
       corsDone,
       connectionOk,
-      verified: status.ok && corsDone && connectionOk,
+      verified: progress.secretsOk && corsDone && connectionOk,
     };
   },
 );
