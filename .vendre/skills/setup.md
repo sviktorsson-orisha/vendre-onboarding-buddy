@@ -157,3 +157,16 @@ Mutation protection token lives in a module variable, never localStorage.
 Never add mock or placeholder product data.
 
 Never fork the client in src/lib/vendre/.
+
+Step 6 — Storage for the guide progress (new projects)
+
+The guide's checkmarks (CORS confirmed, connection test green) are stored
+server-side in the Cloud table `public.vendre_setup_progress`. In a freshly
+imported copy of this template the table may not exist yet. When it is missing
+the progress falls back to memory and the guide shows a warning — apply the
+migration in `supabase/migrations/` that creates the table (it is idempotent)
+so the progress survives reloads and other domains.
+
+The storefront switches from demo data to live data as soon as the guide is
+fully verified — the guide refreshes the storefront state itself, so no manual
+page reload is needed.
