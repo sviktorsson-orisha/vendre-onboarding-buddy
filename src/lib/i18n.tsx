@@ -381,6 +381,8 @@ const dictionary = {
     "account.overview": "Overview",
     "account.orders": "Orders",
     "account.addresses": "Addresses",
+    "account.mainAddress": "Main address",
+    "account.noAddresses": "No addresses registered.",
     "account.users": "Users",
     "account.profile": "Edit account",
     "account.save": "Save",
