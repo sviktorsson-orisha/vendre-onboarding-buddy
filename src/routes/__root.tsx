@@ -135,8 +135,9 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const status = Route.useLoaderData();
   // Server-decided storefront mode: same answer for every visitor, on SSR and client.
-  // Live data as soon as the store answers — regardless of guide progress.
-  setServerConfigured(status?.ok === true);
+  // Live data only once the whole guide is verified (credentials + CORS + green test),
+  // because browser calls to the store require the origin to be allowlisted.
+  setServerConfigured(status?.verified === true);
   setServerVerified(status?.verified === true);
 
 

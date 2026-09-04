@@ -32,9 +32,10 @@ The setup screen lists every origin with copy buttons.
 
 Step 1 — Collect credentials (do this immediately)
 
-This is the FIRST thing to do in a new project. Do not suggest alternatives,
+This is the FIRST thing to do in a new project, in the very first reply, before
+any greeting, analysis, suggestion or question. Do not suggest alternatives,
 do not offer to build anything, do not ask what the user wants to do — open the
-input form for the credentials right away and ask for the values.
+secrets form for the credentials right away and ask for the values.
 
 Ask for all three values in ONE single secrets form, in one call:
 
@@ -50,8 +51,12 @@ is expected — the values are verified by the connection test, not by reading
 them back.
 
 The setup modal stays open until the guide is fully verified (credentials +
-CORS confirmed + green connection test). The storefront itself switches from
-demo data to live data as soon as the credentials work and the store answers.
+CORS confirmed + green connection test). The storefront keeps serving demo data
+until that same point: some reads (VQL) work without CORS, but session, cart
+and account calls are blocked by CORS, so credentials alone do not mean the
+store is connected. The storefront is never empty — dummy data until live data
+can be fetched.
+
 
 Keys are created in Menu → Apps & Integrations → Headless → OAuth
 (/Admin/headless/auth/oauth-clients), which requires the "Store configuration"
