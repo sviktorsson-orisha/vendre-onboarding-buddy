@@ -221,70 +221,55 @@ function OrdersView() {
 
 /* ----------------------------------------------------------- addresses -- */
 
-function AddressCard({ address }: { address: Address }) {
-  const { t } = useI18n();
-  const { updateAddress } = useAccountMutations();
-  const [form, setForm] = useState(address);
-  const [saved, setSaved] = useState(false);
-
-  useEffect(() => setForm(address), [address]);
-
-  const field = (key: keyof Address, label: TranslationKey) => (
-    <div className="space-y-1.5">
-      <Label htmlFor={`${address.id}-${String(key)}`}>{t(label)}</Label>
-      <Input
-        id={`${address.id}-${String(key)}`}
-        value={String(form[key] ?? "")}
-        onChange={(event) => {
-          setSaved(false);
-          setForm((current) => ({ ...current, [key]: event.target.value }));
-        }}
-      />
-    </div>
-  );
+function AddressCard({ address, badge }: { address: Address; badge?: string }) {
+  const lines = [
+    [address.firstname, address.lastname].filter(Boolean).join(" "),
+    address.company,
+    address.street_address,
+    [address.postcode, address.city].filter(Boolean).join(" "),
+    address.country,
+  ].filter((line) => Boolean(line && String(line).trim()));
 
   return (
-    <form
-      className="space-y-4 rounded-lg border border-border p-4"
-      onSubmit={async (event) => {
-        event.preventDefault();
-        await updateAddress.mutateAsync(form);
-        setSaved(true);
-      }}
-    >
+    <div className="space-y-2 rounded-lg border border-border p-4">
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        {address.label}
+        {badge ?? address.label}
       </p>
-      <div className="grid gap-4 sm:grid-cols-2">
-        {field("firstname", "account.firstname")}
-        {field("lastname", "account.lastname")}
-        {field("company", "account.company")}
-        {field("telephone", "account.phone")}
-      </div>
-      {field("street_address", "account.street")}
-      <div className="grid gap-4 sm:grid-cols-3">
-        {field("postcode", "account.postcode")}
-        {field("city", "account.city")}
-        {field("country", "account.country")}
-      </div>
-      <div className="flex items-center gap-3">
-        <Button type="submit" size="sm" disabled={updateAddress.isPending}>
-          {updateAddress.isPending ? t("account.saving") : t("account.save")}
-        </Button>
-        {saved && <span className="text-xs text-muted-foreground">{t("account.saved")}</span>}
-      </div>
-    </form>
+      <address className="space-y-0.5 text-sm not-italic text-foreground">
+        {lines.map((line, index) => (
+          <div key={index}>{line}</div>
+        ))}
+      </address>
+    </div>
   );
 }
 
 function AddressesView() {
   const { t } = useI18n();
   const { data: addresses } = useAddresses();
+  const list = addresses ?? [];
+  const mainIndex = list.findIndex(
+    (address) => address.is_default_shipping || address.is_default_billing,
+  );
+  const main = list[mainIndex >= 0 ? mainIndex : 0];
+  const rest = list.filter((address) => address !== main);
+
   return (
     <Section title={t("account.addresses")}>
-      <div className="space-y-5">
-        {addresses?.map((address) => <AddressCard key={address.id} address={address} />)}
-      </div>
+      {list.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t("account.noAddresses")}</p>
+      ) : (
+        <div className="space-y-5">
+          {main && <AddressCard address={main} badge={t("account.mainAddress")} />}
+          {rest.length > 0 && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {rest.map((address) => (
+                <AddressCard key={address.id} address={address} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </Section>
   );
 }
