@@ -207,7 +207,9 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
     return Array.from(new Set(list));
   }, [publishedOrigin, preview, published]);
 
-  const done = [adminDone, secretsOk, publishedOrigin !== "", corsDone, connectionOk, connectionOk];
+  // Steps 5 and 6 must never go green before CORS has been confirmed.
+  const verified = corsDone && connectionOk;
+  const done = [adminDone, secretsOk, publishedOrigin !== "", corsDone, verified, verified];
   const total = TITLE_KEYS.length;
   const active = Math.max(done.findIndex((value) => !value), 0);
   const completedCount = done.filter(Boolean).length;
