@@ -2,11 +2,19 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { LogOut, MapPin, Package, User, UserCog } from "lucide-react";
 
+import { StoreImage } from "@/components/store/store-image";
 import { StoreShell } from "@/components/store/store-shell";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import {
@@ -16,17 +24,15 @@ import {
   useAuth,
   useOrder,
   useOrders,
-  useSubUsers,
 } from "@/lib/vendre/account";
 import type { Account, Address } from "@/types/vendre-account";
 
-export type AccountView = "oversikt" | "ordrar" | "adresser" | "anvandare" | "konto";
+export type AccountView = "oversikt" | "ordrar" | "adresser" | "konto";
 
 const NAV: { view: AccountView; label: TranslationKey; icon: typeof User }[] = [
   { view: "oversikt", label: "account.overview", icon: User },
   { view: "ordrar", label: "account.orders", icon: Package },
   { view: "adresser", label: "account.addresses", icon: MapPin },
-  { view: "anvandare", label: "account.users", icon: UserCog },
   { view: "konto", label: "account.profile", icon: UserCog },
 ];
 
@@ -101,41 +107,82 @@ function OrdersView() {
         >
           {t("account.back")}
         </button>
-        <table className="mt-4 w-full text-sm">
-          <thead>
-            <tr className="border-b border-border text-left text-xs uppercase text-muted-foreground">
-              <th className="py-2">{t("account.name")}</th>
-              <th className="py-2">{t("account.quantity")}</th>
-              <th className="py-2 text-right">{t("account.price")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {order.lines.map((line) => (
-              <tr key={line.id} className="border-b border-border/60">
-                <td className="py-2 text-foreground">{line.name}</td>
-                <td className="py-2 text-muted-foreground">{line.quantity}</td>
-                <td className="py-2 text-right text-foreground">{line.price}</td>
+        {order.lines.length === 0 ? (
+          <p className="mt-4 text-sm text-muted-foreground">{t("account.noOrderLines")}</p>
+        ) : (
+          <table className="mt-4 w-full text-sm">
+            <thead>
+              <tr className="border-b border-border text-left text-xs uppercase text-muted-foreground">
+                <th className="py-2">{t("account.name")}</th>
+                <th className="py-2">{t("account.quantity")}</th>
+                <th className="py-2 text-right">{t("account.price")}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {order.lines.map((line) => (
+                <tr key={line.id} className="border-b border-border/60">
+                  <td className="py-2">
+                    <div className="flex items-center gap-3">
+                      <StoreImage
+                        image={
+                          line.image
+                            ? {
+                                id: null,
+                                path: null,
+                                image: line.image,
+                                alt: line.name,
+                                alt_translated: null,
+                              }
+                            : null
+                        }
+                        alt={line.name}
+                        label={line.name}
+                        className="h-12 w-12 shrink-0 rounded-md"
+                      />
+                      <span className="text-foreground">{line.name}</span>
+                    </div>
+                  </td>
+                  <td className="py-2 text-muted-foreground">{line.quantity}</td>
+                  <td className="py-2 text-right text-foreground">{line.price}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
         <dl className="mt-4 space-y-1 text-sm">
-          {order.shipping_total && (
-            <div className="flex justify-between">
-              <dt className="text-muted-foreground">{t("account.shipping")}</dt>
-              <dd>{order.shipping_total}</dd>
-            </div>
+          {order.totals.length > 0 ? (
+            order.totals.map((row, index) => (
+              <div
+                key={`${row.title}-${index}`}
+                className={cn(
+                  "flex justify-between",
+                  index === order.totals.length - 1 && "font-semibold text-foreground",
+                )}
+              >
+                <dt className="text-muted-foreground">{row.title}</dt>
+                <dd>{row.value}</dd>
+              </div>
+            ))
+          ) : (
+            <>
+              {order.shipping_total && (
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">{t("account.shipping")}</dt>
+                  <dd>{order.shipping_total}</dd>
+                </div>
+              )}
+              {order.tax_total && (
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">{t("account.tax")}</dt>
+                  <dd>{order.tax_total}</dd>
+                </div>
+              )}
+              <div className="flex justify-between font-semibold">
+                <dt>{t("account.total")}</dt>
+                <dd>{order.total}</dd>
+              </div>
+            </>
           )}
-          {order.tax_total && (
-            <div className="flex justify-between">
-              <dt className="text-muted-foreground">{t("account.tax")}</dt>
-              <dd>{order.tax_total}</dd>
-            </div>
-          )}
-          <div className="flex justify-between font-semibold">
-            <dt>{t("account.total")}</dt>
-            <dd>{order.total}</dd>
-          </div>
         </dl>
       </Section>
     );
@@ -179,106 +226,59 @@ function OrdersView() {
 
 /* ----------------------------------------------------------- addresses -- */
 
-function AddressCard({ address }: { address: Address }) {
-  const { t } = useI18n();
-  const { updateAddress } = useAccountMutations();
-  const [form, setForm] = useState(address);
-  const [saved, setSaved] = useState(false);
-
-  useEffect(() => setForm(address), [address]);
-
-  const field = (key: keyof Address, label: TranslationKey) => (
-    <div className="space-y-1.5">
-      <Label htmlFor={`${address.id}-${String(key)}`}>{t(label)}</Label>
-      <Input
-        id={`${address.id}-${String(key)}`}
-        value={String(form[key] ?? "")}
-        onChange={(event) => {
-          setSaved(false);
-          setForm((current) => ({ ...current, [key]: event.target.value }));
-        }}
-      />
-    </div>
-  );
+function AddressCard({ address, badge }: { address: Address; badge?: string }) {
+  const lines = [
+    [address.firstname, address.lastname].filter(Boolean).join(" "),
+    address.company,
+    address.street_address,
+    [address.postcode, address.city].filter(Boolean).join(" "),
+    address.country,
+  ].filter((line) => Boolean(line && String(line).trim()));
 
   return (
-    <form
-      className="space-y-4 rounded-lg border border-border p-4"
-      onSubmit={async (event) => {
-        event.preventDefault();
-        await updateAddress.mutateAsync(form);
-        setSaved(true);
-      }}
-    >
+    <div className="space-y-2 rounded-lg border border-border p-4">
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        {address.label}
+        {badge ?? address.label}
       </p>
-      <div className="grid gap-4 sm:grid-cols-2">
-        {field("firstname", "account.firstname")}
-        {field("lastname", "account.lastname")}
-        {field("company", "account.company")}
-        {field("telephone", "account.phone")}
-      </div>
-      {field("street_address", "account.street")}
-      <div className="grid gap-4 sm:grid-cols-3">
-        {field("postcode", "account.postcode")}
-        {field("city", "account.city")}
-        {field("country", "account.country")}
-      </div>
-      <div className="flex items-center gap-3">
-        <Button type="submit" size="sm" disabled={updateAddress.isPending}>
-          {updateAddress.isPending ? t("account.saving") : t("account.save")}
-        </Button>
-        {saved && <span className="text-xs text-muted-foreground">{t("account.saved")}</span>}
-      </div>
-    </form>
+      <address className="space-y-0.5 text-sm not-italic text-foreground">
+        {lines.map((line, index) => (
+          <div key={index}>{line}</div>
+        ))}
+      </address>
+    </div>
   );
 }
 
 function AddressesView() {
   const { t } = useI18n();
   const { data: addresses } = useAddresses();
+  const list = addresses ?? [];
+  const mainIndex = list.findIndex(
+    (address) => address.is_default_shipping || address.is_default_billing,
+  );
+  const main = list[mainIndex >= 0 ? mainIndex : 0];
+  const rest = list.filter((address) => address !== main);
+
   return (
     <Section title={t("account.addresses")}>
-      <div className="space-y-5">
-        {addresses?.map((address) => <AddressCard key={address.id} address={address} />)}
-      </div>
-    </Section>
-  );
-}
-
-/* --------------------------------------------------------------- users -- */
-
-function UsersView() {
-  const { t } = useI18n();
-  const { data: users } = useSubUsers();
-  return (
-    <Section title={t("account.users")}>
-      {(users?.length ?? 0) === 0 ? (
-        <p className="text-sm text-muted-foreground">{t("account.noUsers")}</p>
+      {list.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t("account.noAddresses")}</p>
       ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border text-left text-xs uppercase text-muted-foreground">
-              <th className="py-2">{t("account.name")}</th>
-              <th className="py-2">{t("account.email")}</th>
-              <th className="py-2">{t("account.role")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users?.map((user) => (
-              <tr key={user.id} className="border-b border-border/60">
-                <td className="py-2 text-foreground">{user.name}</td>
-                <td className="py-2 text-muted-foreground">{user.email}</td>
-                <td className="py-2 text-muted-foreground">{user.role}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="space-y-5">
+          {main && <AddressCard address={main} badge={t("account.mainAddress")} />}
+          {rest.length > 0 && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {rest.map((address) => (
+                <AddressCard key={address.id} address={address} />
+              ))}
+            </div>
+          )}
+        </div>
       )}
     </Section>
   );
 }
+
 
 /* ------------------------------------------------------------- profile -- */
 
@@ -385,7 +385,40 @@ export default function AccountPage({ view = "oversikt" }: { view?: AccountView 
         </p>
 
         <div className="mt-8 grid gap-8 lg:grid-cols-[220px_1fr]">
-          <nav>
+          <div className="lg:hidden">
+            <Label className="text-xs text-muted-foreground">{t("account.title")}</Label>
+            <Select
+              value={view}
+              onValueChange={(next) => {
+                if (next === "oversikt") void navigate({ to: "/mitt-konto" });
+                else void navigate({ to: "/mitt-konto/$view", params: { view: next as AccountView } });
+              }}
+            >
+              <SelectTrigger className="mt-1 w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {NAV.map((item) => (
+                  <SelectItem key={item.view} value={item.view}>
+                    {t(item.label)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <button
+              type="button"
+              className="mt-3 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+              onClick={() => {
+                void logout.mutateAsync().then(() => navigate({ to: "/" }));
+              }}
+            >
+              <LogOut className="size-4" />
+              {t("account.signOut")}
+            </button>
+          </div>
+
+          <nav className="hidden lg:block">
+
             <ul className="space-y-1">
               {NAV.map((item) => {
                 const Icon = item.icon;
@@ -435,10 +468,12 @@ export default function AccountPage({ view = "oversikt" }: { view?: AccountView 
           </nav>
 
           <div>
+            <h2 className="brand-heading mb-4 text-2xl text-foreground lg:hidden">
+              {t(NAV.find((i) => i.view === view)?.label ?? "account.overview")}
+            </h2>
             {view === "oversikt" && <OverviewView />}
             {view === "ordrar" && <OrdersView />}
             {view === "adresser" && <AddressesView />}
-            {view === "anvandare" && <UsersView />}
             {view === "konto" && <ProfileView />}
           </div>
         </div>

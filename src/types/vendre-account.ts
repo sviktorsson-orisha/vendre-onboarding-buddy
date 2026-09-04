@@ -48,6 +48,14 @@ export type OrderLine = {
   name: string;
   quantity: number;
   price: string;
+  /** Raw image path from the store, resolved against the store base URL when rendered. */
+  image?: string | null;
+};
+
+/** A total row exactly as the store labels it (`{ title, value }`). */
+export type OrderTotal = {
+  title: string;
+  value: string;
 };
 
 export type OrderSummary = {
@@ -60,6 +68,8 @@ export type OrderSummary = {
 
 export type OrderDetail = OrderSummary & {
   lines: OrderLine[];
+  /** Totals exactly as the store returns them; never computed in the frontend. */
+  totals: OrderTotal[];
   shipping_address?: Address | null;
   billing_address?: Address | null;
   shipping_total?: string;

@@ -87,7 +87,7 @@ function isBag(value: unknown): value is Bag {
 function flatten(payload: unknown): Bag {
   if (!isBag(payload)) return {};
   const out: Bag = { ...payload };
-  for (const key of ["account", "customer", "address", "data", "attributes"]) {
+  for (const key of ["account", "customer", "address", "data", "attributes", "order"]) {
     const nested = payload[key];
     if (isBag(nested)) Object.assign(out, flatten(nested));
   }
@@ -155,6 +155,78 @@ function asArray(payload: unknown, ...keys: string[]): unknown[] {
   return [];
 }
 
+const ADDRESS_LIST_KEYS = [
+  "addresses",
+  "address_book",
+  "addressbook",
+  "address_list",
+  "items",
+  "entries",
+  "results",
+  "rows",
+  "data",
+];
+
+function looksLikeAddress(value: unknown): boolean {
+  if (!isBag(value)) return false;
+  const bag = flatten(value);
+  return ["street_address", "street", "postcode", "zip", "city", "address_1"].some(
+    (key) => typeof bag[key] === "string" && (bag[key] as string).trim(),
+  );
+}
+
+/**
+ * The address book comes back as an array, as an object wrapping one of many
+ * list keys (sometimes one level deeper), or as an object keyed by address id.
+ */
+function extractAddressList(payload: unknown, depth = 0): unknown[] {
+  if (Array.isArray(payload)) return payload;
+  if (!isBag(payload) || depth > 2) return [];
+
+  for (const key of ADDRESS_LIST_KEYS) {
+    const value = payload[key];
+    if (Array.isArray(value)) return value;
+    if (isBag(value)) {
+      const nested = extractAddressList(value, depth + 1);
+      if (nested.length) return nested;
+    }
+  }
+
+  // Object keyed by id: { "12": {...}, "13": {...} }
+  const values = Object.values(payload);
+  if (values.length && values.every(looksLikeAddress)) return values;
+
+  // Single address object returned bare.
+  if (looksLikeAddress(payload)) return [payload];
+
+  for (const value of values) {
+    if (isBag(value) || Array.isArray(value)) {
+      const nested = extractAddressList(value, depth + 1);
+      if (nested.length) return nested;
+    }
+  }
+
+  return [];
+}
+
+function dedupeAddresses(list: Address[]): Address[] {
+  const seen = new Set<string>();
+  return list.filter((address) => {
+    const key = [
+      address.id,
+      address.street_address,
+      address.postcode,
+      address.city,
+    ]
+      .join("|")
+      .toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+
 function normalizeOrder(payload: unknown, index: number): OrderSummary {
   const bag = flatten(payload);
   return {
@@ -166,16 +238,61 @@ function normalizeOrder(payload: unknown, index: number): OrderSummary {
   };
 }
 
+/** Pulls an image path out of the many shapes a store can use on an order line. */
+function pickLineImage(bag: Bag): string | null {
+  const direct = pick(bag, ["image", "image_url", "thumbnail", "thumb", "picture", "photo"]);
+  if (direct) return direct;
+  for (const key of ["image", "images", "media"]) {
+    const value = bag[key];
+    if (isBag(value)) {
+      const nested = pick(value, ["image", "path", "url", "src"]);
+      if (nested) return nested;
+    }
+    if (Array.isArray(value) && value.length > 0) {
+      const first = value[0];
+      if (typeof first === "string" && first.trim()) return first;
+      if (isBag(first)) {
+        const nested = pick(first, ["image", "path", "url", "src"]);
+        if (nested) return nested;
+      }
+    }
+  }
+  return null;
+}
+
+/** Total rows come either as a `totals` array or as single fields on the order. */
+function normalizeTotals(bag: Bag): { title: string; value: string }[] {
+  const raw = asArray(bag["totals"] ?? bag["order_totals"] ?? bag["summary"]);
+  return raw
+    .map((entry) => {
+      const totalBag = flatten(entry);
+      return {
+        title: pick(totalBag, ["title", "label", "name", "text"]),
+        value: pick(totalBag, ["text", "value", "value_formatted", "amount", "total"]),
+      };
+    })
+    .filter((row) => row.title || row.value);
+}
+
 function normalizeOrderDetail(payload: unknown, id: string): OrderDetail {
   const bag = flatten(payload);
   const summary = normalizeOrder(payload, 0);
-  const lines = asArray(bag["products"] ?? bag["lines"] ?? bag["items"]).map((line, index) => {
+  const lines = asArray(
+    bag["products"] ?? bag["order_products"] ?? bag["lines"] ?? bag["items"] ?? bag["rows"],
+  ).map((line, index) => {
     const lineBag = flatten(line);
     return {
       id: (lineBag["id"] as string | number) ?? index,
-      name: pick(lineBag, ["name", "title", "product_name"]),
+      name: pick(lineBag, ["name", "product_name", "title", "model"]),
       quantity: Number(lineBag["quantity"] ?? lineBag["qty"] ?? 1),
-      price: pick(lineBag, ["price", "total", "row_total", "final_price"]),
+      price: pick(lineBag, [
+        "total_final_price",
+        "final_price",
+        "row_total",
+        "total",
+        "price",
+      ]),
+      image: pickLineImage(lineBag),
     };
   });
   return {
@@ -183,6 +300,7 @@ function normalizeOrderDetail(payload: unknown, id: string): OrderDetail {
     id: summary.id || id,
     order_number: summary.order_number || id,
     lines,
+    totals: normalizeTotals(bag),
     shipping_total: pick(bag, ["shipping_total", "shipping"]),
     tax_total: pick(bag, ["tax_total", "tax"]),
     shipping_address: bag["shipping_address"]
@@ -349,10 +467,33 @@ const liveAccountApi: AccountApi = {
       }),
     );
   },
-  getAddresses: () =>
-    guarded(() => call<unknown>("accounts/me/addresses")).then((data) =>
-      asArray(data, "addresses", "address_list", "data").map(normalizeAddress),
-    ),
+  getAddresses: async () => {
+    /** Fetches one candidate endpoint, logging the raw shape in dev. */
+    const probe = async (path: string): Promise<Address[]> => {
+      try {
+        const data = await guarded(() => call<unknown>(path));
+        if (import.meta.env.DEV) {
+          console.debug(`[vendre] ${path} raw response`, data);
+        }
+        return dedupeAddresses(extractAddressList(data).map(normalizeAddress));
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.debug(`[vendre] ${path} failed`, error);
+        }
+        return [];
+      }
+    };
+
+    // Some stores expose the full address book on `address-book`; older ones
+    // only on `addresses`. Prefer whichever returns the most entries.
+    const [book, legacy] = await Promise.all([
+      probe("accounts/me/address-book"),
+      probe("accounts/me/addresses"),
+    ]);
+    return book.length >= legacy.length ? (book.length ? book : legacy) : legacy;
+  },
+
+
   updateAddress: async (address) => {
     await guarded(() =>
       call("accounts/me/addresses", {

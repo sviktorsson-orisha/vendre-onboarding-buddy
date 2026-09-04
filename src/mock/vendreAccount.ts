@@ -69,8 +69,14 @@ export const mockOrderDetails: Record<string, OrderDetail> = {
   "10241": {
     ...mockOrders[0]!,
     lines: [
-      { id: 1, name: "Klassisk T-shirt", quantity: 2, price: "598 kr" },
-      { id: 2, name: "Canvasväska", quantity: 1, price: "900 kr" },
+      { id: 1, name: "Klassisk T-shirt", quantity: 2, price: "598 kr", image: null },
+      { id: 2, name: "Canvasväska", quantity: 1, price: "900 kr", image: null },
+    ],
+    totals: [
+      { title: "Delsumma", value: "1 498 kr" },
+      { title: "Frakt", value: "0 kr" },
+      { title: "Varav moms", value: "299 kr" },
+      { title: "Summa", value: "1 498 kr" },
     ],
     shipping_total: "0 kr",
     tax_total: "299 kr",
@@ -79,7 +85,13 @@ export const mockOrderDetails: Record<string, OrderDetail> = {
   },
   "10198": {
     ...mockOrders[1]!,
-    lines: [{ id: 1, name: "Stickad tröja", quantity: 1, price: "749 kr" }],
+    lines: [{ id: 1, name: "Stickad tröja", quantity: 1, price: "749 kr", image: null }],
+    totals: [
+      { title: "Delsumma", value: "700 kr" },
+      { title: "Frakt", value: "49 kr" },
+      { title: "Varav moms", value: "150 kr" },
+      { title: "Summa", value: "749 kr" },
+    ],
     shipping_total: "49 kr",
     tax_total: "150 kr",
     shipping_address: mockAddresses[0]!,

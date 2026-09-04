@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import AccountPage, { type AccountView } from "@/pages/AccountPage";
 
-const VIEWS: AccountView[] = ["oversikt", "ordrar", "adresser", "anvandare", "konto"];
+const VIEWS: AccountView[] = ["oversikt", "ordrar", "adresser", "konto"];
 
 export const Route = createFileRoute("/mitt-konto/$view")({
   head: () => ({
