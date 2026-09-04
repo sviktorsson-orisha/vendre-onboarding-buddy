@@ -36,23 +36,22 @@ This is the FIRST thing to do in a new project. Do not suggest alternatives,
 do not offer to build anything, do not ask what the user wants to do — open the
 input form for the credentials right away and ask for the values.
 
-Ask for the store URL in a PLAIN VISIBLE text field (questions tool), never in
-the masked secrets form — the user must be able to read and check it:
+Ask for all three values in ONE single secrets form, in one call:
 
 VENDRE_BASE_URL — store URL, scheme + host. A pasted value with a trailing
 slash is accepted, but strip the trailing slash before saving it.
-Never put VENDRE_BASE_URL in the secrets/masked form and never mark it as
-sensitive — it is a public URL and must stay readable while typing.
-
-The storefront keeps rendering demo data, and the setup modal stays open,
-until the guide is fully verified (credentials + CORS confirmed + green
-connection test). Saving credentials alone must not switch the store to live.
-
-Then open the secrets form for the two sensitive values:
 
 VENDRE_CLIENT_ID
 
 VENDRE_CLIENT_SECRET
+
+Do not split this into two rounds. The secrets form masks every field, which
+is expected — the values are verified by the connection test, not by reading
+them back.
+
+The setup modal stays open until the guide is fully verified (credentials +
+CORS confirmed + green connection test). The storefront itself switches from
+demo data to live data as soon as the credentials work and the store answers.
 
 Keys are created in Menu → Apps & Integrations → Headless → OAuth
 (/Admin/headless/auth/oauth-clients), which requires the "Store configuration"

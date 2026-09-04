@@ -10,7 +10,7 @@ Dummy-datan byts ut mot butikens riktiga innehåll så fort nycklarna finns och 
 
 ## 3. Toppbannern försvinner när man börjar bygga
 
-När man klickar på "börja bygga butiken" stängs popupen och toppbannern tas bort helt, så den inte kan trigga popupen igen. Bannern kommer tillbaka bara om guiden återställs.
+När man klickar på "börja bygga butiken" stängs popupen och toppbannern tas bort helt, så den inte kan trigga popupen igen. Förutsatt att alla steg i guiden är genomförda och variefierade. 
 
 ## Tekniska noteringar
 

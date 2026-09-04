@@ -11,7 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { setServerConfigured } from "@/context/onboarding-context";
+import { setServerConfigured, setServerVerified } from "@/context/onboarding-context";
 import { getStorefrontStatus } from "@/lib/vendre/status.functions";
 
 
@@ -135,8 +135,9 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const status = Route.useLoaderData();
   // Server-decided storefront mode: same answer for every visitor, on SSR and client.
-  // Demo data stays until the guide is fully verified (credentials + CORS + test).
-  setServerConfigured(status?.verified === true);
+  // Live data as soon as the store answers — regardless of guide progress.
+  setServerConfigured(status?.ok === true);
+  setServerVerified(status?.verified === true);
 
 
 
