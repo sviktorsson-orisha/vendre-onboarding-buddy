@@ -60,7 +60,11 @@ Variants are read with `POST /surface/2/vql`:
   `sort_order`.
 - **`choice.products[0].id` is the product added to cart** — never the parent id
   from the URL.
-- Out-of-stock choices are rendered greyed out and disabled (no restock form).
+- **Out of stock does not mean unbuyable.** A choice is only greyed out and
+  disabled when every product carrying it has `in_stock: false` **and**
+  `stock_allow_checkout === false`. `null`/`0`-style values inherit the parent or
+  store default, which allows checkout. Request `stock_allow_checkout` in the
+  `products` field list. No restock form is rendered.
 - **A variant child is a product of its own.** On every selection the PDP re-reads
   the whole record with a `products` VQL query and renders it: name, short
   description, description, image, price and stock all follow the selected variant.
@@ -80,5 +84,11 @@ Variants are read with `POST /surface/2/vql`:
   child id returns an empty result. Always query `product.parent_id ?? product.id`,
   so a PDP entered directly on a variant still renders the selector — with the
   child's own choices preselected from `choice.products[].id`.
-- With several variant types the buy button only enables when all types are
-  selected and they resolve to the same product id.
+- **With several variant types, intersect.** Every choice lists all products
+  carrying it, so the real variant is the id shared by all selected choices
+  (`lists.reduce((acc, ids) => acc.filter(id => ids.includes(id)))`). The buy button
+  enables only when every type is selected, the intersection is non-empty and the
+  resolved product is not blocked by the stock rule above.
+- Listings never add a variant parent to the cart: a product with
+  `child_count > 0` (or blocked by the stock rule) shows a "Läs mer" link to the
+  PDP instead of an add-to-cart button.
