@@ -106,9 +106,44 @@ export default function ProductPage({ id }: { id: string }) {
     const allow = variant.stock_allow_checkout ?? product?.stock_allow_checkout ?? true;
     return allow === false;
   };
-  /** A choice is only unavailable when every product carrying it is blocked. */
-  const choiceBlocked = (choice: ProductVariantChoice) =>
-    choice.products.length > 0 && choice.products.every(entryBlocked);
+  /**
+   * A choice is unavailable when no buyable product carries it *together with*
+   * the choices already picked in the other variant types. Picking Blue must grey
+   * out a size that has no blue product, and vice versa.
+   */
+  const choiceBlocked = (typeId: number, choice: ProductVariantChoice) => {
+    if (choice.products.length === 0) return true;
+    const otherLists = variantTypes
+      .filter((type) => type.id !== typeId)
+      .map((type) => type.product_variant_choices.find((item) => item.id === selection[type.id]))
+      .filter((item): item is ProductVariantChoice => Boolean(item))
+      .map((item) => item.products.map((entry) => entry.id));
+    return !choice.products.some(
+      (entry) => !entryBlocked(entry) && otherLists.every((ids) => ids.includes(entry.id)),
+    );
+  };
+
+  /** Keep a selection only while it still combines with the freshly picked choice. */
+  const pickChoice = (typeId: number, choiceId: number) =>
+    setSelection((prev) => {
+      const next: Record<number, number> = { ...prev, [typeId]: choiceId };
+      const idsFor = (id: number, cid: number) =>
+        variantTypes
+          .find((type) => type.id === id)
+          ?.product_variant_choices.find((item) => item.id === cid)
+          ?.products.map((entry) => entry.id) ?? [];
+      let kept = idsFor(typeId, choiceId);
+      for (const type of variantTypes) {
+        if (type.id === typeId) continue;
+        const current = next[type.id];
+        if (current == null) continue;
+        const shared = idsFor(type.id, current).filter((id) => kept.includes(id));
+        if (shared.length === 0) delete next[type.id];
+        else kept = shared;
+      }
+      return next;
+    });
+
   const selectedInStock = selectedChoices.every((choice) =>
     choice.products.some((variant) => variant.in_stock !== false),
   );
