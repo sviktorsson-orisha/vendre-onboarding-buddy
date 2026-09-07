@@ -111,8 +111,21 @@ export default function ProductPage({ id }: { id: string }) {
           )}
           <ProductPrice product={buyableProduct ?? product} size="lg" className="mt-5" />
           {(variantTypes.length === 0 || allSelected) && (
-            <p className={cn("mt-1 text-sm", soldOut ? "text-destructive" : "text-emerald-700")}>
-              {soldOut ? t("store.outOfStock") : t("store.inStock")}
+            <p
+              className={cn(
+                "mt-1 text-sm",
+                variantTypes.length > 0
+                  ? selectedInStock
+                    ? "text-emerald-700"
+                    : "text-destructive"
+                  : soldOut
+                    ? "text-destructive"
+                    : "text-emerald-700",
+              )}
+            >
+              {(variantTypes.length > 0 ? !selectedInStock : soldOut)
+                ? t("store.outOfStock")
+                : t("store.inStock")}
             </p>
           )}
 
