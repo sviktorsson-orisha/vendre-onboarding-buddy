@@ -342,6 +342,29 @@ export function mockProduct(id: string): Product | null {
   return products.find((p) => p.id === id) ?? null;
 }
 
+/**
+ * Demo variants shaped like the VQL response. Each choice points back at the
+ * parent product id so the demo cart still works.
+ */
+export function mockProductVariants(id: string): ProductVariantType[] {
+  const product = products.find((p) => p.id === id);
+  const attribute = product?.attributes?.[0];
+  if (!product || !attribute) return [];
+  return [
+    {
+      id: 1,
+      name: attribute.name,
+      sort_order: 1,
+      product_variant_choices: attribute.values.map((value, index) => ({
+        id: index + 1,
+        name: value.name,
+        sort_order: index + 1,
+        products: [{ id: Number(product.id), in_stock: index !== 1 }],
+      })),
+    },
+  ];
+}
+
 export function mockFeaturedProducts(count = 4): Product[] {
   return products.slice(0, count);
 }
