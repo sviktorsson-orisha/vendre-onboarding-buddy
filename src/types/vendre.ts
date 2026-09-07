@@ -123,7 +123,13 @@ export type ProductVariantChoice = {
   id: number;
   name: string;
   sort_order?: number | null;
-  products: { id: number; in_stock?: boolean | null; quantity?: number | null }[];
+  products: {
+    id: number;
+    in_stock?: boolean | null;
+    quantity?: number | null;
+    /** null means "inherit the store default", which allows checkout. */
+    stock_allow_checkout?: boolean | null;
+  }[];
 };
 
 export type ProductVariantType = {
