@@ -281,15 +281,20 @@ const liveApi: VendreApi = {
       }),
     );
   },
+  // DELETE shopping-cart clears the whole cart, so a single line is removed by
+  // setting its quantity to 0 on the same endpoint used for quantity changes.
   removeLine: async (line) => {
     await guarded(() =>
-      surfaceJson("shopping-cart", {
-        method: "DELETE",
+      surfaceJson("shopping-cart/products", {
+        method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ id: line.id }),
+        body: JSON.stringify({
+          products: [{ id: line.productId, quantity: 0, attributes: line.attributes }],
+        }),
       }),
     );
   },
+
   getSessionContext: () => guarded(() => surfaceJson<SessionContext>("session/context")),
   checkoutUrl: async () => {
     const { baseUrl } = await getVendreToken();
