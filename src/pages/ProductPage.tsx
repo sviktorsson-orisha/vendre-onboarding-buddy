@@ -19,8 +19,6 @@ export default function ProductPage({ id }: { id: string }) {
   const [selection, setSelection] = useState<Record<number, number>>({});
   const [quantity, setQuantity] = useState(1);
 
-  const choiceProductId = (choice: ProductVariantChoice) => choice.products[0]?.id ?? null;
-
   const selectedChoices = useMemo(
     () =>
       variantTypes
@@ -34,15 +32,18 @@ export default function ProductPage({ id }: { id: string }) {
   const allSelected = variantTypes.length > 0 && selectedChoices.length === variantTypes.length;
 
   /**
-   * With one variant type the selected choice decides the product. With several,
-   * only a combination that resolves to the same product id is a real product.
+   * Each choice lists every product carrying it. With several variant types the real
+   * product is the one shared by all selected choices, so intersect the id lists.
    */
   const selectedVariantProductId = useMemo(() => {
     if (!allSelected) return null;
-    const ids = selectedChoices.map(choiceProductId);
-    const first = ids[0];
-    return first != null && ids.every((value) => value === first) ? first : null;
+    const lists = selectedChoices.map((choice) => choice.products.map((item) => item.id));
+    if (lists.length === 0) return null;
+    const shared = lists.reduce((acc, ids) => acc.filter((id) => ids.includes(id)));
+    return shared[0] ?? null;
+
   }, [allSelected, selectedChoices]);
+
 
   // A variant is its own product in Vendre — reload the full record on selection.
   const { data: variantProduct } = useVariantProduct(selectedVariantProductId);
@@ -77,15 +78,18 @@ export default function ProductPage({ id }: { id: string }) {
    * A variant with no stock may still be sold: stock_allow_checkout === false is the
    * only thing that blocks it, and null means "inherit the store default" (allowed).
    */
-  const choiceBlocked = (choice: ProductVariantChoice) => {
-    const variant = choice.products[0];
-    if (!variant || variant.in_stock !== false) return false;
+  const entryBlocked = (variant: ProductVariantChoice["products"][number]) => {
+    if (variant.in_stock !== false) return false;
     const allow = variant.stock_allow_checkout ?? product?.stock_allow_checkout ?? true;
     return allow === false;
   };
-  const selectedInStock = selectedChoices.every(
-    (choice) => choice.products[0]?.in_stock !== false,
+  /** A choice is only unavailable when every product carrying it is blocked. */
+  const choiceBlocked = (choice: ProductVariantChoice) =>
+    choice.products.length > 0 && choice.products.every(entryBlocked);
+  const selectedInStock = selectedChoices.every((choice) =>
+    choice.products.some((variant) => variant.in_stock !== false),
   );
+
   const selectedBlocked = selectedChoices.some(choiceBlocked);
   const parentSoldOut = product.stock_total === 0 && product.stock_allow_checkout === false;
   const soldOut = variantTypes.length > 0 ? allSelected && selectedBlocked : parentSoldOut;
