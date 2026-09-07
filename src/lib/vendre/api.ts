@@ -332,6 +332,26 @@ type VqlProductsResponse = {
   page_count?: number;
 } | null;
 
+type VqlVariantsResponse = {
+  query?: { product_variant_types?: ProductVariantType[] };
+  data?: { query?: { product_variant_types?: ProductVariantType[] } };
+} | null;
+
+/** Drop choices without a buyable product and sort everything by sort_order. */
+function normalizeVariantTypes(types: ProductVariantType[]): ProductVariantType[] {
+  const bySort = (a: { sort_order?: number | null }, b: { sort_order?: number | null }) =>
+    (a.sort_order ?? 0) - (b.sort_order ?? 0);
+  return (types ?? [])
+    .map((type) => ({
+      ...type,
+      product_variant_choices: (type.product_variant_choices ?? [])
+        .filter((choice) => Array.isArray(choice.products) && choice.products.length > 0)
+        .sort(bySort),
+    }))
+    .filter((type) => type.product_variant_choices.length > 0)
+    .sort(bySort);
+}
+
 let vqlDisabled = false;
 let catalogueCache: { at: number; products: Promise<Product[]> } | null = null;
 
