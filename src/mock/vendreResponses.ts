@@ -179,6 +179,7 @@ function product(
     seo_link: null,
     categories_id: String(categoryId),
     has_attributes: Boolean(opts.attributes?.length),
+    child_count: opts.attributes?.length ? opts.attributes.length : 0,
     ...(opts.attributes ? { attributes: opts.attributes } : {}),
   };
 }

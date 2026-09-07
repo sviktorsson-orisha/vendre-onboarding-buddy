@@ -10,6 +10,8 @@ export function ProductCard({ product }: { product: Product }) {
   const { t } = useI18n();
   const { add } = useCartMutations();
   const soldOut = product.stock_total === 0 && product.stock_allow_checkout === false;
+  const hasVariants = (product.child_count ?? 0) > 0;
+  const readMoreOnly = hasVariants || soldOut;
 
   return (
     <article className="brand-card group flex flex-col overflow-hidden p-0">
