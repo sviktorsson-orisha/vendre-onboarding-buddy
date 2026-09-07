@@ -217,14 +217,14 @@ export default function ProductPage({ id }: { id: string }) {
               <h2 className="brand-eyebrow text-muted-foreground">{type.name}</h2>
               <div className="mt-2 flex flex-wrap gap-2">
                 {type.product_variant_choices.map((choice) => {
-                  const blocked = choiceBlocked(choice);
+                  const blocked = choiceBlocked(type.id, choice);
                   const active = selection[type.id] === choice.id;
                   return (
                     <button
                       key={choice.id}
                       type="button"
                       disabled={blocked}
-                      onClick={() => setSelection((prev) => ({ ...prev, [type.id]: choice.id }))}
+                      onClick={() => pickChoice(type.id, choice.id)}
                       className={cn(
                         "rounded-md border px-3 py-1.5 text-sm transition-colors",
                         blocked
