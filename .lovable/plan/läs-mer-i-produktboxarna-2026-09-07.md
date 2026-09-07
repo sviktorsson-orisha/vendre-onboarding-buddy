@@ -4,7 +4,8 @@ I produktlistningarna (kategorisida, sökresultat, startsida) ska köpknappen by
 
 ## När visas "Läs mer"
 
-- Produkten har varianter (butiken svarar med `child_count > 0`, eller har attribut), eller
+- Produkten har varianter (butiken svarar med `child_count > 0`),   
+eller
 - Produkten är slut i lager och får inte köpas när den är slut (`stock_total` = 0 och `stock_allow_checkout` är falskt)
 
 I alla andra fall visas köpknappen precis som idag. Produktsidan påverkas inte.
