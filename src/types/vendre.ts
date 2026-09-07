@@ -110,6 +110,8 @@ export type Product = {
   has_attributes: boolean;
   /** Number of variant children. > 0 means the product must be configured on the PDP. */
   child_count?: number | null;
+  /** Set on variant children: the id of the parent product that owns the variant tree. */
+  parent_id?: number | null;
   /** Present on some installs; variant selectors render from it when available. */
   attributes?: ProductAttribute[];
 };
