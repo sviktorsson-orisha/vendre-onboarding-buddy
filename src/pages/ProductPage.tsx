@@ -77,15 +77,18 @@ export default function ProductPage({ id }: { id: string }) {
    * A variant with no stock may still be sold: stock_allow_checkout === false is the
    * only thing that blocks it, and null means "inherit the store default" (allowed).
    */
-  const choiceBlocked = (choice: ProductVariantChoice) => {
-    const variant = choice.products[0];
-    if (!variant || variant.in_stock !== false) return false;
+  const entryBlocked = (variant: ProductVariantChoice["products"][number]) => {
+    if (variant.in_stock !== false) return false;
     const allow = variant.stock_allow_checkout ?? product?.stock_allow_checkout ?? true;
     return allow === false;
   };
-  const selectedInStock = selectedChoices.every(
-    (choice) => choice.products[0]?.in_stock !== false,
+  /** A choice is only unavailable when every product carrying it is blocked. */
+  const choiceBlocked = (choice: ProductVariantChoice) =>
+    choice.products.length > 0 && choice.products.every(entryBlocked);
+  const selectedInStock = selectedChoices.every((choice) =>
+    choice.products.some((variant) => variant.in_stock !== false),
   );
+
   const selectedBlocked = selectedChoices.some(choiceBlocked);
   const parentSoldOut = product.stock_total === 0 && product.stock_allow_checkout === false;
   const soldOut = variantTypes.length > 0 ? allSelected && selectedBlocked : parentSoldOut;
