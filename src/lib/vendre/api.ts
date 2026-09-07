@@ -376,6 +376,9 @@ type VqlRawProduct = {
   stock_allow_checkout?: boolean | number | null;
   /** Relation `image` returns { id, name, href } — href is the store-relative path. */
   image?: { id?: number | string | null; name?: string | null; href?: string | null } | null;
+  /** Relation `specifications`: { id, parent_id, name, type, short_value, value }. */
+  specifications?: ProductSpecification[] | null;
+
   pricing?: {
     price?: string | null;
     original?: string | null;
