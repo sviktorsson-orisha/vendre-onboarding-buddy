@@ -217,7 +217,8 @@ const liveApi: VendreApi = {
       const hit = await fromCategory(item.id);
       if (hit) return hit;
     }
-    return null;
+    // Variant children are not listed in categories — read them through VQL instead.
+    return vqlProduct(id);
   },
   // Only the page's own description is rendered — content blocks are not used.
   // GET galleries/{id}/pages lists the pages *inside* a gallery, so the page
