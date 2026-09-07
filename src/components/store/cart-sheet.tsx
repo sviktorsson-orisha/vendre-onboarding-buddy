@@ -116,14 +116,10 @@ export function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
 
         <div className="border-t border-border pt-4">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">
-              {pricesIncludeVat ? t("store.total") : t("store.totalInclVat")}
-            </span>
+            <span className="text-muted-foreground">{t("store.total")}</span>
             <span className="text-lg font-bold text-foreground">{cartTotal}</span>
           </div>
-          {!pricesIncludeVat && lines.length > 0 && (
-            <p className="mt-1 text-xs text-muted-foreground">{t("store.totalVatNote")}</p>
-          )}
+
           <button
             type="button"
             className="brand-button mt-4 w-full justify-center"
