@@ -21,6 +21,7 @@ import {
   mockPageContent,
   mockPageTree,
   mockProduct,
+  mockProductVariants,
   mockSearch,
   mockSessionContext,
 } from "@/mock/vendreResponses";
@@ -37,6 +38,7 @@ import type {
   PageTreeNode,
   PageTreeResponse,
   Product,
+  ProductVariantType,
   SearchQuery,
   SearchResult,
   SessionContext,
@@ -57,6 +59,8 @@ export type VendreApi = {
   getMenus: () => Promise<MenuItem[]>;
   getCategory: (id: number, query?: CategoryQuery) => Promise<CategoryResponse>;
   getProduct: (id: string, categoryId?: number) => Promise<Product | null>;
+  /** Variant types + choices for a product (VQL). Empty when the product has none. */
+  getProductVariants: (productId: string | number) => Promise<ProductVariantType[]>;
   /** CMS page content for an information_page menu item (gallery id). */
   getPageContent: (id: number) => Promise<PageContent>;
   /** CMS page tree; the only source of `is_menu` for footer groups. */
@@ -163,6 +167,41 @@ const liveApi: VendreApi = {
     ),
   getCategory: (id, query) =>
     guarded(() => surfaceJson<CategoryResponse>(`categories/${id}${categoryQuery(query)}`)),
+  // Variants come from VQL. Verified response shape: { query: { product_variant_types: [...] } }.
+  // `quantity` is not returned by this install, so only `in_stock` is relied on.
+  getProductVariants: async (productId) => {
+    try {
+      const data = await guarded(() =>
+        surfaceJson<VqlVariantsResponse>("vql", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            query: {
+              product_variant_types: {
+                filters: { where: { product_id: String(productId) } },
+                fields: [
+                  "id",
+                  "name",
+                  "sort_order",
+                  {
+                    product_variant_choices: {
+                      fields: ["_all", { products: { fields: ["id", "in_stock", "quantity"] } }],
+                    },
+                  },
+                ],
+              },
+            },
+          }),
+        }),
+      );
+      const types =
+        data?.query?.product_variant_types ?? data?.data?.query?.product_variant_types ?? [];
+      return normalizeVariantTypes(types);
+    } catch {
+      // VQL disabled or the product has no variants: render the page without a selector.
+      return [];
+    }
+  },
   getProduct: async (id, categoryId) => {
     // Surface v2 has no products/{id} endpoint; products are read from a category listing.
     const fromCategory = async (catId: number) => {
@@ -178,7 +217,8 @@ const liveApi: VendreApi = {
       const hit = await fromCategory(item.id);
       if (hit) return hit;
     }
-    return null;
+    // Variant children are not listed in categories — read them through VQL instead.
+    return vqlProduct(id);
   },
   // Only the page's own description is rendered — content blocks are not used.
   // GET galleries/{id}/pages lists the pages *inside* a gallery, so the page
@@ -297,6 +337,90 @@ type VqlProductsResponse = {
   page_count?: number;
 } | null;
 
+type VqlRawProduct = {
+  id: number;
+  name?: string;
+  model?: string | null;
+  description?: string | null;
+  short_description?: string | null;
+  child_count?: number | null;
+  tax_rate?: number | null;
+  category_id?: number | null;
+  seo_link?: string | null;
+  pricing?: {
+    price?: string | null;
+    original?: string | null;
+    original_raw?: number | null;
+    special?: string | null;
+    special_raw?: number | null;
+    final_excl_raw?: number | null;
+  } | null;
+};
+
+/** Single product read through VQL (used for variant children, which no category lists). */
+async function vqlProduct(id: string | number): Promise<Product | null> {
+  try {
+    const data = await guarded(() =>
+      surfaceJson<{ query?: { products?: VqlRawProduct[] } } | null>("vql", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          query: { products: { filters: { where: { id: Number(id) } }, fields: ["_all"] } },
+        }),
+      }),
+    );
+    const raw = data?.query?.products?.[0];
+    if (!raw) return null;
+    const pricing = raw.pricing ?? {};
+    return {
+      id: String(raw.id),
+      name: raw.name ?? `#${raw.id}`,
+      model: raw.model ?? null,
+      description: raw.description ?? null,
+      description_short: raw.short_description ?? null,
+      price: pricing.price ?? pricing.original ?? null,
+      price_raw: pricing.original_raw ?? null,
+      price_original: pricing.original ?? null,
+      price_original_raw: pricing.original_raw ?? null,
+      price_special: pricing.special ?? null,
+      price_special_raw: pricing.special_raw ?? null,
+      final_price_excl_raw: pricing.final_excl_raw ?? null,
+      tax: raw.tax_rate ?? null,
+      unit: null,
+      image: null,
+      images: [],
+      stock_total: null,
+      stock_allow_checkout: null,
+      seo_link: raw.seo_link ?? null,
+      categories_id: raw.category_id != null ? String(raw.category_id) : null,
+      has_attributes: false,
+      child_count: raw.child_count ?? 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
+type VqlVariantsResponse = {
+  query?: { product_variant_types?: ProductVariantType[] };
+  data?: { query?: { product_variant_types?: ProductVariantType[] } };
+} | null;
+
+/** Drop choices without a buyable product and sort everything by sort_order. */
+function normalizeVariantTypes(types: ProductVariantType[]): ProductVariantType[] {
+  const bySort = (a: { sort_order?: number | null }, b: { sort_order?: number | null }) =>
+    (a.sort_order ?? 0) - (b.sort_order ?? 0);
+  return (types ?? [])
+    .map((type) => ({
+      ...type,
+      product_variant_choices: (type.product_variant_choices ?? [])
+        .filter((choice) => Array.isArray(choice.products) && choice.products.length > 0)
+        .sort(bySort),
+    }))
+    .filter((type) => type.product_variant_choices.length > 0)
+    .sort(bySort);
+}
+
 let vqlDisabled = false;
 let catalogueCache: { at: number; products: Promise<Product[]> } | null = null;
 
@@ -357,6 +481,7 @@ const demoApi: VendreApi = {
   getMenus: async () => mockMenus,
   getCategory: async (id, query) => mockCategory(id, query),
   getProduct: async (id) => mockProduct(id),
+  getProductVariants: async (productId) => mockProductVariants(String(productId)),
   getPageContent: async (id) => mockPageContent(id),
   getPageTree: async () => mockPageTree(),
   getCart: async () => demoCart,
@@ -542,6 +667,18 @@ export function useProduct(id: string, categoryId?: number) {
     queryKey: ["vendre", api.mode, "product", id, categoryId ?? null],
     queryFn: () => api.getProduct(id, categoryId),
     staleTime: 5 * 60 * 1000,
+    enabled: Boolean(id),
+  });
+}
+
+export function useProductVariants(id: string) {
+  const api = useVendreApi();
+  const scope = useCacheScope();
+  return useQuery({
+    queryKey: ["vendre", api.mode, "product-variants", id, scope],
+    queryFn: () => api.getProductVariants(id),
+    staleTime: 5 * 60 * 1000,
+    enabled: Boolean(id),
   });
 }
 

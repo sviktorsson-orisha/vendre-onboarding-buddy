@@ -41,3 +41,28 @@ language and VAT mode. Stock and dynamic prices are refetched on view.
 ## SEO
 
 Product schema, canonical and dynamic meta belong to `vendre-ecommerce-seo`.
+
+## Verified variant implementation (this project)
+
+Variants are read with `POST /surface/2/vql`:
+
+```json
+{ "query": { "product_variant_types": {
+  "filters": { "where": { "product_id": "<PRODUCT_ID>" } },
+  "fields": ["id","name","sort_order",
+    { "product_variant_choices": { "fields": ["_all",
+      { "products": { "fields": ["id","in_stock","quantity"] } } ] } } ] } } }
+```
+
+- The response is `{ query: { product_variant_types: [...] } }` (no `data` wrapper on
+  Surface v2). `quantity` is not returned by this install — rely on `in_stock`.
+- Drop choices whose `products` array is empty/null, sort types and choices by
+  `sort_order`.
+- **`choice.products[0].id` is the product added to cart** — never the parent id
+  from the URL.
+- Out-of-stock choices are rendered greyed out and disabled (no restock form).
+- Variant children are not present in any category listing, so their price is read
+  with a `products` VQL query (`pricing.original/special/final_excl_raw`) and shown
+  once every variant type has a selection.
+- With several variant types the buy button only enables when all types are
+  selected and they resolve to the same product id.
