@@ -193,7 +193,13 @@ const liveApi: VendreApi = {
                         "_all",
                         {
                           products: {
-                            fields: ["id", "in_stock", "quantity", "stock_allow_checkout"],
+                            fields: [
+                              "id",
+                              "in_stock",
+                              "quantity",
+                              "stock_allow_checkout",
+                              "active",
+                            ],
                           },
                         },
                       ],
