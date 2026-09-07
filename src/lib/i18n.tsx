@@ -110,6 +110,8 @@ const dictionary = {
     "store.checkout": "Till kassan",
     "store.checkoutDemo": "Kassan öppnas när butiken är kopplad.",
     "store.total": "Summa",
+    "store.totalInclVat": "Summa (inkl. moms)",
+    "store.totalVatNote": "Produktpriserna visas exkl. moms. Butikens totalsumma anges inkl. moms.",
     "store.addToCart": "Lägg i kundvagn",
     "store.outOfStock": "Slut i lager",
     "store.inStock": "I lager",
