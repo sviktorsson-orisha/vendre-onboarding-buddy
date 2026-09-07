@@ -750,7 +750,10 @@ export function useProductVariants(id: string) {
   const api = useVendreApi();
   const scope = useCacheScope();
   return useQuery({
-    queryKey: ["vendre", api.mode, "product-variants", id, scope],
+    // Keep the normalisation version in the key. React Query preserves data
+    // through hot reloads, so an older unfiltered tree must not keep inactive
+    // products selectable after the response rules change.
+    queryKey: ["vendre", api.mode, "product-variants", "status-filter-v2", id, scope],
     queryFn: () => api.getProductVariants(id),
     staleTime: 5 * 60 * 1000,
     enabled: Boolean(id),
