@@ -331,6 +331,7 @@ const dictionary = {
     "store.outOfStock": "Out of stock",
     "store.readMore": "Read more",
     "store.inStock": "In stock",
+    "store.selectVariant": "Select an option to continue",
     "store.viewAll": "View all",
     "store.viewAllIn": "View all in {name}",
     "store.heroTitle": "Your store, ready from day one",
