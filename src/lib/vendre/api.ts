@@ -412,6 +412,7 @@ const demoApi: VendreApi = {
   getMenus: async () => mockMenus,
   getCategory: async (id, query) => mockCategory(id, query),
   getProduct: async (id) => mockProduct(id),
+  getProductVariants: async (productId) => mockProductVariants(String(productId)),
   getPageContent: async (id) => mockPageContent(id),
   getPageTree: async () => mockPageTree(),
   getCart: async () => demoCart,
