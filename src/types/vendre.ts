@@ -114,6 +114,25 @@ export type Product = {
   attributes?: ProductAttribute[];
 };
 
+/**
+ * Variant data from POST /surface/2/vql (resource product_variant_types).
+ * Each choice points at a real, buyable product: choice.products[0].id is the
+ * id to add to cart — never the parent product id from the URL.
+ */
+export type ProductVariantChoice = {
+  id: number;
+  name: string;
+  sort_order?: number | null;
+  products: { id: number; in_stock?: boolean | null; quantity?: number | null }[];
+};
+
+export type ProductVariantType = {
+  id: number;
+  name: string;
+  sort_order?: number | null;
+  product_variant_choices: ProductVariantChoice[];
+};
+
 export type ProductAttribute = {
   id: string | number;
   name: string;
