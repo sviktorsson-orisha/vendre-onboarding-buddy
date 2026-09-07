@@ -762,26 +762,42 @@ export function useSessionContext() {
 export function useCartMutations() {
   const api = useVendreApi();
   const queryClient = useQueryClient();
-  const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: ["vendre", api.mode, "cart"] });
+  const cartKey = ["vendre", api.mode, "cart"] as const;
+
+  // Every mutation is serialized and followed by a fresh store read, so the
+  // totals shown always come from the store's own response for the final state
+  // (no client-side arithmetic, no stale total from an out-of-order refetch).
+  const chain = useRef<Promise<unknown>>(Promise.resolve());
+
+  const run = <T,>(mutate: () => Promise<T>) => {
+    const next = chain.current
+      .catch(() => undefined)
+      .then(async () => {
+        await mutate();
+        await queryClient.cancelQueries({ queryKey: cartKey });
+        const cart = await api.getCart();
+        queryClient.setQueryData(cartKey, cart);
+        return cart;
+      });
+    chain.current = next;
+    return next;
+  };
 
   const add = useMutation({
     mutationFn: ({ productId, quantity }: { productId: string | number; quantity?: number }) =>
-      api.addToCart(productId, quantity ?? 1),
-    onSuccess: invalidate,
+      run(() => api.addToCart(productId, quantity ?? 1)),
   });
   const update = useMutation({
     mutationFn: ({ line, quantity }: { line: CartLine; quantity: number }) =>
-      api.updateQty(line, quantity),
-    onSuccess: invalidate,
+      run(() => api.updateQty(line, quantity)),
   });
   const remove = useMutation({
-    mutationFn: ({ line }: { line: CartLine }) => api.removeLine(line),
-    onSuccess: invalidate,
+    mutationFn: ({ line }: { line: CartLine }) => run(() => api.removeLine(line)),
   });
 
   return { add, update, remove };
 }
+
 
 export function useFeaturedProducts(count = 4) {
   const api = useVendreApi();
