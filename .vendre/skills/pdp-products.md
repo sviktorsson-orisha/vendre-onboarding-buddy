@@ -84,6 +84,14 @@ Variants are read with `POST /surface/2/vql`:
   child id returns an empty result. Always query `product.parent_id ?? product.id`,
   so a PDP entered directly on a variant still renders the selector — with the
   child's own choices preselected from `choice.products[].id`.
+- **Inactive variant products are dropped.** Request `active` in the `products`
+  field list; `null`/missing means active. Products with `active: false` are removed
+  during normalisation, and a choice left without products disappears entirely.
+- **Cross-type availability.** A choice is disabled and greyed out when no buyable
+  product carries it *together with* the choices already selected in the other
+  variant types: pick Blue and a size with no blue product is disabled, and the
+  other way round. Selecting a choice that no longer combines with an existing
+  selection clears that other selection instead of locking the user in.
 - **With several variant types, intersect.** Every choice lists all products
   carrying it, so the real variant is the id shared by all selected choices
   (`lists.reduce((acc, ids) => acc.filter(id => ids.includes(id)))`). The buy button
