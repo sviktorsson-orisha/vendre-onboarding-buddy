@@ -18,7 +18,6 @@ import { Route as MittKontoIndexRouteImport } from './routes/mitt-konto.index'
 import { Route as MittKontoViewRouteImport } from './routes/mitt-konto.$view'
 import { Route as ProduktIdRouteImport } from './routes/produkt.$id'
 import { Route as SidaIdRouteImport } from './routes/sida.$id'
-import { Route as ApiPublicDnsCheckRouteImport } from './routes/api/public/dns-check'
 import { Route as ApiVendreSetupProgressRouteImport } from './routes/api/vendre/setup-progress'
 import { Route as ApiVendreStatusRouteImport } from './routes/api/vendre/status'
 import { Route as ApiVendreTokenRouteImport } from './routes/api/vendre/token'
@@ -68,11 +67,6 @@ const SidaIdRoute = SidaIdRouteImport.update({
   path: '/sida/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicDnsCheckRoute = ApiPublicDnsCheckRouteImport.update({
-  id: '/api/public/dns-check',
-  path: '/api/public/dns-check',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiVendreSetupProgressRoute = ApiVendreSetupProgressRouteImport.update({
   id: '/api/vendre/setup-progress',
   path: '/api/vendre/setup-progress',
@@ -99,7 +93,6 @@ export interface FileRoutesByFullPath {
   '/produkt/$id': typeof ProduktIdRoute
   '/sida/$id': typeof SidaIdRoute
   '/mitt-konto/': typeof MittKontoIndexRoute
-  '/api/public/dns-check': typeof ApiPublicDnsCheckRoute
   '/api/vendre/setup-progress': typeof ApiVendreSetupProgressRoute
   '/api/vendre/status': typeof ApiVendreStatusRoute
   '/api/vendre/token': typeof ApiVendreTokenRoute
@@ -113,7 +106,6 @@ export interface FileRoutesByTo {
   '/produkt/$id': typeof ProduktIdRoute
   '/sida/$id': typeof SidaIdRoute
   '/mitt-konto': typeof MittKontoIndexRoute
-  '/api/public/dns-check': typeof ApiPublicDnsCheckRoute
   '/api/vendre/setup-progress': typeof ApiVendreSetupProgressRoute
   '/api/vendre/status': typeof ApiVendreStatusRoute
   '/api/vendre/token': typeof ApiVendreTokenRoute
@@ -129,7 +121,6 @@ export interface FileRoutesById {
   '/produkt/$id': typeof ProduktIdRoute
   '/sida/$id': typeof SidaIdRoute
   '/mitt-konto/': typeof MittKontoIndexRoute
-  '/api/public/dns-check': typeof ApiPublicDnsCheckRoute
   '/api/vendre/setup-progress': typeof ApiVendreSetupProgressRoute
   '/api/vendre/status': typeof ApiVendreStatusRoute
   '/api/vendre/token': typeof ApiVendreTokenRoute
@@ -146,7 +137,6 @@ export interface FileRouteTypes {
     | '/produkt/$id'
     | '/sida/$id'
     | '/mitt-konto/'
-    | '/api/public/dns-check'
     | '/api/vendre/setup-progress'
     | '/api/vendre/status'
     | '/api/vendre/token'
@@ -160,7 +150,6 @@ export interface FileRouteTypes {
     | '/produkt/$id'
     | '/sida/$id'
     | '/mitt-konto'
-    | '/api/public/dns-check'
     | '/api/vendre/setup-progress'
     | '/api/vendre/status'
     | '/api/vendre/token'
@@ -175,7 +164,6 @@ export interface FileRouteTypes {
     | '/produkt/$id'
     | '/sida/$id'
     | '/mitt-konto/'
-    | '/api/public/dns-check'
     | '/api/vendre/setup-progress'
     | '/api/vendre/status'
     | '/api/vendre/token'
@@ -189,7 +177,6 @@ export interface RootRouteChildren {
   KategoriIdRoute: typeof KategoriIdRoute
   ProduktIdRoute: typeof ProduktIdRoute
   SidaIdRoute: typeof SidaIdRoute
-  ApiPublicDnsCheckRoute: typeof ApiPublicDnsCheckRoute
   ApiVendreSetupProgressRoute: typeof ApiVendreSetupProgressRoute
   ApiVendreStatusRoute: typeof ApiVendreStatusRoute
   ApiVendreTokenRoute: typeof ApiVendreTokenRoute
@@ -260,13 +247,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SidaIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/dns-check': {
-      id: '/api/public/dns-check'
-      path: '/api/public/dns-check'
-      fullPath: '/api/public/dns-check'
-      preLoaderRoute: typeof ApiPublicDnsCheckRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/vendre/setup-progress': {
       id: '/api/vendre/setup-progress'
       path: '/api/vendre/setup-progress'
@@ -313,7 +293,6 @@ const rootRouteChildren: RootRouteChildren = {
   KategoriIdRoute: KategoriIdRoute,
   ProduktIdRoute: ProduktIdRoute,
   SidaIdRoute: SidaIdRoute,
-  ApiPublicDnsCheckRoute: ApiPublicDnsCheckRoute,
   ApiVendreSetupProgressRoute: ApiVendreSetupProgressRoute,
   ApiVendreStatusRoute: ApiVendreStatusRoute,
   ApiVendreTokenRoute: ApiVendreTokenRoute,
