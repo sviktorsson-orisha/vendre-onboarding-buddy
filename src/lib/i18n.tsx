@@ -116,6 +116,7 @@ const dictionary = {
     "store.outOfStock": "Slut i lager",
     "store.readMore": "Läs mer",
     "store.inStock": "I lager",
+    "store.selectVariant": "Välj alternativ för att kunna köpa",
     "store.viewAll": "Visa alla",
     "store.viewAllIn": "Visa allt i {name}",
     "store.heroTitle": "Din butik, redo från dag ett",
