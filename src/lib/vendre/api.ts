@@ -355,6 +355,11 @@ type VqlRawProduct = {
   tax_rate?: number | null;
   category_id?: number | null;
   seo_link?: string | null;
+  in_stock?: boolean | null;
+  quantity?: number | null;
+  stock_allow_checkout?: boolean | number | null;
+  /** Relation `image` returns { id, name, href } — href is the store-relative path. */
+  image?: { id?: number | string | null; name?: string | null; href?: string | null } | null;
   pricing?: {
     price?: string | null;
     original?: string | null;
@@ -365,7 +370,11 @@ type VqlRawProduct = {
   } | null;
 };
 
-/** Single product read through VQL (used for variant children, which no category lists). */
+/**
+ * Single product read through VQL. Variant children are real products of their own,
+ * so the PDP re-reads the full record (name, description, image, price, stock)
+ * whenever a variant is selected.
+ */
 async function vqlProduct(id: string | number): Promise<Product | null> {
   try {
     const data = await guarded(() =>
@@ -373,13 +382,29 @@ async function vqlProduct(id: string | number): Promise<Product | null> {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          query: { products: { filters: { where: { id: Number(id) } }, fields: ["_all"] } },
+          query: {
+            products: {
+              filters: { where: { id: Number(id) } },
+              fields: ["_all", { image: { fields: ["id", "name", "href"] } }],
+            },
+          },
         }),
       }),
     );
     const raw = data?.query?.products?.[0];
     if (!raw) return null;
     const pricing = raw.pricing ?? {};
+    const image: VendreImage | null = raw.image?.href
+      ? {
+          id: raw.image.id != null ? String(raw.image.id) : null,
+          path: raw.image.href,
+          image: raw.image.href,
+          alt: raw.image.name ?? null,
+          alt_translated: null,
+        }
+      : null;
+    const allowCheckout =
+      raw.stock_allow_checkout == null ? null : Boolean(Number(raw.stock_allow_checkout));
     return {
       id: String(raw.id),
       name: raw.name ?? `#${raw.id}`,
@@ -395,10 +420,10 @@ async function vqlProduct(id: string | number): Promise<Product | null> {
       final_price_excl_raw: pricing.final_excl_raw ?? null,
       tax: raw.tax_rate ?? null,
       unit: null,
-      image: null,
-      images: [],
-      stock_total: null,
-      stock_allow_checkout: null,
+      image,
+      images: image ? [image] : [],
+      stock_total: raw.quantity ?? (raw.in_stock === false ? 0 : null),
+      stock_allow_checkout: allowCheckout,
       seo_link: raw.seo_link ?? null,
       categories_id: raw.category_id != null ? String(raw.category_id) : null,
       has_attributes: false,
@@ -408,6 +433,7 @@ async function vqlProduct(id: string | number): Promise<Product | null> {
     return null;
   }
 }
+
 
 type VqlVariantsResponse = {
   query?: { product_variant_types?: ProductVariantType[] };
