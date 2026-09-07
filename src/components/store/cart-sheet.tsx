@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/sheet";
 import { useOnboarding } from "@/context/onboarding-context";
 import { useI18n } from "@/lib/i18n";
-import { useCart, useCartMutations, useVendreApi } from "@/lib/vendre/api";
+import { useCart, useCartMutations, useSessionContext, useVendreApi } from "@/lib/vendre/api";
 
 
 export function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
