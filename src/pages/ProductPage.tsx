@@ -6,7 +6,7 @@ import { StoreImage } from "@/components/store/store-image";
 import { StoreShell } from "@/components/store/store-shell";
 import { useI18n } from "@/lib/i18n";
 import { ProductPrice } from "@/components/store/product-price";
-import { useCartMutations, useProduct, useProductVariants } from "@/lib/vendre/api";
+import { useCartMutations, useProduct, useProductVariants, useVariantProduct } from "@/lib/vendre/api";
 import { cn } from "@/lib/utils";
 import type { ProductVariantChoice } from "@/types/vendre";
 
@@ -44,11 +44,12 @@ export default function ProductPage({ id }: { id: string }) {
     return first != null && ids.every((value) => value === first) ? first : null;
   }, [allSelected, selectedChoices]);
 
-  const { data: variantProduct } = useProduct(
-    selectedVariantProductId != null ? String(selectedVariantProductId) : "",
-  );
+  // A variant is its own product in Vendre — reload the full record on selection.
+  const { data: variantProduct } = useVariantProduct(selectedVariantProductId);
 
   const buyableProduct = variantProduct ?? product;
+  /** Everything on screen follows the selected variant when one is loaded. */
+  const view = variantProduct ?? product;
   const activeProductId = selectedVariantProductId ?? product?.id ?? null;
 
   if (isLoading) {
@@ -98,16 +99,19 @@ export default function ProductPage({ id }: { id: string }) {
     <StoreShell>
       <div className="grid gap-10 lg:grid-cols-2">
         <StoreImage
-          image={product.image ?? product.images[0] ?? null}
-          alt={product.name}
-          label={product.name}
+          key={view?.id ?? product.id}
+          image={view?.image ?? view?.images?.[0] ?? product.image ?? product.images[0] ?? null}
+          alt={view?.name ?? product.name}
+          label={view?.name ?? product.name}
           className="aspect-4/5 w-full rounded-2xl border border-border"
         />
 
         <div>
-          <h1 className="text-3xl font-extrabold text-foreground">{product.name}</h1>
-          {product.description_short && (
-            <p className="mt-3 text-sm text-muted-foreground">{product.description_short}</p>
+          <h1 className="text-3xl font-extrabold text-foreground">{view?.name ?? product.name}</h1>
+          {(view?.description_short || product.description_short) && (
+            <p className="mt-3 text-sm text-muted-foreground">
+              {view?.description_short || product.description_short}
+            </p>
           )}
           <ProductPrice product={buyableProduct ?? product} size="lg" className="mt-5" />
           {(variantTypes.length === 0 || allSelected) && (
@@ -200,12 +204,12 @@ export default function ProductPage({ id }: { id: string }) {
             <p className="mt-2 text-xs text-muted-foreground">{t("store.selectVariant")}</p>
           )}
 
-          {product.description && (
+          {(view?.description || product.description) && (
             <section className="mt-10">
               <h2 className="text-lg font-bold text-foreground">{t("store.description")}</h2>
               <div
                 className="mt-2 text-sm leading-relaxed text-muted-foreground"
-                dangerouslySetInnerHTML={{ __html: product.description }}
+                dangerouslySetInnerHTML={{ __html: view?.description ?? product.description ?? "" }}
               />
             </section>
           )}
