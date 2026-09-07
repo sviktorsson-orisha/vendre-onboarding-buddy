@@ -124,8 +124,13 @@ export default function ProductPage({ id }: { id: string }) {
   };
 
   /** Keep a selection only while it still combines with the freshly picked choice. */
-  const pickChoice = (typeId: number, choiceId: number) =>
+  const pickChoice = (typeId: number, choice: ProductVariantChoice) => {
+    // `disabled` protects normal pointer/keyboard interaction. Keep the same
+    // rule here as a data-level guard so stale events can never select a choice
+    // whose only matching product is inactive.
+    if (choiceBlocked(typeId, choice)) return;
     setSelection((prev) => {
+      const choiceId = choice.id;
       const next: Record<number, number> = { ...prev, [typeId]: choiceId };
       const idsFor = (id: number, cid: number) =>
         variantTypes
@@ -143,6 +148,7 @@ export default function ProductPage({ id }: { id: string }) {
       }
       return next;
     });
+  };
 
   const selectedInStock = selectedChoices.every((choice) =>
     choice.products.some((variant) => variant.in_stock !== false),
@@ -224,7 +230,7 @@ export default function ProductPage({ id }: { id: string }) {
                       key={choice.id}
                       type="button"
                       disabled={blocked}
-                      onClick={() => pickChoice(type.id, choice.id)}
+                      onClick={() => pickChoice(type.id, choice)}
                       className={cn(
                         "rounded-md border px-3 py-1.5 text-sm transition-colors",
                         blocked
