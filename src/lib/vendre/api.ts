@@ -404,7 +404,11 @@ async function vqlProduct(id: string | number): Promise<Product | null> {
           query: {
             products: {
               filters: { where: { id: Number(id) } },
-              fields: ["_all", { image: { fields: ["id", "name", "href"] } }],
+              fields: [
+                "_all",
+                { image: { fields: ["id", "name", "href"] } },
+                { specifications: { fields: ["_all"] } },
+              ],
             },
           },
         }),
@@ -448,6 +452,7 @@ async function vqlProduct(id: string | number): Promise<Product | null> {
       has_attributes: false,
       child_count: raw.child_count ?? 0,
       parent_id: raw.parent_id ?? null,
+      specifications: (raw.specifications ?? []).filter((item) => item?.name && item?.value),
     };
   } catch {
     return null;
