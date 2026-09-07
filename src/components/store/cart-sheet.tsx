@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/sheet";
 import { useOnboarding } from "@/context/onboarding-context";
 import { useI18n } from "@/lib/i18n";
-import { useCart, useCartMutations, useSessionContext, useVendreApi } from "@/lib/vendre/api";
+import { useCart, useCartMutations, useVendreApi } from "@/lib/vendre/api";
 
 
 export function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
@@ -20,11 +20,8 @@ export function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
   const { isConfigured } = useOnboarding();
   const { data: cart, isLoading } = useCart();
   const { update, remove } = useCartMutations();
-  const { data: session } = useSessionContext();
-  // The store returns cart_total incl. VAT regardless of the session VAT setting,
-  // so the label has to say so when line prices are shown excl. VAT.
-  const pricesIncludeVat = session?.prices_include_vat !== false;
   const lines = cart?.products ?? [];
+
   // The total always comes from the store — never summed in the frontend.
   const cartTotal =
     cart?.cart_total_formatted ??
@@ -116,14 +113,10 @@ export function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
 
         <div className="border-t border-border pt-4">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">
-              {pricesIncludeVat ? t("store.total") : t("store.totalInclVat")}
-            </span>
+            <span className="text-muted-foreground">{t("store.total")}</span>
             <span className="text-lg font-bold text-foreground">{cartTotal}</span>
           </div>
-          {!pricesIncludeVat && lines.length > 0 && (
-            <p className="mt-1 text-xs text-muted-foreground">{t("store.totalVatNote")}</p>
-          )}
+
           <button
             type="button"
             className="brand-button mt-4 w-full justify-center"
