@@ -107,3 +107,21 @@ Variants are read with `POST /surface/2/vql`:
 - Listings never add a variant parent to the cart: a product with
   `child_count > 0` (or blocked by the stock rule) shows a "Läs mer" link to the
   PDP instead of an add-to-cart button.
+
+## Specifications
+
+Specifications are the VQL relation `specifications` on `products`, not a field
+in `_all` and not present in category listings. Read them for the *active*
+product id (parent, or the selected variant child):
+
+```json
+{ "query": { "products": {
+  "filters": { "where": { "id": <ACTIVE_PRODUCT_ID> } },
+  "fields": ["id", { "specifications": { "fields": ["_all"] } }]
+} } }
+```
+
+Rows look like `{ id, parent_id, name, type, short_value, value }`. Drop entries
+without both `name` and `value`, and render them as a name/value list under the
+description. Because each variant is its own product, the list must refetch when
+the selection changes — the PDP hook is keyed on the active product id.
