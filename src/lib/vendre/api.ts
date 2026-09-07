@@ -472,7 +472,9 @@ function normalizeVariantTypes(types: ProductVariantType[]): ProductVariantType[
       product_variant_choices: (type.product_variant_choices ?? [])
         .map((choice) => ({
           ...choice,
-          products: (choice.products ?? []).filter((entry) => isActive(entry.active)),
+          products: (choice.products ?? []).filter(
+            (entry) => isActive(entry.status) && isActive(entry.active),
+          ),
         }))
         .filter((choice) => choice.products.length > 0)
         .sort(bySort),
