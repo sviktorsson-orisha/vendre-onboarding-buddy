@@ -767,7 +767,7 @@ export function useCartMutations() {
   // Every mutation is serialized and followed by a fresh store read, so the
   // totals shown always come from the store's own response for the final state
   // (no client-side arithmetic, no stale total from an out-of-order refetch).
-  const chain = useRef<Promise<unknown>>(Promise.resolve());
+  const chain = cartMutationQueue;
 
   const run = <T,>(mutate: () => Promise<T>) => {
     const next = chain.current
