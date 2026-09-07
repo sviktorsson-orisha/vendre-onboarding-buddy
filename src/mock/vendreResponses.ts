@@ -16,6 +16,7 @@ import type {
   PageTreeNode,
   PageTreeResponse,
   Product,
+  ProductVariantType,
   SessionContext,
 } from "@/types/vendre";
 
