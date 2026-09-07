@@ -20,6 +20,10 @@ export function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
   const { isConfigured } = useOnboarding();
   const { data: cart, isLoading } = useCart();
   const { update, remove } = useCartMutations();
+  const { data: session } = useSessionContext();
+  // The store returns cart_total incl. VAT regardless of the session VAT setting,
+  // so the label has to say so when line prices are shown excl. VAT.
+  const pricesIncludeVat = session?.prices_include_vat !== false;
   const lines = cart?.products ?? [];
   // The total always comes from the store — never summed in the frontend.
   const cartTotal =
