@@ -19,8 +19,6 @@ export default function ProductPage({ id }: { id: string }) {
   const [selection, setSelection] = useState<Record<number, number>>({});
   const [quantity, setQuantity] = useState(1);
 
-  const choiceProductId = (choice: ProductVariantChoice) => choice.products[0]?.id ?? null;
-
   const selectedChoices = useMemo(
     () =>
       variantTypes
@@ -34,15 +32,17 @@ export default function ProductPage({ id }: { id: string }) {
   const allSelected = variantTypes.length > 0 && selectedChoices.length === variantTypes.length;
 
   /**
-   * With one variant type the selected choice decides the product. With several,
-   * only a combination that resolves to the same product id is a real product.
+   * Each choice lists every product carrying it. With several variant types the real
+   * product is the one shared by all selected choices, so intersect the id lists.
    */
   const selectedVariantProductId = useMemo(() => {
     if (!allSelected) return null;
-    const ids = selectedChoices.map(choiceProductId);
-    const first = ids[0];
-    return first != null && ids.every((value) => value === first) ? first : null;
+    const lists = selectedChoices.map((choice) => choice.products.map((item) => item.id));
+    if (lists.length === 0) return null;
+    const shared = lists.reduce((acc, ids) => acc.filter((id) => ids.includes(id)));
+    return shared.length === 1 ? shared[0] : (shared[0] ?? null);
   }, [allSelected, selectedChoices]);
+
 
   // A variant is its own product in Vendre — reload the full record on selection.
   const { data: variantProduct } = useVariantProduct(selectedVariantProductId);
