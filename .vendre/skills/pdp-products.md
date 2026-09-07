@@ -61,8 +61,19 @@ Variants are read with `POST /surface/2/vql`:
 - **`choice.products[0].id` is the product added to cart** — never the parent id
   from the URL.
 - Out-of-stock choices are rendered greyed out and disabled (no restock form).
-- Variant children are not present in any category listing, so their price is read
-  with a `products` VQL query (`pricing.original/special/final_excl_raw`) and shown
-  once every variant type has a selection.
+- **A variant child is a product of its own.** On every selection the PDP re-reads
+  the whole record with a `products` VQL query and renders it: name, short
+  description, description, image, price and stock all follow the selected variant.
+
+```json
+{ "query": { "products": {
+  "filters": { "where": { "id": <CHILD_ID> } },
+  "fields": ["_all", { "image": { "fields": ["id","name","href"] } }] } } }
+```
+
+  Variant children are not listed in any category, so VQL is the only source.
+  The image relation is `image` (not `images`); `image.href` is the store-relative
+  path. Price lives in `pricing` (`original/special/final_excl_raw`), stock in
+  `in_stock` plus `stock_allow_checkout` (`null` = store default = checkout allowed).
 - With several variant types the buy button only enables when all types are
   selected and they resolve to the same product id.
