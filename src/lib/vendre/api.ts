@@ -193,7 +193,13 @@ const liveApi: VendreApi = {
                         "_all",
                         {
                           products: {
-                            fields: ["id", "in_stock", "quantity", "stock_allow_checkout"],
+                            fields: [
+                              "id",
+                              "in_stock",
+                              "quantity",
+                              "stock_allow_checkout",
+                              "status",
+                            ],
                           },
                         },
                       ],
@@ -451,15 +457,26 @@ type VqlVariantsResponse = {
   data?: { query?: { product_variant_types?: ProductVariantType[] } };
 } | null;
 
-/** Drop choices without a buyable product and sort everything by sort_order. */
+/**
+ * Drop inactive variant products and choices without a buyable product, then sort
+ * everything by sort_order. Vendre marks an inactive product with `status: 0`; a
+ * missing/null status means the store default: active.
+ */
 function normalizeVariantTypes(types: ProductVariantType[]): ProductVariantType[] {
   const bySort = (a: { sort_order?: number | null }, b: { sort_order?: number | null }) =>
     (a.sort_order ?? 0) - (b.sort_order ?? 0);
+  const isActive = (value: unknown) => value == null || Boolean(Number(value));
   return (types ?? [])
     .map((type) => ({
       ...type,
       product_variant_choices: (type.product_variant_choices ?? [])
-        .filter((choice) => Array.isArray(choice.products) && choice.products.length > 0)
+        .map((choice) => ({
+          ...choice,
+          products: (choice.products ?? []).filter(
+            (entry) => isActive(entry.status) && isActive(entry.active),
+          ),
+        }))
+        .filter((choice) => choice.products.length > 0)
         .sort(bySort),
     }))
     .filter((type) => type.product_variant_choices.length > 0)
@@ -733,7 +750,10 @@ export function useProductVariants(id: string) {
   const api = useVendreApi();
   const scope = useCacheScope();
   return useQuery({
-    queryKey: ["vendre", api.mode, "product-variants", id, scope],
+    // Keep the normalisation version in the key. React Query preserves data
+    // through hot reloads, so an older unfiltered tree must not keep inactive
+    // products selectable after the response rules change.
+    queryKey: ["vendre", api.mode, "product-variants", "status-filter-v2", id, scope],
     queryFn: () => api.getProductVariants(id),
     staleTime: 5 * 60 * 1000,
     enabled: Boolean(id),

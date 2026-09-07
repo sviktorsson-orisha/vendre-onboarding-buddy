@@ -360,7 +360,7 @@ export function mockProductVariants(id: string): ProductVariantType[] {
         id: index + 1,
         name: value.name,
         sort_order: index + 1,
-        products: [{ id: Number(product.id), in_stock: index !== 1 }],
+        products: [{ id: Number(product.id), in_stock: index !== 1, active: true }],
       })),
     },
   ];

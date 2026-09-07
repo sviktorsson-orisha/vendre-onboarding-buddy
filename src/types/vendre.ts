@@ -129,6 +129,10 @@ export type ProductVariantChoice = {
     id: number;
     in_stock?: boolean | null;
     quantity?: number | null;
+    /** Vendre's activity flag: 0 = inactive. null/missing = active. */
+    status?: boolean | number | null;
+    /** null/missing means the store default: the product is active. */
+    active?: boolean | number | null;
     /** null means "inherit the store default", which allows checkout. */
     stock_allow_checkout?: boolean | null;
   }[];

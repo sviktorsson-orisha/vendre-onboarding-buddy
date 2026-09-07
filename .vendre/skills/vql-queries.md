@@ -40,7 +40,10 @@ Never run customer-scoped data through a cached VQL query.
 - `product_variant_types` — variant tree, filtered with
   `filters.where.product_id`. Only the **parent** product id returns rows; a
   variant child returns `[]`. Nested `product_variant_choices` → `products`
-  (`id`, `in_stock`, `stock_allow_checkout`) maps a choice to real product ids.
+  (`id`, `in_stock`, `stock_allow_checkout`, `status`) maps a choice to real
+  product ids. Request `status` and drop entries with `status: 0` — that is the
+  activity flag on this install (`active` is not returned); `null`/missing means
+  active.
 - `products` — full record for a single id (`fields: ["_all", { image: ... }]`).
   This is the only way to read a variant child, since children are not listed in
   any category response.
