@@ -42,6 +42,7 @@ import type {
   SearchQuery,
   SearchResult,
   SessionContext,
+  VendreImage,
 } from "@/types/vendre";
 
 
@@ -61,6 +62,8 @@ export type VendreApi = {
   getProduct: (id: string, categoryId?: number) => Promise<Product | null>;
   /** Variant types + choices for a product (VQL). Empty when the product has none. */
   getProductVariants: (productId: string | number) => Promise<ProductVariantType[]>;
+  /** Full product record for a selected variant child (its own product in Vendre). */
+  getVariantProduct: (productId: string | number) => Promise<Product | null>;
   /** CMS page content for an information_page menu item (gallery id). */
   getPageContent: (id: number) => Promise<PageContent>;
   /** CMS page tree; the only source of `is_menu` for footer groups. */
@@ -210,6 +213,7 @@ const liveApi: VendreApi = {
       return [];
     }
   },
+  getVariantProduct: (productId) => vqlProduct(productId),
   getProduct: async (id, categoryId) => {
     // Surface v2 has no products/{id} endpoint; products are read from a category listing.
     const fromCategory = async (catId: number) => {
@@ -516,6 +520,7 @@ const demoApi: VendreApi = {
   getCategory: async (id, query) => mockCategory(id, query),
   getProduct: async (id) => mockProduct(id),
   getProductVariants: async (productId) => mockProductVariants(String(productId)),
+  getVariantProduct: async (productId) => mockProduct(String(productId)),
   getPageContent: async (id) => mockPageContent(id),
   getPageTree: async () => mockPageTree(),
   getCart: async () => demoCart,
@@ -702,6 +707,18 @@ export function useProduct(id: string, categoryId?: number) {
     queryFn: () => api.getProduct(id, categoryId),
     staleTime: 5 * 60 * 1000,
     enabled: Boolean(id),
+  });
+}
+
+/** Variant children are separate products: re-read the whole record on selection. */
+export function useVariantProduct(productId: number | null) {
+  const api = useVendreApi();
+  const scope = useCacheScope();
+  return useQuery({
+    queryKey: ["vendre", api.mode, "variant-product", productId, scope],
+    queryFn: () => api.getVariantProduct(productId as number),
+    staleTime: 5 * 60 * 1000,
+    enabled: productId != null,
   });
 }
 
