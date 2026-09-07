@@ -108,6 +108,8 @@ export type Product = {
   seo_link: string | null;
   categories_id: string | null;
   has_attributes: boolean;
+  /** Number of variant children. > 0 means the product must be configured on the PDP. */
+  child_count?: number | null;
   /** Present on some installs; variant selectors render from it when available. */
   attributes?: ProductAttribute[];
 };

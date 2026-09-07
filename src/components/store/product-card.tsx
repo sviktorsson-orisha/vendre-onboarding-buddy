@@ -10,6 +10,8 @@ export function ProductCard({ product }: { product: Product }) {
   const { t } = useI18n();
   const { add } = useCartMutations();
   const soldOut = product.stock_total === 0 && product.stock_allow_checkout === false;
+  const hasVariants = (product.child_count ?? 0) > 0;
+  const readMoreOnly = hasVariants || soldOut;
 
   return (
     <article className="brand-card group flex flex-col overflow-hidden p-0">
@@ -34,14 +36,24 @@ export function ProductCard({ product }: { product: Product }) {
           {product.name}
         </Link>
         <ProductPrice product={product} size="md" />
-        <button
-          type="button"
-          className="brand-button mt-auto w-full justify-center"
-          disabled={soldOut || add.isPending}
-          onClick={() => add.mutate({ productId: product.id })}
-        >
-          {soldOut ? t("store.outOfStock") : t("store.addToCart")}
-        </button>
+        {readMoreOnly ? (
+          <Link
+            to="/produkt/$id"
+            params={{ id: String(product.id) }}
+            className="brand-button-ghost mt-auto w-full justify-center"
+          >
+            {t("store.readMore")}
+          </Link>
+        ) : (
+          <button
+            type="button"
+            className="brand-button mt-auto w-full justify-center"
+            disabled={add.isPending}
+            onClick={() => add.mutate({ productId: product.id })}
+          >
+            {t("store.addToCart")}
+          </button>
+        )}
       </div>
     </article>
   );
