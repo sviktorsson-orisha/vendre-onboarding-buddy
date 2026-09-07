@@ -89,6 +89,11 @@ Variants are read with `POST /surface/2/vql`:
   list. `null`/missing means active. Products with `status: 0` are removed during
   normalisation, so a combination like Blue + L that only exists as an inactive
   product resolves to nothing and its choice is disabled.
+- **Bump the variant query key when the filtering rules change.** Variant trees are
+  cached (`["vendre", mode, "product-variants", "status-filter-v2", id, scope]`);
+  without a new key segment an open tab keeps serving the previously normalised
+  tree and inactive choices stay clickable. The click handler also refuses a
+  blocked choice, so a stale render still cannot select an inactive combination.
 - **Cross-type availability.** A choice is disabled and greyed out when no buyable
   product carries it *together with* the choices already selected in the other
   variant types: pick Blue and a size with no blue product is disabled, and the
