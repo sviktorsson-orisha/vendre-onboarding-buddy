@@ -9,7 +9,7 @@
  * Caching follows .vendre/skills/caching.md: menus/categories are cached, cart and
  * session are never cached.
  */
-import { useMemo, useRef } from "react";
+import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useOnboarding } from "@/context/onboarding-context";
@@ -758,6 +758,8 @@ export function useSessionContext() {
     gcTime: 0,
   });
 }
+
+const cartMutationQueue = { current: Promise.resolve() as Promise<unknown> };
 
 export function useCartMutations() {
   const api = useVendreApi();
