@@ -457,15 +457,23 @@ type VqlVariantsResponse = {
   data?: { query?: { product_variant_types?: ProductVariantType[] } };
 } | null;
 
-/** Drop choices without a buyable product and sort everything by sort_order. */
+/**
+ * Drop inactive variant products and choices without a buyable product, then sort
+ * everything by sort_order. A missing/null `active` means the store default: active.
+ */
 function normalizeVariantTypes(types: ProductVariantType[]): ProductVariantType[] {
   const bySort = (a: { sort_order?: number | null }, b: { sort_order?: number | null }) =>
     (a.sort_order ?? 0) - (b.sort_order ?? 0);
+  const isActive = (value: unknown) => value == null || Boolean(Number(value));
   return (types ?? [])
     .map((type) => ({
       ...type,
       product_variant_choices: (type.product_variant_choices ?? [])
-        .filter((choice) => Array.isArray(choice.products) && choice.products.length > 0)
+        .map((choice) => ({
+          ...choice,
+          products: (choice.products ?? []).filter((entry) => isActive(entry.active)),
+        }))
+        .filter((choice) => choice.products.length > 0)
         .sort(bySort),
     }))
     .filter((type) => type.product_variant_choices.length > 0)
