@@ -14,9 +14,9 @@ export function SetupNoticeBar() {
   // The guide is the first thing to do in a fresh project: keep it open while
   // the setup is unfinished, unless the developer closed it themselves.
   useEffect(() => {
-    if (verified || guideDismissed) return;
+    if (verified) return;
     setOpen(true);
-  }, [verified, guideDismissed]);
+  }, [verified]);
 
   // "Start building the store" only removes the banner once every step of the
   // guide is green. If the setup breaks (or was never finished on this domain)
