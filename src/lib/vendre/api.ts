@@ -459,7 +459,8 @@ type VqlVariantsResponse = {
 
 /**
  * Drop inactive variant products and choices without a buyable product, then sort
- * everything by sort_order. A missing/null `active` means the store default: active.
+ * everything by sort_order. Vendre marks an inactive product with `status: 0`; a
+ * missing/null status means the store default: active.
  */
 function normalizeVariantTypes(types: ProductVariantType[]): ProductVariantType[] {
   const bySort = (a: { sort_order?: number | null }, b: { sort_order?: number | null }) =>
