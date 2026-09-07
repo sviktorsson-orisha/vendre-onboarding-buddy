@@ -337,6 +337,70 @@ type VqlProductsResponse = {
   page_count?: number;
 } | null;
 
+type VqlRawProduct = {
+  id: number;
+  name?: string;
+  model?: string | null;
+  description?: string | null;
+  short_description?: string | null;
+  child_count?: number | null;
+  tax_rate?: number | null;
+  category_id?: number | null;
+  seo_link?: string | null;
+  pricing?: {
+    price?: string | null;
+    original?: string | null;
+    original_raw?: number | null;
+    special?: string | null;
+    special_raw?: number | null;
+    final_excl_raw?: number | null;
+  } | null;
+};
+
+/** Single product read through VQL (used for variant children, which no category lists). */
+async function vqlProduct(id: string | number): Promise<Product | null> {
+  try {
+    const data = await guarded(() =>
+      surfaceJson<{ query?: { products?: VqlRawProduct[] } } | null>("vql", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          query: { products: { filters: { where: { id: Number(id) } }, fields: ["_all"] } },
+        }),
+      }),
+    );
+    const raw = data?.query?.products?.[0];
+    if (!raw) return null;
+    const pricing = raw.pricing ?? {};
+    return {
+      id: String(raw.id),
+      name: raw.name ?? `#${raw.id}`,
+      model: raw.model ?? null,
+      description: raw.description ?? null,
+      description_short: raw.short_description ?? null,
+      price: pricing.price ?? pricing.original ?? null,
+      price_raw: pricing.original_raw ?? null,
+      price_original: pricing.original ?? null,
+      price_original_raw: pricing.original_raw ?? null,
+      price_special: pricing.special ?? null,
+      price_special_raw: pricing.special_raw ?? null,
+      final_price_excl_raw: pricing.final_excl_raw ?? null,
+      tax: raw.tax_rate ?? null,
+      unit: null,
+      image: null,
+      images: [],
+      stock_total: null,
+      stock_allow_checkout: null,
+      seo_link: raw.seo_link ?? null,
+      categories_id: raw.category_id != null ? String(raw.category_id) : null,
+      has_attributes: false,
+      child_count: raw.child_count ?? 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
 type VqlVariantsResponse = {
   query?: { product_variant_types?: ProductVariantType[] };
   data?: { query?: { product_variant_types?: ProductVariantType[] } };
