@@ -298,6 +298,21 @@ export default function ProductPage({ id }: { id: string }) {
               />
             </section>
           )}
+
+          {specifications.length > 0 && (
+            <section className="mt-10">
+              <h2 className="text-lg font-bold text-foreground">{t("store.specifications")}</h2>
+              <dl className="mt-3 divide-y divide-border border-y border-border text-sm">
+                {specifications.map((spec) => (
+                  <div key={spec.id} className="flex gap-4 py-2">
+                    <dt className="w-1/2 font-medium text-foreground">{spec.name}</dt>
+                    <dd className="w-1/2 text-muted-foreground">{spec.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          )}
+
         </div>
       </div>
     </StoreShell>
