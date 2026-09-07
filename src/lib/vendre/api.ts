@@ -66,6 +66,8 @@ export type VendreApi = {
   getProductVariants: (productId: string | number) => Promise<ProductVariantType[]>;
   /** Full product record for a selected variant child (its own product in Vendre). */
   getVariantProduct: (productId: string | number) => Promise<Product | null>;
+  /** Name/value specifications for a product (VQL relation `specifications`). */
+  getProductSpecifications: (productId: string | number) => Promise<ProductSpecification[]>;
   /** CMS page content for an information_page menu item (gallery id). */
   getPageContent: (id: number) => Promise<PageContent>;
   /** CMS page tree; the only source of `is_menu` for footer groups. */
@@ -222,6 +224,7 @@ const liveApi: VendreApi = {
     }
   },
   getVariantProduct: (productId) => vqlProduct(productId),
+  getProductSpecifications: (productId) => vqlSpecifications(productId),
   getProduct: async (id, categoryId) => {
     // Surface v2 has no products/{id} endpoint; products are read from a category listing.
     const fromCategory = async (catId: number) => {
@@ -462,6 +465,36 @@ async function vqlProduct(id: string | number): Promise<Product | null> {
 }
 
 
+/**
+ * Specifications live on the VQL relation `specifications`; category listings do not
+ * carry them, so the PDP reads them for whichever product is currently active.
+ */
+async function vqlSpecifications(id: string | number): Promise<ProductSpecification[]> {
+  try {
+    const data = await guarded(() =>
+      surfaceJson<{ query?: { products?: { specifications?: ProductSpecification[] }[] } } | null>(
+        "vql",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            query: {
+              products: {
+                filters: { where: { id: Number(id) } },
+                fields: ["id", { specifications: { fields: ["_all"] } }],
+              },
+            },
+          }),
+        },
+      ),
+    );
+    const list = data?.query?.products?.[0]?.specifications ?? [];
+    return list.filter((item) => item?.name && item?.value);
+  } catch {
+    return [];
+  }
+}
+
 type VqlVariantsResponse = {
   query?: { product_variant_types?: ProductVariantType[] };
   data?: { query?: { product_variant_types?: ProductVariantType[] } };
@@ -555,6 +588,8 @@ const demoApi: VendreApi = {
   getProduct: async (id) => mockProduct(id),
   getProductVariants: async (productId) => mockProductVariants(String(productId)),
   getVariantProduct: async (productId) => mockProduct(String(productId)),
+  getProductSpecifications: async (productId) =>
+    (await mockProduct(String(productId)))?.specifications ?? [],
   getPageContent: async (id) => mockPageContent(id),
   getPageTree: async () => mockPageTree(),
   getCart: async () => demoCart,
@@ -753,6 +788,18 @@ export function useVariantProduct(productId: number | null) {
     queryFn: () => api.getVariantProduct(productId as number),
     staleTime: 5 * 60 * 1000,
     enabled: productId != null,
+  });
+}
+
+/** Specifications for the product currently shown on the PDP (parent or variant). */
+export function useProductSpecifications(productId: string | number | null) {
+  const api = useVendreApi();
+  const scope = useCacheScope();
+  return useQuery({
+    queryKey: ["vendre", api.mode, "product-specifications", String(productId), scope],
+    queryFn: () => api.getProductSpecifications(productId as string | number),
+    staleTime: 5 * 60 * 1000,
+    enabled: productId != null && productId !== "",
   });
 }
 
