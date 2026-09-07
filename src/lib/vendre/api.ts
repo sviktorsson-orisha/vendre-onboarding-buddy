@@ -602,6 +602,18 @@ export function useProduct(id: string, categoryId?: number) {
     queryKey: ["vendre", api.mode, "product", id, categoryId ?? null],
     queryFn: () => api.getProduct(id, categoryId),
     staleTime: 5 * 60 * 1000,
+    enabled: Boolean(id),
+  });
+}
+
+export function useProductVariants(id: string) {
+  const api = useVendreApi();
+  const scope = useCacheScope();
+  return useQuery({
+    queryKey: ["vendre", api.mode, "product-variants", id, scope],
+    queryFn: () => api.getProductVariants(id),
+    staleTime: 5 * 60 * 1000,
+    enabled: Boolean(id),
   });
 }
 
