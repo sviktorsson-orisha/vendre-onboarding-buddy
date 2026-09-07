@@ -134,17 +134,17 @@ export default function ProductPage({ id }: { id: string }) {
               <h2 className="brand-eyebrow text-muted-foreground">{type.name}</h2>
               <div className="mt-2 flex flex-wrap gap-2">
                 {type.product_variant_choices.map((choice) => {
-                  const outOfStock = choice.products[0]?.in_stock === false;
+                  const blocked = choiceBlocked(choice);
                   const active = selection[type.id] === choice.id;
                   return (
                     <button
                       key={choice.id}
                       type="button"
-                      disabled={outOfStock}
+                      disabled={blocked}
                       onClick={() => setSelection((prev) => ({ ...prev, [type.id]: choice.id }))}
                       className={cn(
                         "rounded-md border px-3 py-1.5 text-sm transition-colors",
-                        outOfStock
+                        blocked
                           ? "cursor-not-allowed border-border bg-muted text-muted-foreground line-through opacity-60"
                           : active
                             ? "border-primary bg-primary/10 text-primary"
