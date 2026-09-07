@@ -188,7 +188,7 @@ alone. Skills: `account-auth.md`, `customer-account/SKILL.md`,
 | --- | --- | --- | --- | --- |
 | GET | `shopping-cart` | `shopping_cart` | – | lines, totals, coupons (never cache) |
 | POST | `shopping-cart/products` | `shopping_cart` | yes | add / set quantity, batch `{ products: [...] }` |
-| DELETE | `shopping-cart` | `shopping_cart` | yes | remove line |
+| DELETE | `shopping-cart` | `shopping_cart` | yes | **clears the whole cart** — remove a single line with `POST shopping-cart/products` and `quantity: 0` |
 | POST | `shopping-cart/coupons/activate` | `shopping_cart` | yes | apply coupon |
 | POST | `shopping-cart/coupons/deactivate` | `shopping_cart` | yes | remove coupon |
 | POST | `shopping-cart/coupons/reset` | `shopping_cart` | yes | clear coupons |
