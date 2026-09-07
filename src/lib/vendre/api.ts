@@ -21,6 +21,7 @@ import {
   mockPageContent,
   mockPageTree,
   mockProduct,
+  mockProductVariants,
   mockSearch,
   mockSessionContext,
 } from "@/mock/vendreResponses";
@@ -37,6 +38,7 @@ import type {
   PageTreeNode,
   PageTreeResponse,
   Product,
+  ProductVariantType,
   SearchQuery,
   SearchResult,
   SessionContext,
@@ -57,6 +59,8 @@ export type VendreApi = {
   getMenus: () => Promise<MenuItem[]>;
   getCategory: (id: number, query?: CategoryQuery) => Promise<CategoryResponse>;
   getProduct: (id: string, categoryId?: number) => Promise<Product | null>;
+  /** Variant types + choices for a product (VQL). Empty when the product has none. */
+  getProductVariants: (productId: string | number) => Promise<ProductVariantType[]>;
   /** CMS page content for an information_page menu item (gallery id). */
   getPageContent: (id: number) => Promise<PageContent>;
   /** CMS page tree; the only source of `is_menu` for footer groups. */
