@@ -41,6 +41,7 @@ export default function ProductPage({ id }: { id: string }) {
     if (lists.length === 0) return null;
     const shared = lists.reduce((acc, ids) => acc.filter((id) => ids.includes(id)));
     return shared.length === 1 ? shared[0] : (shared[0] ?? null);
+
   }, [allSelected, selectedChoices]);
 
 
