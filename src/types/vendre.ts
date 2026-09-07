@@ -114,7 +114,20 @@ export type Product = {
   parent_id?: number | null;
   /** Present on some installs; variant selectors render from it when available. */
   attributes?: ProductAttribute[];
+  /** VQL relation `specifications` — name/value pairs shown on the PDP. */
+  specifications?: ProductSpecification[];
 };
+
+/** POST /surface/2/vql → products.specifications */
+export type ProductSpecification = {
+  id: number;
+  parent_id?: number | null;
+  name: string;
+  type?: number | null;
+  short_value?: string | null;
+  value: string | null;
+};
+
 
 /**
  * Variant data from POST /surface/2/vql (resource product_variant_types).
