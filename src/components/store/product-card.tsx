@@ -36,14 +36,24 @@ export function ProductCard({ product }: { product: Product }) {
           {product.name}
         </Link>
         <ProductPrice product={product} size="md" />
-        <button
-          type="button"
-          className="brand-button mt-auto w-full justify-center"
-          disabled={soldOut || add.isPending}
-          onClick={() => add.mutate({ productId: product.id })}
-        >
-          {soldOut ? t("store.outOfStock") : t("store.addToCart")}
-        </button>
+        {readMoreOnly ? (
+          <Link
+            to="/produkt/$id"
+            params={{ id: String(product.id) }}
+            className="brand-button-ghost mt-auto w-full justify-center"
+          >
+            {t("store.readMore")}
+          </Link>
+        ) : (
+          <button
+            type="button"
+            className="brand-button mt-auto w-full justify-center"
+            disabled={add.isPending}
+            onClick={() => add.mutate({ productId: product.id })}
+          >
+            {t("store.addToCart")}
+          </button>
+        )}
       </div>
     </article>
   );
