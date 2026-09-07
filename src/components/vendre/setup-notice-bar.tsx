@@ -18,8 +18,10 @@ export function SetupNoticeBar() {
     setOpen(true);
   }, [verified, guideDismissed]);
 
-  // "Start building the store" removes the banner for good.
-  if (guideDismissed) return null;
+  // "Start building the store" only removes the banner once every step of the
+  // guide is green. If the setup breaks (or was never finished on this domain)
+  // the banner and guide come back.
+  if (verified && guideDismissed) return null;
 
   return (
 
