@@ -38,7 +38,9 @@ import type {
   PageTreeNode,
   PageTreeResponse,
   Product,
+  ProductSpecification,
   ProductVariantType,
+
   SearchQuery,
   SearchResult,
   SessionContext,
