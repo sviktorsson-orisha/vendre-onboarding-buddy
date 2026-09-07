@@ -198,7 +198,7 @@ const liveApi: VendreApi = {
                               "in_stock",
                               "quantity",
                               "stock_allow_checkout",
-                              "active",
+                              "status",
                             ],
                           },
                         },
