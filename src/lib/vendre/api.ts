@@ -21,6 +21,7 @@ import {
   mockPageContent,
   mockPageTree,
   mockProduct,
+  mockProductVariants,
   mockSearch,
   mockSessionContext,
 } from "@/mock/vendreResponses";
@@ -37,9 +38,11 @@ import type {
   PageTreeNode,
   PageTreeResponse,
   Product,
+  ProductVariantType,
   SearchQuery,
   SearchResult,
   SessionContext,
+  VendreImage,
 } from "@/types/vendre";
 
 
@@ -57,6 +60,10 @@ export type VendreApi = {
   getMenus: () => Promise<MenuItem[]>;
   getCategory: (id: number, query?: CategoryQuery) => Promise<CategoryResponse>;
   getProduct: (id: string, categoryId?: number) => Promise<Product | null>;
+  /** Variant types + choices for a product (VQL). Empty when the product has none. */
+  getProductVariants: (productId: string | number) => Promise<ProductVariantType[]>;
+  /** Full product record for a selected variant child (its own product in Vendre). */
+  getVariantProduct: (productId: string | number) => Promise<Product | null>;
   /** CMS page content for an information_page menu item (gallery id). */
   getPageContent: (id: number) => Promise<PageContent>;
   /** CMS page tree; the only source of `is_menu` for footer groups. */
@@ -163,6 +170,50 @@ const liveApi: VendreApi = {
     ),
   getCategory: (id, query) =>
     guarded(() => surfaceJson<CategoryResponse>(`categories/${id}${categoryQuery(query)}`)),
+  // Variants come from VQL. Verified response shape: { query: { product_variant_types: [...] } }.
+  // `quantity` is not returned by this install; `stock_allow_checkout` may be null,
+  // which means the store default (checkout allowed) applies.
+  getProductVariants: async (productId) => {
+    try {
+      const data = await guarded(() =>
+        surfaceJson<VqlVariantsResponse>("vql", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            query: {
+              product_variant_types: {
+                filters: { where: { product_id: String(productId) } },
+                fields: [
+                  "id",
+                  "name",
+                  "sort_order",
+                  {
+                    product_variant_choices: {
+                      fields: [
+                        "_all",
+                        {
+                          products: {
+                            fields: ["id", "in_stock", "quantity", "stock_allow_checkout"],
+                          },
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+          }),
+        }),
+      );
+      const types =
+        data?.query?.product_variant_types ?? data?.data?.query?.product_variant_types ?? [];
+      return normalizeVariantTypes(types);
+    } catch {
+      // VQL disabled or the product has no variants: render the page without a selector.
+      return [];
+    }
+  },
+  getVariantProduct: (productId) => vqlProduct(productId),
   getProduct: async (id, categoryId) => {
     // Surface v2 has no products/{id} endpoint; products are read from a category listing.
     const fromCategory = async (catId: number) => {
@@ -178,7 +229,8 @@ const liveApi: VendreApi = {
       const hit = await fromCategory(item.id);
       if (hit) return hit;
     }
-    return null;
+    // Variant children are not listed in categories — read them through VQL instead.
+    return vqlProduct(id);
   },
   // Only the page's own description is rendered — content blocks are not used.
   // GET galleries/{id}/pages lists the pages *inside* a gallery, so the page
@@ -229,15 +281,20 @@ const liveApi: VendreApi = {
       }),
     );
   },
+  // DELETE shopping-cart clears the whole cart, so a single line is removed by
+  // setting its quantity to 0 on the same endpoint used for quantity changes.
   removeLine: async (line) => {
     await guarded(() =>
-      surfaceJson("shopping-cart", {
-        method: "DELETE",
+      surfaceJson("shopping-cart/products", {
+        method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ id: line.id }),
+        body: JSON.stringify({
+          products: [{ id: line.productId, quantity: 0, attributes: line.attributes }],
+        }),
       }),
     );
   },
+
   getSessionContext: () => guarded(() => surfaceJson<SessionContext>("session/context")),
   checkoutUrl: async () => {
     const { baseUrl } = await getVendreToken();
@@ -296,6 +353,118 @@ type VqlProductsResponse = {
   page_index?: number;
   page_count?: number;
 } | null;
+
+type VqlRawProduct = {
+  id: number;
+  name?: string;
+  parent_id?: number | null;
+  model?: string | null;
+  description?: string | null;
+  short_description?: string | null;
+  child_count?: number | null;
+  tax_rate?: number | null;
+  category_id?: number | null;
+  seo_link?: string | null;
+  in_stock?: boolean | null;
+  quantity?: number | null;
+  stock_allow_checkout?: boolean | number | null;
+  /** Relation `image` returns { id, name, href } — href is the store-relative path. */
+  image?: { id?: number | string | null; name?: string | null; href?: string | null } | null;
+  pricing?: {
+    price?: string | null;
+    original?: string | null;
+    original_raw?: number | null;
+    special?: string | null;
+    special_raw?: number | null;
+    final_excl_raw?: number | null;
+  } | null;
+};
+
+/**
+ * Single product read through VQL. Variant children are real products of their own,
+ * so the PDP re-reads the full record (name, description, image, price, stock)
+ * whenever a variant is selected.
+ */
+async function vqlProduct(id: string | number): Promise<Product | null> {
+  try {
+    const data = await guarded(() =>
+      surfaceJson<{ query?: { products?: VqlRawProduct[] } } | null>("vql", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          query: {
+            products: {
+              filters: { where: { id: Number(id) } },
+              fields: ["_all", { image: { fields: ["id", "name", "href"] } }],
+            },
+          },
+        }),
+      }),
+    );
+    const raw = data?.query?.products?.[0];
+    if (!raw) return null;
+    const pricing = raw.pricing ?? {};
+    const image: VendreImage | null = raw.image?.href
+      ? {
+          id: raw.image.id != null ? String(raw.image.id) : null,
+          path: raw.image.href,
+          image: raw.image.href,
+          alt: raw.image.name ?? null,
+          alt_translated: null,
+        }
+      : null;
+    const allowCheckout =
+      raw.stock_allow_checkout == null ? null : Boolean(Number(raw.stock_allow_checkout));
+    return {
+      id: String(raw.id),
+      name: raw.name ?? `#${raw.id}`,
+      model: raw.model ?? null,
+      description: raw.description ?? null,
+      description_short: raw.short_description ?? null,
+      price: pricing.price ?? pricing.original ?? null,
+      price_raw: pricing.original_raw ?? null,
+      price_original: pricing.original ?? null,
+      price_original_raw: pricing.original_raw ?? null,
+      price_special: pricing.special ?? null,
+      price_special_raw: pricing.special_raw ?? null,
+      final_price_excl_raw: pricing.final_excl_raw ?? null,
+      tax: raw.tax_rate ?? null,
+      unit: null,
+      image,
+      images: image ? [image] : [],
+      stock_total: raw.quantity ?? (raw.in_stock === false ? 0 : null),
+      stock_allow_checkout: allowCheckout,
+      seo_link: raw.seo_link ?? null,
+      categories_id: raw.category_id != null ? String(raw.category_id) : null,
+      has_attributes: false,
+      child_count: raw.child_count ?? 0,
+      parent_id: raw.parent_id ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+
+type VqlVariantsResponse = {
+  query?: { product_variant_types?: ProductVariantType[] };
+  data?: { query?: { product_variant_types?: ProductVariantType[] } };
+} | null;
+
+/** Drop choices without a buyable product and sort everything by sort_order. */
+function normalizeVariantTypes(types: ProductVariantType[]): ProductVariantType[] {
+  const bySort = (a: { sort_order?: number | null }, b: { sort_order?: number | null }) =>
+    (a.sort_order ?? 0) - (b.sort_order ?? 0);
+  return (types ?? [])
+    .map((type) => ({
+      ...type,
+      product_variant_choices: (type.product_variant_choices ?? [])
+        .filter((choice) => Array.isArray(choice.products) && choice.products.length > 0)
+        .sort(bySort),
+    }))
+    .filter((type) => type.product_variant_choices.length > 0)
+    .sort(bySort);
+}
 
 let vqlDisabled = false;
 let catalogueCache: { at: number; products: Promise<Product[]> } | null = null;
@@ -357,6 +526,8 @@ const demoApi: VendreApi = {
   getMenus: async () => mockMenus,
   getCategory: async (id, query) => mockCategory(id, query),
   getProduct: async (id) => mockProduct(id),
+  getProductVariants: async (productId) => mockProductVariants(String(productId)),
+  getVariantProduct: async (productId) => mockProduct(String(productId)),
   getPageContent: async (id) => mockPageContent(id),
   getPageTree: async () => mockPageTree(),
   getCart: async () => demoCart,
@@ -542,6 +713,30 @@ export function useProduct(id: string, categoryId?: number) {
     queryKey: ["vendre", api.mode, "product", id, categoryId ?? null],
     queryFn: () => api.getProduct(id, categoryId),
     staleTime: 5 * 60 * 1000,
+    enabled: Boolean(id),
+  });
+}
+
+/** Variant children are separate products: re-read the whole record on selection. */
+export function useVariantProduct(productId: number | null) {
+  const api = useVendreApi();
+  const scope = useCacheScope();
+  return useQuery({
+    queryKey: ["vendre", api.mode, "variant-product", productId, scope],
+    queryFn: () => api.getVariantProduct(productId as number),
+    staleTime: 5 * 60 * 1000,
+    enabled: productId != null,
+  });
+}
+
+export function useProductVariants(id: string) {
+  const api = useVendreApi();
+  const scope = useCacheScope();
+  return useQuery({
+    queryKey: ["vendre", api.mode, "product-variants", id, scope],
+    queryFn: () => api.getProductVariants(id),
+    staleTime: 5 * 60 * 1000,
+    enabled: Boolean(id),
   });
 }
 
@@ -566,29 +761,47 @@ export function useSessionContext() {
   });
 }
 
+const cartMutationQueue = { current: Promise.resolve() as Promise<unknown> };
+
 export function useCartMutations() {
   const api = useVendreApi();
   const queryClient = useQueryClient();
-  const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: ["vendre", api.mode, "cart"] });
+  const cartKey = ["vendre", api.mode, "cart"] as const;
+
+  // Every mutation is serialized and followed by a fresh store read, so the
+  // totals shown always come from the store's own response for the final state
+  // (no client-side arithmetic, no stale total from an out-of-order refetch).
+  const chain = cartMutationQueue;
+
+  const run = <T,>(mutate: () => Promise<T>) => {
+    const next = chain.current
+      .catch(() => undefined)
+      .then(async () => {
+        await mutate();
+        await queryClient.cancelQueries({ queryKey: cartKey });
+        const cart = await api.getCart();
+        queryClient.setQueryData(cartKey, cart);
+        return cart;
+      });
+    chain.current = next;
+    return next;
+  };
 
   const add = useMutation({
     mutationFn: ({ productId, quantity }: { productId: string | number; quantity?: number }) =>
-      api.addToCart(productId, quantity ?? 1),
-    onSuccess: invalidate,
+      run(() => api.addToCart(productId, quantity ?? 1)),
   });
   const update = useMutation({
     mutationFn: ({ line, quantity }: { line: CartLine; quantity: number }) =>
-      api.updateQty(line, quantity),
-    onSuccess: invalidate,
+      run(() => api.updateQty(line, quantity)),
   });
   const remove = useMutation({
-    mutationFn: ({ line }: { line: CartLine }) => api.removeLine(line),
-    onSuccess: invalidate,
+    mutationFn: ({ line }: { line: CartLine }) => run(() => api.removeLine(line)),
   });
 
   return { add, update, remove };
 }
+
 
 export function useFeaturedProducts(count = 4) {
   const api = useVendreApi();

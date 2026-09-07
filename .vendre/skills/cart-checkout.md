@@ -25,7 +25,8 @@ checkout.
 
 - Every change schedules an async sync to
   `POST /surface/2/shopping-cart/products` (add / set quantity) or
-  `DELETE /surface/2/shopping-cart` (remove), always with
+  `POST /surface/2/shopping-cart/products` with `quantity: 0` (remove a single
+  line — `DELETE /surface/2/shopping-cart` empties the entire cart), always with
   `Surface-Mutation-Protection-Token`.
 - **Debounce ~400–600 ms** and coalesce: rapid consecutive changes to the same
   line collapse into **one** request carrying the latest state. Last write wins.

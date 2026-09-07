@@ -1,20 +1,80 @@
 import { Link } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { StoreImage } from "@/components/store/store-image";
 import { StoreShell } from "@/components/store/store-shell";
 import { useI18n } from "@/lib/i18n";
 import { ProductPrice } from "@/components/store/product-price";
-import { useCartMutations, useProduct } from "@/lib/vendre/api";
+import { useCartMutations, useProduct, useProductVariants, useVariantProduct } from "@/lib/vendre/api";
 import { cn } from "@/lib/utils";
+import type { ProductVariantChoice } from "@/types/vendre";
 
 export default function ProductPage({ id }: { id: string }) {
   const { t } = useI18n();
   const { data: product, isLoading } = useProduct(id);
+  // A variant child carries parent_id; the variant tree only exists on the parent.
+  const variantOwnerId = product ? String(product.parent_id ?? product.id) : "";
+  const { data: variantTypes = [] } = useProductVariants(variantOwnerId);
   const { add } = useCartMutations();
-  const [variant, setVariant] = useState<string | number | null>(null);
+  /** typeId -> selected choice id */
+  const [selection, setSelection] = useState<Record<number, number>>({});
   const [quantity, setQuantity] = useState(1);
+
+  /** Landing directly on a variant: preselect the choices that resolve to it. */
+  const landedVariantId = product?.parent_id != null ? Number(product.id) : null;
+  const preselectKey = `${landedVariantId ?? ""}:${variantTypes.map((type) => type.id).join(",")}`;
+  const [preselectedFor, setPreselectedFor] = useState<string | null>(null);
+  if (landedVariantId != null && variantTypes.length > 0 && preselectedFor !== preselectKey) {
+    const next: Record<number, number> = {};
+    for (const type of variantTypes) {
+      const choice = type.product_variant_choices.find((item) =>
+        item.products.some((entry) => entry.id === landedVariantId),
+      );
+      if (choice) next[type.id] = choice.id;
+    }
+    setPreselectedFor(preselectKey);
+    if (Object.keys(next).length > 0) setSelection(next);
+  }
+
+  const selectedChoices = useMemo(
+    () =>
+      variantTypes
+        .map((type) =>
+          type.product_variant_choices.find((choice) => choice.id === selection[type.id]),
+        )
+        .filter((choice): choice is ProductVariantChoice => Boolean(choice)),
+    [variantTypes, selection],
+  );
+
+  const allSelected = variantTypes.length > 0 && selectedChoices.length === variantTypes.length;
+
+  /**
+   * Each choice lists every product carrying it. With several variant types the real
+   * product is the one shared by all selected choices, so intersect the id lists.
+   */
+  const selectedVariantProductId = useMemo(() => {
+    if (!allSelected) return null;
+    const lists = selectedChoices.map((choice) => choice.products.map((item) => item.id));
+    if (lists.length === 0) return null;
+    const shared = lists.reduce((acc, ids) => acc.filter((id) => ids.includes(id)));
+    return shared[0] ?? null;
+
+  }, [allSelected, selectedChoices]);
+
+
+  // A variant is its own product in Vendre — reload the full record on selection.
+  const { data: variantProduct } = useVariantProduct(
+    selectedVariantProductId != null && selectedVariantProductId !== landedVariantId
+      ? selectedVariantProductId
+      : null,
+  );
+
+  const buyableProduct = variantProduct ?? product;
+  /** Everything on screen follows the selected variant when one is loaded. */
+  const view = variantProduct ?? product;
+  const activeProductId = selectedVariantProductId ?? product?.id ?? null;
+
 
   if (isLoading) {
     return (
@@ -37,28 +97,114 @@ export default function ProductPage({ id }: { id: string }) {
     );
   }
 
-  const soldOut = product.stock_total === 0 && product.stock_allow_checkout === false;
-  const attributes = product.attributes ?? [];
+  /**
+   * A variant with no stock may still be sold: stock_allow_checkout === false is the
+   * only thing that blocks it, and null means "inherit the store default" (allowed).
+   */
+  const entryBlocked = (variant: ProductVariantChoice["products"][number]) => {
+    if (variant.in_stock !== false) return false;
+    const allow = variant.stock_allow_checkout ?? product?.stock_allow_checkout ?? true;
+    return allow === false;
+  };
+  /** A choice is only unavailable when every product carrying it is blocked. */
+  const choiceBlocked = (choice: ProductVariantChoice) =>
+    choice.products.length > 0 && choice.products.every(entryBlocked);
+  const selectedInStock = selectedChoices.every((choice) =>
+    choice.products.some((variant) => variant.in_stock !== false),
+  );
+
+  /** The exact combination that was picked, not just the individual choices. */
+  const selectedEntries = selectedChoices
+    .flatMap((choice) => choice.products)
+    .filter((variant) => variant.id === selectedVariantProductId);
+  const combinationBlocked =
+    selectedEntries.length > 0 && selectedEntries.some(entryBlocked);
+  /** The variant's own record wins once it is loaded. */
+  const variantRecordBlocked =
+    variantProduct != null &&
+    variantProduct.stock_total === 0 &&
+    variantProduct.stock_allow_checkout === false;
+
+  const selectedBlocked = selectedChoices.some(choiceBlocked) || combinationBlocked;
+  const parentSoldOut = product.stock_total === 0 && product.stock_allow_checkout === false;
+  const soldOut =
+    variantTypes.length > 0
+      ? (allSelected && selectedBlocked) || variantRecordBlocked
+      : parentSoldOut;
+
+
+  // Fallback for installs where VQL returns no variant types.
+  const attributes = variantTypes.length > 0 ? [] : (product.attributes ?? []);
+  const canBuy =
+    (variantTypes.length === 0 || selectedVariantProductId != null) && !soldOut && Boolean(activeProductId);
 
   return (
     <StoreShell>
       <div className="grid gap-10 lg:grid-cols-2">
         <StoreImage
-          image={product.image ?? product.images[0] ?? null}
-          alt={product.name}
-          label={product.name}
+          key={view?.id ?? product.id}
+          image={view?.image ?? view?.images?.[0] ?? product.image ?? product.images[0] ?? null}
+          alt={view?.name ?? product.name}
+          label={view?.name ?? product.name}
           className="aspect-4/5 w-full rounded-2xl border border-border"
         />
 
         <div>
-          <h1 className="text-3xl font-extrabold text-foreground">{product.name}</h1>
-          {product.description_short && (
-            <p className="mt-3 text-sm text-muted-foreground">{product.description_short}</p>
+          <h1 className="text-3xl font-extrabold text-foreground">{view?.name ?? product.name}</h1>
+          {(view?.description_short || product.description_short) && (
+            <p className="mt-3 text-sm text-muted-foreground">
+              {view?.description_short || product.description_short}
+            </p>
           )}
-          <ProductPrice product={product} size="lg" className="mt-5" />
-          <p className={cn("mt-1 text-sm", soldOut ? "text-destructive" : "text-emerald-700")}>
-            {soldOut ? t("store.outOfStock") : t("store.inStock")}
-          </p>
+          <ProductPrice product={buyableProduct ?? product} size="lg" className="mt-5" />
+          {(variantTypes.length === 0 || allSelected) && (
+            <p
+              className={cn(
+                "mt-1 text-sm",
+                variantTypes.length > 0
+                  ? selectedInStock
+                    ? "text-emerald-700"
+                    : "text-destructive"
+                  : soldOut
+                    ? "text-destructive"
+                    : "text-emerald-700",
+              )}
+            >
+              {(variantTypes.length > 0 ? !selectedInStock : soldOut)
+                ? t("store.outOfStock")
+                : t("store.inStock")}
+            </p>
+          )}
+
+          {variantTypes.map((type) => (
+            <div key={type.id} className="mt-6">
+              <h2 className="brand-eyebrow text-muted-foreground">{type.name}</h2>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {type.product_variant_choices.map((choice) => {
+                  const blocked = choiceBlocked(choice);
+                  const active = selection[type.id] === choice.id;
+                  return (
+                    <button
+                      key={choice.id}
+                      type="button"
+                      disabled={blocked}
+                      onClick={() => setSelection((prev) => ({ ...prev, [type.id]: choice.id }))}
+                      className={cn(
+                        "rounded-md border px-3 py-1.5 text-sm transition-colors",
+                        blocked
+                          ? "cursor-not-allowed border-border bg-muted text-muted-foreground line-through opacity-60"
+                          : active
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border bg-card text-foreground hover:bg-accent",
+                      )}
+                    >
+                      {choice.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
 
           {attributes.map((attribute) => (
             <div key={attribute.id} className="mt-6">
@@ -68,13 +214,7 @@ export default function ProductPage({ id }: { id: string }) {
                   <button
                     key={value.id}
                     type="button"
-                    onClick={() => setVariant(value.id)}
-                    className={cn(
-                      "rounded-md border px-3 py-1.5 text-sm transition-colors",
-                      variant === value.id
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border bg-card text-foreground hover:bg-accent",
-                    )}
+                    className="rounded-md border border-border bg-card px-3 py-1.5 text-sm text-foreground transition-colors hover:bg-accent"
                   >
                     {value.name}
                   </button>
@@ -95,19 +235,24 @@ export default function ProductPage({ id }: { id: string }) {
             <button
               type="button"
               className="brand-button"
-              disabled={soldOut || add.isPending}
-              onClick={() => add.mutate({ productId: product.id, quantity })}
+              disabled={!canBuy || add.isPending}
+              onClick={() =>
+                activeProductId != null && add.mutate({ productId: activeProductId, quantity })
+              }
             >
               {soldOut ? t("store.outOfStock") : t("store.addToCart")}
             </button>
           </div>
+          {variantTypes.length > 0 && selectedVariantProductId == null && !soldOut && (
+            <p className="mt-2 text-xs text-muted-foreground">{t("store.selectVariant")}</p>
+          )}
 
-          {product.description && (
+          {(view?.description || product.description) && (
             <section className="mt-10">
               <h2 className="text-lg font-bold text-foreground">{t("store.description")}</h2>
               <div
                 className="mt-2 text-sm leading-relaxed text-muted-foreground"
-                dangerouslySetInnerHTML={{ __html: product.description }}
+                dangerouslySetInnerHTML={{ __html: view?.description ?? product.description ?? "" }}
               />
             </section>
           )}

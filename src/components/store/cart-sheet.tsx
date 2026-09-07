@@ -21,6 +21,7 @@ export function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
   const { data: cart, isLoading } = useCart();
   const { update, remove } = useCartMutations();
   const lines = cart?.products ?? [];
+
   // The total always comes from the store — never summed in the frontend.
   const cartTotal =
     cart?.cart_total_formatted ??
@@ -115,6 +116,7 @@ export function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
             <span className="text-muted-foreground">{t("store.total")}</span>
             <span className="text-lg font-bold text-foreground">{cartTotal}</span>
           </div>
+
           <button
             type="button"
             className="brand-button mt-4 w-full justify-center"

@@ -108,8 +108,37 @@ export type Product = {
   seo_link: string | null;
   categories_id: string | null;
   has_attributes: boolean;
+  /** Number of variant children. > 0 means the product must be configured on the PDP. */
+  child_count?: number | null;
+  /** Set on variant children: the id of the parent product that owns the variant tree. */
+  parent_id?: number | null;
   /** Present on some installs; variant selectors render from it when available. */
   attributes?: ProductAttribute[];
+};
+
+/**
+ * Variant data from POST /surface/2/vql (resource product_variant_types).
+ * Each choice points at a real, buyable product: choice.products[0].id is the
+ * id to add to cart — never the parent product id from the URL.
+ */
+export type ProductVariantChoice = {
+  id: number;
+  name: string;
+  sort_order?: number | null;
+  products: {
+    id: number;
+    in_stock?: boolean | null;
+    quantity?: number | null;
+    /** null means "inherit the store default", which allows checkout. */
+    stock_allow_checkout?: boolean | null;
+  }[];
+};
+
+export type ProductVariantType = {
+  id: number;
+  name: string;
+  sort_order?: number | null;
+  product_variant_choices: ProductVariantChoice[];
 };
 
 export type ProductAttribute = {
