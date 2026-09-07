@@ -160,7 +160,8 @@ export default function ProductPage({ id }: { id: string }) {
     variantProduct.stock_total === 0 &&
     variantProduct.stock_allow_checkout === false;
 
-  const selectedBlocked = selectedChoices.some(choiceBlocked) || combinationBlocked;
+  const selectedBlocked =
+    selectedChoices.some((choice) => choice.products.every(entryBlocked)) || combinationBlocked;
   const parentSoldOut = product.stock_total === 0 && product.stock_allow_checkout === false;
   const soldOut =
     variantTypes.length > 0
