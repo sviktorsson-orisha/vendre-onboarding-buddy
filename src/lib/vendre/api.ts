@@ -357,6 +357,7 @@ type VqlProductsResponse = {
 type VqlRawProduct = {
   id: number;
   name?: string;
+  parent_id?: number | null;
   model?: string | null;
   description?: string | null;
   short_description?: string | null;
@@ -437,6 +438,7 @@ async function vqlProduct(id: string | number): Promise<Product | null> {
       categories_id: raw.category_id != null ? String(raw.category_id) : null,
       has_attributes: false,
       child_count: raw.child_count ?? 0,
+      parent_id: raw.parent_id ?? null,
     };
   } catch {
     return null;

@@ -75,5 +75,10 @@ Variants are read with `POST /surface/2/vql`:
   The image relation is `image` (not `images`); `image.href` is the store-relative
   path. Price lives in `pricing` (`original/special/final_excl_raw`), stock in
   `in_stock` plus `stock_allow_checkout` (`null` = store default = checkout allowed).
+- **The variant tree lives on the parent.** A variant child carries `parent_id`
+  (e.g. product 271 → `parent_id: 188`), and `product_variant_types` filtered on a
+  child id returns an empty result. Always query `product.parent_id ?? product.id`,
+  so a PDP entered directly on a variant still renders the selector — with the
+  child's own choices preselected from `choice.products[].id`.
 - With several variant types the buy button only enables when all types are
   selected and they resolve to the same product id.

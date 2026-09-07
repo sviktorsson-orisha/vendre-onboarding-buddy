@@ -13,11 +13,29 @@ import type { ProductVariantChoice } from "@/types/vendre";
 export default function ProductPage({ id }: { id: string }) {
   const { t } = useI18n();
   const { data: product, isLoading } = useProduct(id);
-  const { data: variantTypes = [] } = useProductVariants(id);
+  // A variant child carries parent_id; the variant tree only exists on the parent.
+  const variantOwnerId = product ? String(product.parent_id ?? product.id) : "";
+  const { data: variantTypes = [] } = useProductVariants(variantOwnerId);
   const { add } = useCartMutations();
   /** typeId -> selected choice id */
   const [selection, setSelection] = useState<Record<number, number>>({});
   const [quantity, setQuantity] = useState(1);
+
+  /** Landing directly on a variant: preselect the choices that resolve to it. */
+  const landedVariantId = product?.parent_id != null ? Number(product.id) : null;
+  const preselectKey = `${landedVariantId ?? ""}:${variantTypes.map((type) => type.id).join(",")}`;
+  const [preselectedFor, setPreselectedFor] = useState<string | null>(null);
+  if (landedVariantId != null && variantTypes.length > 0 && preselectedFor !== preselectKey) {
+    const next: Record<number, number> = {};
+    for (const type of variantTypes) {
+      const choice = type.product_variant_choices.find((item) =>
+        item.products.some((entry) => entry.id === landedVariantId),
+      );
+      if (choice) next[type.id] = choice.id;
+    }
+    setPreselectedFor(preselectKey);
+    if (Object.keys(next).length > 0) setSelection(next);
+  }
 
   const selectedChoices = useMemo(
     () =>
@@ -46,12 +64,17 @@ export default function ProductPage({ id }: { id: string }) {
 
 
   // A variant is its own product in Vendre — reload the full record on selection.
-  const { data: variantProduct } = useVariantProduct(selectedVariantProductId);
+  const { data: variantProduct } = useVariantProduct(
+    selectedVariantProductId != null && selectedVariantProductId !== landedVariantId
+      ? selectedVariantProductId
+      : null,
+  );
 
   const buyableProduct = variantProduct ?? product;
   /** Everything on screen follows the selected variant when one is loaded. */
   const view = variantProduct ?? product;
   const activeProductId = selectedVariantProductId ?? product?.id ?? null;
+
 
   if (isLoading) {
     return (
