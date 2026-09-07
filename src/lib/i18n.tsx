@@ -323,6 +323,8 @@ const dictionary = {
     "store.checkout": "Go to checkout",
     "store.checkoutDemo": "Checkout opens once the store is connected.",
     "store.total": "Total",
+    "store.totalInclVat": "Total (incl. VAT)",
+    "store.totalVatNote": "Product prices are shown excl. VAT. The store's cart total is returned incl. VAT.",
     "store.addToCart": "Add to cart",
     "store.outOfStock": "Out of stock",
     "store.inStock": "In stock",
