@@ -34,3 +34,21 @@ data; keep the data layer switchable rather than hardcoding VQL everywhere.
 VQL results for static collections (brands, tags, curated lists) cache
 aggressively, keyed by the full query **and** market/currency/language/VAT.
 Never run customer-scoped data through a cached VQL query.
+
+## Verified resources on this install
+
+- `product_variant_types` — variant tree, filtered with
+  `filters.where.product_id`. Only the **parent** product id returns rows; a
+  variant child returns `[]`. Nested `product_variant_choices` → `products`
+  (`id`, `in_stock`, `stock_allow_checkout`) maps a choice to real product ids.
+- `products` — full record for a single id (`fields: ["_all", { image: ... }]`).
+  This is the only way to read a variant child, since children are not listed in
+  any category response.
+- Responses are `{ query: { <resource>: [...] } }` — there is **no** `data`
+  wrapper on Surface v2. Tolerate `data.query.*` defensively.
+- Requested fields are not guaranteed: `quantity` is silently omitted on this
+  install, so never branch on it.
+- A 500 from one variant query must not flip the global "VQL disabled" flag used
+  by search — treat it as "no variants" and keep rendering the page.
+
+See `vendre-pdp-products` for the exact variant query bodies.
