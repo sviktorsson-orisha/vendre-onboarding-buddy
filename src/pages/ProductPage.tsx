@@ -6,7 +6,13 @@ import { StoreImage } from "@/components/store/store-image";
 import { StoreShell } from "@/components/store/store-shell";
 import { useI18n } from "@/lib/i18n";
 import { ProductPrice } from "@/components/store/product-price";
-import { useCartMutations, useProduct, useProductVariants, useVariantProduct } from "@/lib/vendre/api";
+import {
+  useCartMutations,
+  useProduct,
+  useProductSpecifications,
+  useProductVariants,
+  useVariantProduct,
+} from "@/lib/vendre/api";
 import { cn } from "@/lib/utils";
 import type { ProductVariantChoice } from "@/types/vendre";
 
@@ -177,8 +183,8 @@ export default function ProductPage({ id }: { id: string }) {
 
   // Fallback for installs where VQL returns no variant types.
   const attributes = variantTypes.length > 0 ? [] : (product.attributes ?? []);
-  /** Specifications follow the selected variant, falling back to the parent product. */
-  const specifications = (view?.specifications?.length ? view.specifications : product.specifications) ?? [];
+  /** Specifications follow whichever product is active (parent or selected variant). */
+  const specifications = specificationList ?? [];
   const canBuy =
     (variantTypes.length === 0 || selectedVariantProductId != null) && !soldOut && Boolean(activeProductId);
 
