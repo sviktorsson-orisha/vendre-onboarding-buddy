@@ -6,7 +6,13 @@ import { StoreImage } from "@/components/store/store-image";
 import { StoreShell } from "@/components/store/store-shell";
 import { useI18n } from "@/lib/i18n";
 import { ProductPrice } from "@/components/store/product-price";
-import { useCartMutations, useProduct, useProductVariants, useVariantProduct } from "@/lib/vendre/api";
+import {
+  useCartMutations,
+  useProduct,
+  useProductSpecifications,
+  useProductVariants,
+  useVariantProduct,
+} from "@/lib/vendre/api";
 import { cn } from "@/lib/utils";
 import type { ProductVariantChoice } from "@/types/vendre";
 
@@ -74,6 +80,9 @@ export default function ProductPage({ id }: { id: string }) {
   /** Everything on screen follows the selected variant when one is loaded. */
   const view = variantProduct ?? product;
   const activeProductId = selectedVariantProductId ?? product?.id ?? null;
+  const { data: specificationList } = useProductSpecifications(activeProductId);
+
+
 
 
   if (isLoading) {
@@ -177,8 +186,11 @@ export default function ProductPage({ id }: { id: string }) {
 
   // Fallback for installs where VQL returns no variant types.
   const attributes = variantTypes.length > 0 ? [] : (product.attributes ?? []);
+  /** Specifications follow whichever product is active (parent or selected variant). */
+  const specifications = specificationList ?? [];
   const canBuy =
     (variantTypes.length === 0 || selectedVariantProductId != null) && !soldOut && Boolean(activeProductId);
+
 
   return (
     <StoreShell>
@@ -298,6 +310,21 @@ export default function ProductPage({ id }: { id: string }) {
               />
             </section>
           )}
+
+          {specifications.length > 0 && (
+            <section className="mt-10">
+              <h2 className="text-lg font-bold text-foreground">{t("store.specifications")}</h2>
+              <dl className="mt-3 divide-y divide-border border-y border-border text-sm">
+                {specifications.map((spec) => (
+                  <div key={spec.id} className="flex gap-4 py-2">
+                    <dt className="w-1/2 font-medium text-foreground">{spec.name}</dt>
+                    <dd className="w-1/2 text-muted-foreground">{spec.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          )}
+
         </div>
       </div>
     </StoreShell>

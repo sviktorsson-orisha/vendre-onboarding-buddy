@@ -182,6 +182,10 @@ function product(
     has_attributes: Boolean(opts.attributes?.length),
     child_count: opts.attributes?.length ? opts.attributes.length : 0,
     ...(opts.attributes ? { attributes: opts.attributes } : {}),
+    specifications: [
+      { id: 1, name: "Material", value: "100% bomull" },
+      { id: 2, name: "Tvättråd", value: "40 grader" },
+    ],
   };
 }
 
