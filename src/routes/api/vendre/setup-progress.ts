@@ -23,7 +23,7 @@ export const Route = createFileRoute("/api/vendre/setup-progress")({
         if (!isBrowserSameOrigin(request)) return forbidden();
         if (!rateLimit(request, "setup-progress", 30, 60_000)) return tooManyRequests();
 
-        const { writeSetupProgress, resolveSetupProgress } = await import(
+        const { writeSetupProgress, readSetupProgress, resolveSetupProgress } = await import(
           "@/lib/vendre/setup-progress.server"
         );
 
@@ -36,7 +36,10 @@ export const Route = createFileRoute("/api/vendre/setup-progress")({
 
         // Once the guide is finished, the only thing still editable is the
         // published domain. Completed steps can no longer be rewritten.
-        const current = await resolveSetupProgress();
+        // Use only persisted facts for the completion lock. The resolved
+        // status also contains live credential checks and must not be allowed
+        // to make the guide look completed before connectionOk is saved.
+        const current = await readSetupProgress();
         const completed =
           current.adminDone && current.corsDone && current.secretsOk && current.connectionOk;
         if (completed) {
@@ -44,7 +47,7 @@ export const Route = createFileRoute("/api/vendre/setup-progress")({
         }
 
         await writeSetupProgress(patch);
-        const progress = await resolveSetupProgress();
+        const progress = await resolveSetupProgress(true);
         return Response.json(progress, { headers: { "cache-control": "no-store" } });
       },
     },

@@ -18,6 +18,7 @@ const dictionary = {
     "panel.title": "Setup-guide",
     "panel.step": "Steg {current} av {total}",
     "panel.verified": "Anslutningen är verifierad och klar.",
+    "panel.storageWarning": "Guidens framsteg kunde inte sparas i projektets databas. Stegen sparas tillfälligt, men be chatten att sätta upp lagringen för uppstartsguiden.",
     "panel.progress": "{done} av {total} steg klara.",
     "panel.next": "Nästa:",
     "panel.retest": "Testa igen",
@@ -91,8 +92,6 @@ const dictionary = {
     "step6.verdictDone": "Butiksanslutningen är verifierad",
     "step6.verdict": "Låst tills anslutningen är grön",
     "step6.done": "Setupen är klar. Projektet är redo för storefront-arbete.",
-    "step6.baseUrl": "Base URL",
-    "step6.origin": "Allowlistad origin",
     "step6.pending": "Slutför föregående steg och kör anslutningstestet.",
 
     "complete.title": "Allt är klart!",
@@ -232,6 +231,7 @@ const dictionary = {
     "panel.title": "Setup guide",
     "panel.step": "Step {current} of {total}",
     "panel.verified": "The connection is verified and ready.",
+    "panel.storageWarning": "The guide progress could not be saved to this project's database. Steps are kept temporarily — ask the chat to set up the setup-guide storage.",
     "panel.progress": "{done} of {total} steps completed.",
     "panel.next": "Next:",
     "panel.retest": "Test again",
@@ -303,8 +303,6 @@ const dictionary = {
     "step6.verdictDone": "The store connection is verified",
     "step6.verdict": "Locked until the connection is green",
     "step6.done": "Setup is complete. The project is ready for storefront work.",
-    "step6.baseUrl": "Base URL",
-    "step6.origin": "Allowlisted origin",
     "step6.pending": "Complete the previous steps and run the connection test.",
 
     "complete.title": "Everything is ready!",

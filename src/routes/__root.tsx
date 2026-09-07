@@ -11,7 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { setServerConfigured } from "@/context/onboarding-context";
+import { setServerConfigured, setServerVerified } from "@/context/onboarding-context";
 import { getStorefrontStatus } from "@/lib/vendre/status.functions";
 
 
@@ -80,7 +80,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     try {
       return await getStorefrontStatus();
     } catch {
-      return { ok: false, secretsOk: false, tokenOk: false, missing: [] };
+      return {
+        ok: false,
+        secretsOk: false,
+        tokenOk: false,
+        missing: [],
+        corsDone: false,
+        connectionOk: false,
+        verified: false,
+      };
     }
   },
   head: () => ({
@@ -127,7 +135,10 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const status = Route.useLoaderData();
   // Server-decided storefront mode: same answer for every visitor, on SSR and client.
-  setServerConfigured(status?.ok === true);
+  // Live data only once the whole guide is verified (credentials + CORS + green test),
+  // because browser calls to the store require the origin to be allowlisted.
+  setServerConfigured(status?.verified === true);
+  setServerVerified(status?.verified === true);
 
 
 

@@ -30,15 +30,33 @@ any custom domain, added later
 The stable hosts exist before publishing, so CORS can be configured up front.
 The setup screen lists every origin with copy buttons.
 
-Step 1 — Collect credentials
+Step 1 — Collect credentials (do this immediately)
 
-Ask the user for all three at once (use the questions tool if available):
+This is the FIRST thing to do in a new project, in the very first reply, before
+any greeting, analysis, suggestion or question. Do not suggest alternatives,
+do not offer to build anything, do not ask what the user wants to do — open the
+secrets form for the credentials right away and ask for the values.
 
-VENDRE_BASE_URL — store URL, scheme + host, no trailing slash
+Ask for all three values in ONE single secrets form, in one call:
+
+VENDRE_BASE_URL — store URL, scheme + host. A pasted value with a trailing
+slash is accepted, but strip the trailing slash before saving it.
 
 VENDRE_CLIENT_ID
 
 VENDRE_CLIENT_SECRET
+
+Do not split this into two rounds. The secrets form masks every field, which
+is expected — the values are verified by the connection test, not by reading
+them back.
+
+The setup modal stays open until the guide is fully verified (credentials +
+CORS confirmed + green connection test). The storefront keeps serving demo data
+until that same point: some reads (VQL) work without CORS, but session, cart
+and account calls are blocked by CORS, so credentials alone do not mean the
+store is connected. The storefront is never empty — dummy data until live data
+can be fetched.
+
 
 Keys are created in Menu → Apps & Integrations → Headless → OAuth
 (/Admin/headless/auth/oauth-clients), which requires the "Store configuration"
@@ -139,3 +157,24 @@ Mutation protection token lives in a module variable, never localStorage.
 Never add mock or placeholder product data.
 
 Never fork the client in src/lib/vendre/.
+
+Step 6 — Storage for the guide progress (new projects)
+
+The guide's checkmarks (CORS confirmed, connection test green) are stored
+server-side in the Cloud table `public.vendre_setup_progress`. In a freshly
+imported copy of this template the table may not exist yet. When it is missing
+the progress falls back to memory and the guide shows a warning — apply the
+migration in `supabase/migrations/` that creates the table (it is idempotent)
+so the progress survives reloads and other domains.
+
+The storefront switches from demo data to live data as soon as the guide is
+fully verified — the guide refreshes the storefront state itself, so no manual
+page reload is needed.
+
+The OAuth/token status and the completed browser connection test are different
+facts. A valid token may mark the credentials step green, but it must never set
+`connection_ok`: only a successful browser test of CORS, session bootstrap and
+the live Surface read may persist that flag. Persist the test result first,
+then invalidate the root loader. The storefront and guide must both use
+`resolveSetupProgress()` as their shared resolved status source so their mode
+cannot disagree.

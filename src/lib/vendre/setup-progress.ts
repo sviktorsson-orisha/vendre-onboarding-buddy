@@ -17,6 +17,8 @@ export type SetupProgress = {
   secretsOk: boolean;
   connectionOk: boolean;
   publishedOrigin: string;
+  /** false when the server could not persist the progress (missing storage). */
+  storageOk: boolean;
 };
 
 const EMPTY: SetupProgress = {
@@ -25,6 +27,7 @@ const EMPTY: SetupProgress = {
   secretsOk: false,
   connectionOk: false,
   publishedOrigin: "",
+  storageOk: true,
 };
 
 function coerce(value: Partial<SetupProgress> | null | undefined): SetupProgress {
@@ -34,6 +37,7 @@ function coerce(value: Partial<SetupProgress> | null | undefined): SetupProgress
     secretsOk: Boolean(value?.secretsOk),
     connectionOk: Boolean(value?.connectionOk),
     publishedOrigin: typeof value?.publishedOrigin === "string" ? value.publishedOrigin : "",
+    storageOk: value?.storageOk !== false,
   };
 }
 
@@ -102,14 +106,18 @@ export function useSetupProgress() {
     (patch: Partial<SetupProgress>) => {
       const next = coerce({ ...latest.current, ...patch });
       apply(next);
-      fetch(ENDPOINT, {
+      return fetch(ENDPOINT, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(patch),
       })
         .then((response) => response.json() as Promise<Partial<SetupProgress>>)
-        .then((data) => apply(coerce(data)))
-        .catch(() => undefined);
+        .then((data) => {
+          const saved = coerce(data);
+          apply(saved);
+          return saved;
+        })
+        .catch(() => ({ ...next, storageOk: false }));
     },
     [apply],
   );

@@ -14,6 +14,7 @@ import { useCallback, useEffect, useMemo, useSyncExternalStore, type ReactNode }
 const DISMISS_KEY = "vendre.guide-dismissed";
 
 let configured = false;
+let guideVerified = false;
 let dismissed = false;
 let hydrated = false;
 const listeners = new Set<() => void>();
@@ -36,6 +37,13 @@ export function setServerConfigured(next: boolean) {
   emit();
 }
 
+/** The whole setup guide is done (credentials + CORS + green connection test). */
+export function setServerVerified(next: boolean) {
+  if (guideVerified === next) return;
+  guideVerified = next;
+  emit();
+}
+
 export function setGuideDismissed(next: boolean) {
   dismissed = next;
   if (typeof window !== "undefined") {
@@ -50,13 +58,14 @@ export function setGuideDismissed(next: boolean) {
 }
 
 function snapshot() {
-  return configured ? (dismissed ? 3 : 2) : dismissed ? 1 : 0;
+  return (configured ? 2 : 0) + (dismissed ? 1 : 0) + (guideVerified ? 4 : 0);
 }
 
 export function useOnboarding() {
   const state = useSyncExternalStore(subscribe, snapshot, () => (configured ? 2 : 0));
-  const isConfigured = state >= 2;
-  const guideDismissed = state === 1 || state === 3;
+  const isConfigured = (state & 2) !== 0;
+  const guideDismissed = (state & 1) !== 0;
+  const verified = (state & 4) !== 0;
 
   useEffect(() => {
     if (hydrated) return;
@@ -74,12 +83,13 @@ export function useOnboarding() {
   return useMemo(
     () => ({
       isConfigured,
+      verified,
       guideDismissed,
       mode: isConfigured ? ("live" as const) : ("demo" as const),
       markConfigured,
       reset,
     }),
-    [isConfigured, guideDismissed, markConfigured, reset],
+    [isConfigured, verified, guideDismissed, markConfigured, reset],
   );
 }
 

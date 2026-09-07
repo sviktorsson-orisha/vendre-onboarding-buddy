@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Check, ChevronDown, Copy, ExternalLink, Loader2, Lock, PartyPopper } from "lucide-react";
+import { useRouter } from "@tanstack/react-router";
 
 import { PublishOriginField } from "@/components/vendre/publish-origin-field";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -37,21 +38,18 @@ const TITLE_KEYS: TranslationKey[] = [
 
 type GuideState = "done" | "current" | "pending";
 
+/** Once an origin is copied the label stays on "Copied" so the user can keep track. */
 function CopyButton({ value }: { value: string }) {
   const { t } = useI18n();
   const [copied, setCopied] = useState(false);
   return (
     <button
       type="button"
-      className="brand-button-ghost"
-      onClick={() =>
-        void navigator.clipboard.writeText(value).then(() => {
-          setCopied(true);
-          window.setTimeout(() => setCopied(false), 1500);
-        })
-      }
+      className={cn("brand-button-ghost", copied && "text-emerald-700")}
+      onClick={() => void navigator.clipboard.writeText(value).then(() => setCopied(true))}
     >
-      <Copy className="size-3.5" aria-hidden /> {copied ? t("action.copied") : t("action.copy")}
+      {copied ? <Check className="size-3.5" aria-hidden /> : <Copy className="size-3.5" aria-hidden />}{" "}
+      {copied ? t("action.copied") : t("action.copy")}
     </button>
   );
 }
@@ -152,8 +150,12 @@ function GuideStep({
 }
 
 function AdminLink({ path, baseUrl, children }: { path: string; baseUrl?: string | null; children: ReactNode }) {
-  // With the store base URL known, link straight into the customer's own admin.
-  const href = baseUrl ? `${baseUrl.replace(/\/+$/, "")}${path}` : path;
+  // Until the store URL is known there is nothing to link to — show the path
+  // as plain text and turn it into a real link once the credentials are saved.
+  if (!baseUrl) {
+    return <span className="font-mono text-xs text-muted-foreground">{children}</span>;
+  }
+  const href = `${baseUrl.replace(/\/+$/, "")}${path}`;
   return (
     <a
       href={href}
@@ -175,6 +177,7 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
   const preview = `https://project--${PROJECT_ID}-dev.lovable.app`;
   const published = `https://project--${PROJECT_ID}.lovable.app`;
   const { progress, loaded, update } = useSetupProgress();
+  const router = useRouter();
   // Shared with every visitor/domain: the origin is stored server-side too.
   const publishedOrigin = progress.publishedOrigin;
   const setPublishedOrigin = (value: string) => update({ publishedOrigin: value });
@@ -206,12 +209,19 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
     return Array.from(new Set(list));
   }, [publishedOrigin, preview, published]);
 
-  const done = [adminDone, secretsOk, publishedOrigin !== "", corsDone, connectionOk, connectionOk];
+  // Steps 5 and 6 must never go green before CORS has been confirmed.
+  const verified = corsDone && connectionOk;
+  const done = [adminDone, secretsOk, publishedOrigin !== "", corsDone, verified, verified];
   const total = TITLE_KEYS.length;
   const active = Math.max(done.findIndex((value) => !value), 0);
   const completedCount = done.filter(Boolean).length;
   const states = done.map((value, index): GuideState => (value ? "done" : index === active ? "current" : "pending"));
   const activeTitle = t(TITLE_KEYS[active] ?? "step1.title");
+
+  // Once everything is green the final step opens itself.
+  useEffect(() => {
+    if (verified) setOpen(5);
+  }, [verified]);
 
   // Resume where the guide was left off after a refresh.
   const [resumed, setResumed] = useState(false);
@@ -265,8 +275,11 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
     try {
       const next = await testVendreConnection();
       setResult(next);
-      update({ connectionOk: next.ok });
+      await update({ connectionOk: next.ok });
       if (next.ok) setOpen(5);
+      // The storefront mode is decided by the root loader — refresh it now so
+      // demo data is replaced immediately, without a manual reload.
+      await router.invalidate();
 
     } catch (error) {
       setTestError((error as Error).message);
@@ -300,15 +313,20 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
               </span>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              {connectionOk ? t("panel.verified") : t("panel.progress", { done: completedCount, total })}
+              {verified ? t("panel.verified") : t("panel.progress", { done: completedCount, total })}
             </p>
-            {!connectionOk && (
+            {progress.storageOk === false && (
+              <p className="mt-3 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                {t("panel.storageWarning")}
+              </p>
+            )}
+            {!verified && (
               <p className="mt-3 inline-flex rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-accent-foreground">
                 {t("panel.next")} {active + 1}. {activeTitle}
               </p>
             )}
           </div>
-          <button type="button" onClick={runTest} disabled={testing || !secretStatus?.ok} className="brand-button">
+          <button type="button" onClick={runTest} disabled={testing || !corsDone} className="brand-button">
             {testing && <Loader2 className="size-4 animate-spin" />}
             {testing ? t("panel.testing") : t("panel.retest")}
           </button>
@@ -330,7 +348,7 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
         </div>
       </section>
 
-      {connectionOk && (
+      {verified && (
         <section className="brand-card mt-6 border-emerald-500/40 bg-emerald-500/5 p-5">
           <div className="flex items-start gap-3">
             <PartyPopper className="mt-0.5 size-5 text-emerald-600" aria-hidden />
@@ -457,7 +475,6 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
           <div>
             <div className="flex items-center justify-between gap-3">
               <span className="brand-eyebrow text-muted-foreground">{t("step4.originsLabel")}</span>
-              <CopyButton value={origins.join("\n")} />
             </div>
             <ul className="mt-2 space-y-2">
               {origins.map((origin) => (
@@ -483,8 +500,9 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
               type="checkbox"
               checked={corsDone}
               onChange={(event) => {
-                setCorsDone(event.target.checked);
-                if (event.target.checked) setOpen(4);
+                const checked = event.target.checked;
+                void Promise.resolve(setCorsDone(checked)).then(() => router.invalidate());
+                if (checked) setOpen(4);
               }}
               disabled={!publishedOrigin}
               className="mt-0.5 size-4 accent-primary"
@@ -499,7 +517,7 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
           state={states[4] ?? "pending"}
           open={open === 4}
           onToggle={() => setOpen(open === 4 ? -1 : 4)}
-          verdict={connectionOk ? t("step5.verdictDone") : t("step5.verdict")}
+          verdict={verified ? t("step5.verdictDone") : t("step5.verdict")}
         >
           <p>{t("step5.body")}</p>
           <button type="button" className="brand-button" disabled={testing || !corsDone} onClick={runTest}>
@@ -522,21 +540,11 @@ export function SetupWizard({ onFinish }: { onFinish?: () => void }) {
           state={states[5] ?? "pending"}
           open={open === 5}
           onToggle={() => setOpen(open === 5 ? -1 : 5)}
-          verdict={connectionOk ? t("step6.verdictDone") : t("step6.verdict")}
+          verdict={verified ? t("step6.verdictDone") : t("step6.verdict")}
         >
-          {connectionOk ? (
+          {verified ? (
             <>
               <p className="rounded-md bg-emerald-500/10 p-3 font-medium text-emerald-700">{t("step6.done")}</p>
-              <dl className="space-y-2">
-                <div className="rounded-lg border border-border bg-card p-3">
-                  <dt className="brand-eyebrow">{t("step6.baseUrl")}</dt>
-                  <dd className="mt-1 break-all font-mono text-xs text-foreground">{result?.baseUrl ?? "—"}</dd>
-                </div>
-                <div className="rounded-lg border border-border bg-card p-3">
-                  <dt className="brand-eyebrow">{t("step6.origin")}</dt>
-                  <dd className="mt-1 break-all font-mono text-xs text-foreground">{publishedOrigin || result?.origin || "—"}</dd>
-                </div>
-              </dl>
               <button type="button" className="brand-button" onClick={startBuilding}>
                 {t("complete.cta")}
               </button>

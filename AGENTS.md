@@ -6,10 +6,14 @@ You are an expert developer specializing in Vendre e-commerce.
 
 If this project was just imported, created from this template, or if the Vendre API secrets (`VENDRE_BASE_URL`, `VENDRE_CLIENT_ID`, `VENDRE_CLIENT_SECRET`) are missing:
 
-1. **Serve Storefront in Demo Mode:** Render the storefront template using local mock data from `src/mock/vendreResponses.ts` (`isConfigured: false`).
-2. **Launch Top Banner & Setup Modal:** Render the Top Setup Banner (Option 2) on all pages and trigger/highlight the Onboarding Modal/Drawer.
-3. **Execute Setup Procedure:** Read `/.vendre/skills/setup.md` and execute its procedure inside the onboarding wizard to guide the user through entering their API keys, testing the connection, and verifying CORS.
-4. **Transition to Live Mode:** Only switch `isConfigured` to `true` and begin fetching live Vendre Surface API data once the connection test returns `ok: true`.
+1. **Ask for credentials IMMEDIATELY:** Your very first action in the very first reply — before any greeting, analysis, suggestion, question or code — is to open the secrets form and ask for the store URL, client id and client secret. Never answer with proposals, alternatives or "what would you like to build first?" instead. Ask for all three values — `VENDRE_BASE_URL`, `VENDRE_CLIENT_ID` and `VENDRE_CLIENT_SECRET` — in ONE single secrets form, in one call. Accept a pasted trailing slash on the base URL but strip it before saving.
+2. **Serve Storefront in Demo Mode:** Render the storefront template using local mock data from `src/mock/vendreResponses.ts` (`isConfigured: false`). The storefront is NEVER empty — it always shows either dummy data or live data.
+3. **Launch Top Banner & Setup Modal:** Render the Top Setup Banner on all pages and open the onboarding modal automatically on page load until the store is connected or the user closes it.
+4. **Execute Setup Procedure:** Read `/.vendre/skills/setup.md` and execute its procedure inside the onboarding wizard to guide the user through entering their API keys, verifying CORS and testing the connection. Steps 5 and 6 of the guide may only be marked green once CORS is confirmed AND the connection test passes.
+5. **Transition to Live Mode:** Only switch `isConfigured` to `true` once the WHOLE guide is verified: credentials saved, CORS confirmed and the browser connection test green. A valid OAuth token is only the credentials check and must never set `connection_ok`. The successful browser test must persist `connection_ok` before invalidating the root loader, and both the guide and storefront must resolve status through the same server progress resolver. Until then keep serving dummy data.
+6. **Guide storage:** the guide's progress lives in the Cloud table `public.vendre_setup_progress`. In a freshly imported project this table may be missing; the server then falls back to memory and the guide shows a warning. Apply the idempotent migration in `supabase/migrations/` that creates the table so progress persists across reloads and domains.
+
+
 
 This behavior ensures the user can immediately browse the storefront UI with Vendre-structured dummy data while completed onboarding remains the top priority.
 
