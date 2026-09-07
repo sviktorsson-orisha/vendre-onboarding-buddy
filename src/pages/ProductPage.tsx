@@ -90,9 +90,25 @@ export default function ProductPage({ id }: { id: string }) {
     choice.products.some((variant) => variant.in_stock !== false),
   );
 
-  const selectedBlocked = selectedChoices.some(choiceBlocked);
+  /** The exact combination that was picked, not just the individual choices. */
+  const selectedEntries = selectedChoices
+    .flatMap((choice) => choice.products)
+    .filter((variant) => variant.id === selectedVariantProductId);
+  const combinationBlocked =
+    selectedEntries.length > 0 && selectedEntries.some(entryBlocked);
+  /** The variant's own record wins once it is loaded. */
+  const variantRecordBlocked =
+    variantProduct != null &&
+    variantProduct.stock_total === 0 &&
+    variantProduct.stock_allow_checkout === false;
+
+  const selectedBlocked = selectedChoices.some(choiceBlocked) || combinationBlocked;
   const parentSoldOut = product.stock_total === 0 && product.stock_allow_checkout === false;
-  const soldOut = variantTypes.length > 0 ? allSelected && selectedBlocked : parentSoldOut;
+  const soldOut =
+    variantTypes.length > 0
+      ? (allSelected && selectedBlocked) || variantRecordBlocked
+      : parentSoldOut;
+
 
   // Fallback for installs where VQL returns no variant types.
   const attributes = variantTypes.length > 0 ? [] : (product.attributes ?? []);
