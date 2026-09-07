@@ -168,7 +168,8 @@ const liveApi: VendreApi = {
   getCategory: (id, query) =>
     guarded(() => surfaceJson<CategoryResponse>(`categories/${id}${categoryQuery(query)}`)),
   // Variants come from VQL. Verified response shape: { query: { product_variant_types: [...] } }.
-  // `quantity` is not returned by this install, so only `in_stock` is relied on.
+  // `quantity` is not returned by this install; `stock_allow_checkout` may be null,
+  // which means the store default (checkout allowed) applies.
   getProductVariants: async (productId) => {
     try {
       const data = await guarded(() =>
@@ -185,7 +186,14 @@ const liveApi: VendreApi = {
                   "sort_order",
                   {
                     product_variant_choices: {
-                      fields: ["_all", { products: { fields: ["id", "in_stock", "quantity"] } }],
+                      fields: [
+                        "_all",
+                        {
+                          products: {
+                            fields: ["id", "in_stock", "quantity", "stock_allow_checkout"],
+                          },
+                        },
+                      ],
                     },
                   },
                 ],

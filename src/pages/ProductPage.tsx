@@ -72,11 +72,22 @@ export default function ProductPage({ id }: { id: string }) {
     );
   }
 
+  /**
+   * A variant with no stock may still be sold: stock_allow_checkout === false is the
+   * only thing that blocks it, and null means "inherit the store default" (allowed).
+   */
+  const choiceBlocked = (choice: ProductVariantChoice) => {
+    const variant = choice.products[0];
+    if (!variant || variant.in_stock !== false) return false;
+    const allow = variant.stock_allow_checkout ?? product?.stock_allow_checkout ?? true;
+    return allow === false;
+  };
   const selectedInStock = selectedChoices.every(
     (choice) => choice.products[0]?.in_stock !== false,
   );
+  const selectedBlocked = selectedChoices.some(choiceBlocked);
   const parentSoldOut = product.stock_total === 0 && product.stock_allow_checkout === false;
-  const soldOut = variantTypes.length > 0 ? allSelected && !selectedInStock : parentSoldOut;
+  const soldOut = variantTypes.length > 0 ? allSelected && selectedBlocked : parentSoldOut;
 
   // Fallback for installs where VQL returns no variant types.
   const attributes = variantTypes.length > 0 ? [] : (product.attributes ?? []);
@@ -100,8 +111,21 @@ export default function ProductPage({ id }: { id: string }) {
           )}
           <ProductPrice product={buyableProduct ?? product} size="lg" className="mt-5" />
           {(variantTypes.length === 0 || allSelected) && (
-            <p className={cn("mt-1 text-sm", soldOut ? "text-destructive" : "text-emerald-700")}>
-              {soldOut ? t("store.outOfStock") : t("store.inStock")}
+            <p
+              className={cn(
+                "mt-1 text-sm",
+                variantTypes.length > 0
+                  ? selectedInStock
+                    ? "text-emerald-700"
+                    : "text-destructive"
+                  : soldOut
+                    ? "text-destructive"
+                    : "text-emerald-700",
+              )}
+            >
+              {(variantTypes.length > 0 ? !selectedInStock : soldOut)
+                ? t("store.outOfStock")
+                : t("store.inStock")}
             </p>
           )}
 
@@ -110,17 +134,17 @@ export default function ProductPage({ id }: { id: string }) {
               <h2 className="brand-eyebrow text-muted-foreground">{type.name}</h2>
               <div className="mt-2 flex flex-wrap gap-2">
                 {type.product_variant_choices.map((choice) => {
-                  const outOfStock = choice.products[0]?.in_stock === false;
+                  const blocked = choiceBlocked(choice);
                   const active = selection[type.id] === choice.id;
                   return (
                     <button
                       key={choice.id}
                       type="button"
-                      disabled={outOfStock}
+                      disabled={blocked}
                       onClick={() => setSelection((prev) => ({ ...prev, [type.id]: choice.id }))}
                       className={cn(
                         "rounded-md border px-3 py-1.5 text-sm transition-colors",
-                        outOfStock
+                        blocked
                           ? "cursor-not-allowed border-border bg-muted text-muted-foreground line-through opacity-60"
                           : active
                             ? "border-primary bg-primary/10 text-primary"
