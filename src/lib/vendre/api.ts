@@ -163,6 +163,41 @@ const liveApi: VendreApi = {
     ),
   getCategory: (id, query) =>
     guarded(() => surfaceJson<CategoryResponse>(`categories/${id}${categoryQuery(query)}`)),
+  // Variants come from VQL. Verified response shape: { query: { product_variant_types: [...] } }.
+  // `quantity` is not returned by this install, so only `in_stock` is relied on.
+  getProductVariants: async (productId) => {
+    try {
+      const data = await guarded(() =>
+        surfaceJson<VqlVariantsResponse>("vql", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            query: {
+              product_variant_types: {
+                filters: { where: { product_id: String(productId) } },
+                fields: [
+                  "id",
+                  "name",
+                  "sort_order",
+                  {
+                    product_variant_choices: {
+                      fields: ["_all", { products: { fields: ["id", "in_stock", "quantity"] } }],
+                    },
+                  },
+                ],
+              },
+            },
+          }),
+        }),
+      );
+      const types =
+        data?.query?.product_variant_types ?? data?.data?.query?.product_variant_types ?? [];
+      return normalizeVariantTypes(types);
+    } catch {
+      // VQL disabled or the product has no variants: render the page without a selector.
+      return [];
+    }
+  },
   getProduct: async (id, categoryId) => {
     // Surface v2 has no products/{id} endpoint; products are read from a category listing.
     const fromCategory = async (catId: number) => {
