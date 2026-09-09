@@ -165,7 +165,8 @@ All `accounts*` endpoints resolve to the **`default`** CORS policy, not `custome
 | POST | `accounts` | `default` | yes | registration (full field set required) |
 | GET | `accounts/me` | `default` | – | profile (flat / nested / alias shapes) |
 | PUT | `accounts/me` | `default` | yes | update profile |
-| GET | `accounts/me/addresses` | `default` | – | address book |
+| GET | `accounts/me/addresses` | `default` | – | the customer's **main address** only |
+| GET | `accounts/me/address-book` | `default` | – | the **alternative** addresses only (never the main one) |
 | PUT | `accounts/me/addresses` | `default` | yes | update address |
 | GET | `accounts/me/order-history` | `default` | – | order list |
 | GET | `accounts/me/order-history/{id}` | `default` | – | single order |
