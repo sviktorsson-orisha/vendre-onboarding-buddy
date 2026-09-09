@@ -21,7 +21,8 @@ never before, or a reload bounces the user out).
 | --- | --- |
 | Profile read | `GET /surface/2/accounts/me` |
 | Profile update | `PUT /surface/2/accounts/me` (mutation token) |
-| Addresses | `GET`/`PUT /surface/2/accounts/me/addresses` |
+| Main address | `GET /surface/2/accounts/me/addresses` (returns the customer's main address) |
+| Alternative addresses | `GET /surface/2/accounts/me/address-book` (returns only the alternative addresses) |
 | Orders | `GET /surface/2/accounts/me/order-history` |
 | Order detail | `GET /surface/2/accounts/me/order-history/{id}` |
 
