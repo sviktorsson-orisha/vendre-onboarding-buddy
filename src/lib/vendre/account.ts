@@ -557,10 +557,11 @@ const liveAccountApi: AccountApi = {
     guarded(() => call<unknown>("accounts/me/order-history")).then((data) =>
       asArray(data, "orders", "order_history", "data").map(normalizeOrder),
     ),
-  getOrder: (id) =>
-    guarded(() => call<unknown>(`accounts/me/order-history/${id}`)).then((data) =>
-      normalizeOrderDetail(data, id),
-    ),
+  getOrder: async (id) => {
+    const data = await guarded(() => call<unknown>(`accounts/me/order-history/${id}`));
+    const order = normalizeOrderDetail(data, id);
+    return { ...order, lines: await withLineImages(order.lines) };
+  },
   getSubUsers: () =>
     guarded(() => call<unknown>("accounts/me/users"))
       .then((data) => asArray(data, "users", "data").map(normalizeSubUser))
