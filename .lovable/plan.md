@@ -25,12 +25,28 @@ adressen till "huvudadress" och nästa till "Adress 2".
 
 ## Teknisk del
 
-- `src/lib/vendre/account.ts`: `getAddresses` byter till att returnera
-  `{ main: Address | null, alternatives: Address[] }` – `addresses` för main, `address-book` för
-  alternativen, med dedupe. Flagg-igenkänningen i `normalizeAddress` utökas med fler nyckelnamn.
-  Motsvarande demo-implementation uppdateras.
-- `src/pages/AccountPage.tsx`: `AddressesView` renderar `grid gap-6 lg:grid-cols-2` med main till
-  vänster och listan av alternativ till höger.
-- `src/mock/vendreAccount.ts`: demo-datan delas upp i en huvudadress och alternativa adresser.
-- `.vendre/skills/customer-account/references/account-pages.md` noteras med att `addresses` ger
-  huvudadressen och `address-book` de alternativa.
+- `src/lib/vendre/account.ts`
+  - `getAddresses` slutar jämföra listornas längd. Istället hämtas `accounts/me/addresses`
+    (huvudadress) och `accounts/me/address-book` (alternativ) parallellt och returneras som
+    `{ main: Address | null; alternatives: Address[] }`.
+  - Från `addresses` används den flaggade standardadressen om en sådan finns, annars första posten,
+    som `main`.
+  - Alternativen dedupliceras mot `main` med nyckeln gata + postnummer + ort (befintlig
+    `dedupeAddresses` återanvänds/utökas).
+  - Saknas huvudadress helt plockas `main` från en standardflaggad post i adressboken;
+    `normalizeAddress` utökas med nycklarna `default`, `is_default`, `primary`, `is_primary`
+    och `type: "primary"`.
+  - Etiketten `Adress N` sätts inte längre som fallback när butiken saknar namn – fältet lämnas tomt
+    och vyn avgör rubriken.
+  - `useAddresses` (React Query) behåller `staleTime: 0` men får den nya returtypen.
+- `src/lib/vendre/account.ts` (demo-läget): motsvarande demo-implementation returnerar samma
+  `{ main, alternatives }`-form.
+- `src/mock/vendreAccount.ts`: demo-datan delas i en huvudadress och en eller flera alternativa.
+- `src/pages/AccountPage.tsx`: `AddressesView` renderar `grid gap-6 lg:grid-cols-2` – vänster kolumn
+  huvudadressen med rubriken "Huvudadress", höger kolumn alternativen staplade. Tomt läge visas när
+  varken main eller alternativ finns.
+- `src/types/vendre-account.ts`: eventuell ny typ för adressresultatet.
+- `.vendre/skills/customer-account/references/account-pages.md` och
+  `.vendre/skills/auth-sessions/references/account-pages.md`: notera att `accounts/me/addresses` ger
+  huvudadressen och `accounts/me/address-book` de alternativa.
+
