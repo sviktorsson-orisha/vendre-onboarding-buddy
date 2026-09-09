@@ -43,6 +43,15 @@ export type Address = {
   raw?: Record<string, unknown>;
 };
 
+/**
+ * `accounts/me/addresses` returns the customer's main address, while
+ * `accounts/me/address-book` returns the alternative ones.
+ */
+export type AddressBook = {
+  main: Address | null;
+  alternatives: Address[];
+};
+
 export type OrderLine = {
   id: string | number;
   name: string;

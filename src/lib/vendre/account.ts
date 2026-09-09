@@ -484,13 +484,13 @@ const liveAccountApi: AccountApi = {
       }
     };
 
-    // Some stores expose the full address book on `address-book`; older ones
-    // only on `addresses`. Prefer whichever returns the most entries.
-    const [book, legacy] = await Promise.all([
-      probe("accounts/me/address-book"),
+    // `accounts/me/addresses` holds the customer's main address; the address
+    // book holds the alternative addresses. Keep them apart.
+    const [main, alternatives] = await Promise.all([
       probe("accounts/me/addresses"),
+      probe("accounts/me/address-book"),
     ]);
-    return book.length >= legacy.length ? (book.length ? book : legacy) : legacy;
+    return { main: main[0] ?? null, alternatives };
   },
 
 
