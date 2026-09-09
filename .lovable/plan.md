@@ -1,64 +1,35 @@
-# Verifieringslista för butiken
+# Adresser under Mitt konto – visa rätt huvudadress
 
-En checklista som en kund kan gå igenom när uppstarten är klar och butiken är
-kopplad till deras Vendre-konto, för att bekräfta att allt fungerar.
-Uppstartsguiden ingår inte i listan.
+## Problemet
 
-## Vad som byggs
+Adressvyn hämtar bara adressboken (`accounts/me/address-book` / `accounts/me/addresses`) och plockar
+"huvudadress" med `is_default_shipping` / `is_default_billing`. När butiken inte skickar de flaggorna
+faller koden tillbaka på **första posten i listan** – därför visas en av de alternativa adresserna som
+"huvudadress" och nästa som "Adress 2". Kundens egentliga huvudadress ligger på kundprofilen
+(`accounts/me`, ofta som `default_address`) och används inte alls idag.
 
-En ny fil `.vendre/verifiering.md` med checklistan, plus en kort hänvisning
-till den från `README.md`.
+## Lösning
 
-## Punkter som ska verifieras
+1. **Hämta huvudadressen från kundprofilen.** Vid sidan av adressboken används kunduppgifterna från
+   `accounts/me` (namn, företag, gatuadress, postnummer, ort, land, telefon) som huvudadress. Finns
+   en post i adressboken som är flaggad som standard (`is_default_shipping`, `is_default_billing`,
+   och även varianterna `default`, `is_default`, `primary`, `is_primary`, `type: "primary"`) används
+   den istället.
+2. **Inget mer "gissa första posten".** Om varken profiladress eller flaggad adress finns visas ingen
+   huvudadress – då listas alla adresser som alternativa.
+3. **Ta bort dubbletten.** Om huvudadressen också finns i adressboken (samma gata + postnummer + ort)
+   visas den inte en gång till bland de alternativa.
+4. **Ny layout – två kolumner.** Vänster kolumn: huvudadressen med etiketten "Huvudadress".
+   Höger kolumn: alla alternativa adresser under varandra, med butikens egen etikett per adress
+   (ingen påhittad numrering "Adress 2" när butiken har ett riktigt namn). På mobil staplas
+   kolumnerna: huvudadressen först, alternativa under.
+5. Adresserna förblir enbart läsbara – ingen redigering läggs till.
 
-Butiksram
-- Butikens riktiga innehåll visas (inte exempeldata).
-- Logga och butiksnamn hämtas från butiken.
-- Huvudmenyn visar butikens kategorier; utfällbar meny i full bredd på dator och sidopanel på mobil.
-- Sidfoten visar endast innehållssidor med aktiva undersidor.
+## Teknisk del
 
-Kategorisida
-- Kategoribild, namn och beskrivning visas, bilden till höger.
-- Underkategorier visas som knappar.
-- Filter och sorteringsalternativ kommer från Vendre; prisfilter visas som reglage.
-- Sidbrytning fungerar och val ligger kvar i adressfältet vid omladdning.
-- På mobil öppnas filter och sortering i varsin panel.
-
-Produktsida
-- Bild, namn, beskrivning och pris visas.
-- Specifikationer visas när produkten har sådana.
-- Variantval fungerar: val som saknar aktiv kombination går inte att klicka på.
-- Landar man direkt på en variant är rätt val förvalt.
-- Köpknappen är avstängd när varianten är slut och inte får köpas.
-
-Produktlistning
-- Produkter med varianter, eller som är slut och inte får köpas, visar "Läs mer" istället för köpknapp.
-- Nedsatt pris visas i rött med överstruket ordinarie pris, annars svart pris. Gäller överallt.
-
-Sök
-- Förslag visas efter tre tecken, max fem produkter, med länk till fler resultat.
-- Sökresultatsidan visar träffar med sidbrytning.
-
-Varukorg
-- Lägga till, ändra antal och ta bort en enskild rad fungerar (övriga rader ligger kvar).
-- Produkter i varukorgen går att klicka på och leder till produktsidan.
-- Totalsumman kommer från Vendre och uppdateras efter varje ändring.
-
-Konto
-- Skapa konto och logga in fungerar.
-- Kontoikon i sidhuvudet leder till mina sidor.
-- Ordrar med orderdetaljer, adresser (endast visning) och profil visas.
-- Mobil: vyerna väljs i en rullgardin med rubrik för aktuell vy.
-- Utloggning fungerar och man förblir inloggad vid omladdning.
-
-Innehållssidor
-- Sidor nås via sidfoten och visar sidans beskrivning.
-
-## Kända begränsningar som listas separat
-- Varukorgens totalsumma med/utan moms styrs av Vendres backend.
-- Bild och pris i orderdetaljer beror på vad orderendpointen returnerar.
-- Innehållsblock på CMS-sidor är avstängt som standard.
-
-## Teknisk detalj
-Endast dokumentation läggs till (`.vendre/verifiering.md` + en rad i `README.md`).
-Ingen kod eller funktion i butiken ändras.
+- `src/lib/vendre/account.ts`: utöka flagg-igenkänningen i `normalizeAddress`, och exponera adressen
+  från kundprofilen (via befintlig `normalizeAccount`) så vyn kan använda den som huvudadress.
+- `src/pages/AccountPage.tsx`: `AddressesView` kombinerar profil + adressbok, väljer huvudadress
+  enligt regeln ovan, filtrerar bort dubbletten och renderar `grid gap-6 lg:grid-cols-2`.
+- Demo-datan i `src/mock/vendreAccount.ts` justeras så att demo-läget speglar samma struktur
+  (en flaggad huvudadress + alternativa adresser).
