@@ -143,7 +143,14 @@ function OrdersView() {
                     </div>
                   </td>
                   <td className="py-2 text-muted-foreground">{line.quantity}</td>
-                  <td className="py-2 text-right text-foreground">{line.price}</td>
+                  <td className="py-2 text-right text-foreground">
+                    <div>{line.price_incl || line.price}</div>
+                    {line.price_excl ? (
+                      <div className="text-xs text-muted-foreground">
+                        {line.price_excl} {t("account.exclVat")}
+                      </div>
+                    ) : null}
+                  </td>
                 </tr>
               ))}
             </tbody>

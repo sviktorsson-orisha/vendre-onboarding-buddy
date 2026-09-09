@@ -275,24 +275,63 @@ function normalizeTotals(bag: Bag): { title: string; value: string }[] {
     .filter((row) => row.title || row.value);
 }
 
+/**
+ * Order lines only carry raw numbers (`price_each` / `price_total`, excl. VAT)
+ * while the totals rows are pre-formatted by the store. Reuse a total row as the
+ * formatting sample so line prices look like the rest of the order.
+ */
+function moneyFormatter(sample: string) {
+  const trimmed = (sample ?? "").trim();
+  const match = /^([^\d\s-]*)\s*[-\d\s.,\u00a0]+\s*([^\d\s]*)$/.exec(trimmed);
+  const prefix = match?.[1] ?? "";
+  const suffix = match?.[2] ?? "";
+  return (value: number) => {
+    const number = new Intl.NumberFormat("sv-SE", {
+      minimumFractionDigits: Number.isInteger(value) ? 0 : 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+    return [prefix, number, suffix].filter(Boolean).join(prefix && !suffix ? "" : " ").trim();
+  };
+}
+
+function toNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = Number(value.replace(/\s|\u00a0/g, "").replace(",", "."));
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
+}
+
 function normalizeOrderDetail(payload: unknown, id: string): OrderDetail {
   const bag = flatten(payload);
   const summary = normalizeOrder(payload, 0);
+  const totals = normalizeTotals(bag);
+  const format = moneyFormatter(totals[totals.length - 1]?.value ?? summary.total ?? "");
   const lines = asArray(
     bag["products"] ?? bag["order_products"] ?? bag["lines"] ?? bag["items"] ?? bag["rows"],
   ).map((line, index) => {
     const lineBag = flatten(line);
+    const quantity = Number(lineBag["quantity"] ?? lineBag["qty"] ?? 1);
+    const formatted = pick(lineBag, [
+      "total_final_price",
+      "final_price",
+      "row_total",
+      "total",
+      "price",
+    ]);
+    const each = toNumber(lineBag["price_each"]);
+    const rowExcl = toNumber(lineBag["price_total"]) ?? (each != null ? each * quantity : null);
+    const tax = toNumber(lineBag["tax"]) ?? 0;
+    const rowIncl = rowExcl != null ? rowExcl * (1 + tax / 100) : null;
     return {
       id: (lineBag["id"] as string | number) ?? index,
+      product_id: toNumber(lineBag["product_id"]),
       name: pick(lineBag, ["name", "product_name", "title", "model"]),
-      quantity: Number(lineBag["quantity"] ?? lineBag["qty"] ?? 1),
-      price: pick(lineBag, [
-        "total_final_price",
-        "final_price",
-        "row_total",
-        "total",
-        "price",
-      ]),
+      quantity,
+      price: rowIncl != null ? format(rowIncl) : formatted,
+      price_incl: rowIncl != null ? format(rowIncl) : formatted,
+      price_excl: rowExcl != null ? format(rowExcl) : "",
       image: pickLineImage(lineBag),
     };
   });
@@ -301,7 +340,7 @@ function normalizeOrderDetail(payload: unknown, id: string): OrderDetail {
     id: summary.id || id,
     order_number: summary.order_number || id,
     lines,
-    totals: normalizeTotals(bag),
+    totals,
     shipping_total: pick(bag, ["shipping_total", "shipping"]),
     tax_total: pick(bag, ["tax_total", "tax"]),
     shipping_address: bag["shipping_address"]
@@ -320,6 +359,46 @@ function normalizeSubUser(payload: unknown, index: number): SubUser {
     email: account.email,
     role: pick(bag, ["role", "type", "permission"]),
   };
+}
+
+/**
+ * Order lines have no image at all — only `product_id`. Look the images up in a
+ * single VQL call. A failure here must never break the order view.
+ */
+async function withLineImages(lines: OrderDetail["lines"]): Promise<OrderDetail["lines"]> {
+  const ids = Array.from(
+    new Set(lines.map((line) => line.product_id).filter((id): id is number => !!id)),
+  );
+  if (ids.length === 0) return lines;
+  try {
+    const data = await guarded(() =>
+      call<{ query?: { products?: { id: number; image?: { href?: string | null } | null }[] } }>(
+        "vql",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            query: {
+              products: {
+                filters: { where: { id: ids } },
+                fields: ["id", { image: { fields: ["id", "name", "href"] } }],
+              },
+            },
+          }),
+        },
+      ),
+    );
+    const byId = new Map<number, string | null>(
+      (data?.query?.products ?? []).map((product) => [product.id, product.image?.href ?? null]),
+    );
+    return lines.map((line) =>
+      line.image || !line.product_id
+        ? line
+        : { ...line, image: byId.get(line.product_id) ?? null },
+    );
+  } catch {
+    return lines;
+  }
 }
 
 /* ------------------------------------------------------- register body --- */
@@ -518,10 +597,11 @@ const liveAccountApi: AccountApi = {
     guarded(() => call<unknown>("accounts/me/order-history")).then((data) =>
       asArray(data, "orders", "order_history", "data").map(normalizeOrder),
     ),
-  getOrder: (id) =>
-    guarded(() => call<unknown>(`accounts/me/order-history/${id}`)).then((data) =>
-      normalizeOrderDetail(data, id),
-    ),
+  getOrder: async (id) => {
+    const data = await guarded(() => call<unknown>(`accounts/me/order-history/${id}`));
+    const order = normalizeOrderDetail(data, id);
+    return { ...order, lines: await withLineImages(order.lines) };
+  },
   getSubUsers: () =>
     guarded(() => call<unknown>("accounts/me/users"))
       .then((data) => asArray(data, "users", "data").map(normalizeSubUser))
