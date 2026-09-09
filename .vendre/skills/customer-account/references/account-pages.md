@@ -68,6 +68,23 @@ or as `{ order_history: [...] }`, and order ids appear as `id`, `order_id`, or
 `increment_id`. A missing normalizer is why "orders don't show up" even though
 the account has orders.
 
+### Order detail (current implementation)
+
+`GET accounts/me/order-history/{id}` wraps everything in `order`. Each line is
+`{ id, product_id, name, model, quantity, price_each, price_total, tax }` —
+**no image**, and the amounts are **excluding VAT** while `totals[].text` is
+already formatted and includes VAT.
+
+- Format line prices from `price_total` (or `price_each * quantity`), showing
+  incl. VAT (`price_total * (1 + tax / 100)`) as the main price and excl. VAT as
+  smaller text under it. Total rows stay untouched, straight from the API.
+- Reuse the formatting of the last total row (prefix/suffix, e.g. `kr`) so line
+  prices match the rest of the order instead of hardcoding a currency.
+- Fetch line images with one VQL call after the order loads:
+  `POST vql` with `query.products.filters.where.id = [product_id, ...]` and
+  `fields: ["id", { image: { fields: ["id","name","href"] } }]`. A failing image
+  lookup must never break the order view — render the row without an image.
+
 ## Profile update
 
 `PUT /surface/2/accounts/me` generally rejects partial bodies — send the full
