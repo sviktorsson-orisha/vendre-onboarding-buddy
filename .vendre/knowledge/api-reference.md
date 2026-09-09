@@ -184,6 +184,11 @@ the payload is wrapped in `order` and contains `id`, `status`, `date`,
 Order lines carry **no image** and their prices are **excluding VAT** while the
 order totals are including VAT. Fetch line images separately with one VQL call
 filtering `products` on the collected `product_id` values.
+
+Line amounts arrive raw (`399.2`) while `totals[].text` is already rounded
+(`752 kr`). Derive the display format — currency prefix/suffix **and decimal
+precision** — from a totals row, so a store that shows whole-unit totals also
+shows whole-unit line prices. Never recompute the totals themselves.
 | GET | `accounts/me/users` | `default` | – | sub-users (B2B) |
 | GET | `accounts/me/forgot-password` | `default` | yes | password reset mail |
 | GET | `customers/current` | `default` | – | current customer record |
