@@ -340,7 +340,7 @@ function normalizeOrderDetail(payload: unknown, id: string): OrderDetail {
     id: summary.id || id,
     order_number: summary.order_number || id,
     lines,
-    totals: normalizeTotals(bag),
+    totals,
     shipping_total: pick(bag, ["shipping_total", "shipping"]),
     tax_total: pick(bag, ["tax_total", "tax"]),
     shipping_address: bag["shipping_address"]
