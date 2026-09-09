@@ -275,24 +275,63 @@ function normalizeTotals(bag: Bag): { title: string; value: string }[] {
     .filter((row) => row.title || row.value);
 }
 
+/**
+ * Order lines only carry raw numbers (`price_each` / `price_total`, excl. VAT)
+ * while the totals rows are pre-formatted by the store. Reuse a total row as the
+ * formatting sample so line prices look like the rest of the order.
+ */
+function moneyFormatter(sample: string) {
+  const trimmed = (sample ?? "").trim();
+  const match = /^([^\d\s-]*)\s*[-\d\s.,\u00a0]+\s*([^\d\s]*)$/.exec(trimmed);
+  const prefix = match?.[1] ?? "";
+  const suffix = match?.[2] ?? "";
+  return (value: number) => {
+    const number = new Intl.NumberFormat("sv-SE", {
+      minimumFractionDigits: Number.isInteger(value) ? 0 : 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+    return [prefix, number, suffix].filter(Boolean).join(prefix && !suffix ? "" : " ").trim();
+  };
+}
+
+function toNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = Number(value.replace(/\s|\u00a0/g, "").replace(",", "."));
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
+}
+
 function normalizeOrderDetail(payload: unknown, id: string): OrderDetail {
   const bag = flatten(payload);
   const summary = normalizeOrder(payload, 0);
+  const totals = normalizeTotals(bag);
+  const format = moneyFormatter(totals[totals.length - 1]?.value ?? summary.total ?? "");
   const lines = asArray(
     bag["products"] ?? bag["order_products"] ?? bag["lines"] ?? bag["items"] ?? bag["rows"],
   ).map((line, index) => {
     const lineBag = flatten(line);
+    const quantity = Number(lineBag["quantity"] ?? lineBag["qty"] ?? 1);
+    const formatted = pick(lineBag, [
+      "total_final_price",
+      "final_price",
+      "row_total",
+      "total",
+      "price",
+    ]);
+    const each = toNumber(lineBag["price_each"]);
+    const rowExcl = toNumber(lineBag["price_total"]) ?? (each != null ? each * quantity : null);
+    const tax = toNumber(lineBag["tax"]) ?? 0;
+    const rowIncl = rowExcl != null ? rowExcl * (1 + tax / 100) : null;
     return {
       id: (lineBag["id"] as string | number) ?? index,
+      product_id: toNumber(lineBag["product_id"]),
       name: pick(lineBag, ["name", "product_name", "title", "model"]),
-      quantity: Number(lineBag["quantity"] ?? lineBag["qty"] ?? 1),
-      price: pick(lineBag, [
-        "total_final_price",
-        "final_price",
-        "row_total",
-        "total",
-        "price",
-      ]),
+      quantity,
+      price: rowIncl != null ? format(rowIncl) : formatted,
+      price_incl: rowIncl != null ? format(rowIncl) : formatted,
+      price_excl: rowExcl != null ? format(rowExcl) : "",
       image: pickLineImage(lineBag),
     };
   });
