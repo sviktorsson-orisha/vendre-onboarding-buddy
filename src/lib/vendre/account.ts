@@ -285,10 +285,14 @@ function moneyFormatter(sample: string) {
   const match = /^([^\d\s-]*)\s*[-\d\s.,\u00a0]+\s*([^\d\s]*)$/.exec(trimmed);
   const prefix = match?.[1] ?? "";
   const suffix = match?.[2] ?? "";
+  // Follow the store's own rounding: if the totals are shown without decimals,
+  // the line prices must be too, otherwise the rows and the total look
+  // inconsistent (e.g. "399,20 kr" rows under a "752 kr" total).
+  const decimals = /[.,](\d+)\s*[^\d]*$/.exec(trimmed)?.[1]?.length ?? 0;
   return (value: number) => {
     const number = new Intl.NumberFormat("sv-SE", {
-      minimumFractionDigits: Number.isInteger(value) ? 0 : 2,
-      maximumFractionDigits: 2,
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
     }).format(value);
     return [prefix, number, suffix].filter(Boolean).join(prefix && !suffix ? "" : " ").trim();
   };
