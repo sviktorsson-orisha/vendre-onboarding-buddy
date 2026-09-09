@@ -78,8 +78,11 @@ already formatted and includes VAT.
 - Format line prices from `price_total` (or `price_each * quantity`), showing
   incl. VAT (`price_total * (1 + tax / 100)`) as the main price and excl. VAT as
   smaller text under it. Total rows stay untouched, straight from the API.
-- Reuse the formatting of the last total row (prefix/suffix, e.g. `kr`) so line
-  prices match the rest of the order instead of hardcoding a currency.
+- Reuse the formatting of the last total row (prefix/suffix, e.g. `kr`) **and its
+  decimal precision** so line prices match the rest of the order instead of
+  hardcoding a currency. The store sends raw line amounts (`399.2`) but
+  pre-rounded totals (`752 kr`); if the sample total has no decimals, round line
+  prices to whole units too, otherwise use the same number of decimals.
 - Fetch line images with one VQL call after the order loads:
   `POST vql` with `query.products.filters.where.id = [product_id, ...]` and
   `fields: ["id", { image: { fields: ["id","name","href"] } }]`. A failing image
