@@ -26,6 +26,7 @@ import {
 import type {
   Account,
   Address,
+  AddressBook,
   FieldErrors,
   OrderDetail,
   OrderSummary,
@@ -129,7 +130,7 @@ function normalizeAddress(payload: unknown, index: number): Address {
   const account = normalizeAccount(payload);
   return {
     id: (bag["id"] as string | number) ?? index,
-    label: pick(bag, ["label", "name", "type"]) || `Adress ${index + 1}`,
+    label: pick(bag, ["label", "name", "type"]),
     firstname: account.firstname,
     lastname: account.lastname,
     company: account.company,
@@ -389,7 +390,7 @@ export type AccountApi = {
   forgotPassword: (email: string) => Promise<void>;
   getAccount: () => Promise<Account>;
   updateAccount: (account: Account) => Promise<void>;
-  getAddresses: () => Promise<Address[]>;
+  getAddresses: () => Promise<AddressBook>;
   updateAddress: (address: Address) => Promise<void>;
   getOrders: () => Promise<OrderSummary[]>;
   getOrder: (id: string) => Promise<OrderDetail | null>;
@@ -484,13 +485,13 @@ const liveAccountApi: AccountApi = {
       }
     };
 
-    // Some stores expose the full address book on `address-book`; older ones
-    // only on `addresses`. Prefer whichever returns the most entries.
-    const [book, legacy] = await Promise.all([
-      probe("accounts/me/address-book"),
+    // `accounts/me/addresses` holds the customer's main address; the address
+    // book holds the alternative addresses. Keep them apart.
+    const [main, alternatives] = await Promise.all([
       probe("accounts/me/addresses"),
+      probe("accounts/me/address-book"),
     ]);
-    return book.length >= legacy.length ? (book.length ? book : legacy) : legacy;
+    return { main: main[0] ?? null, alternatives };
   },
 
 
@@ -588,7 +589,10 @@ const demoAccountApi: AccountApi = {
     demoAccount = { ...account };
     emitDemo();
   },
-  getAddresses: async () => demoAddresses,
+  getAddresses: async () => ({
+    main: demoAddresses[0] ?? null,
+    alternatives: demoAddresses.slice(1),
+  }),
   updateAddress: async (address) => {
     demoAddresses = demoAddresses.map((item) => (item.id === address.id ? address : item));
     emitDemo();
