@@ -26,6 +26,7 @@ import {
 import type {
   Account,
   Address,
+  AddressBook,
   FieldErrors,
   OrderDetail,
   OrderSummary,

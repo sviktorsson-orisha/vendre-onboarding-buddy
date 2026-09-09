@@ -226,7 +226,7 @@ function OrdersView() {
 
 /* ----------------------------------------------------------- addresses -- */
 
-function AddressCard({ address, badge }: { address: Address; badge?: string }) {
+function AddressCard({ address }: { address: Address }) {
   const lines = [
     [address.firstname, address.lastname].filter(Boolean).join(" "),
     address.company,
@@ -236,10 +236,7 @@ function AddressCard({ address, badge }: { address: Address; badge?: string }) {
   ].filter((line) => Boolean(line && String(line).trim()));
 
   return (
-    <div className="space-y-2 rounded-lg border border-border p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        {badge ?? address.label}
-      </p>
+    <div className="rounded-lg border border-border p-4">
       <address className="space-y-0.5 text-sm not-italic text-foreground">
         {lines.map((line, index) => (
           <div key={index}>{line}</div>
@@ -251,28 +248,22 @@ function AddressCard({ address, badge }: { address: Address; badge?: string }) {
 
 function AddressesView() {
   const { t } = useI18n();
-  const { data: addresses } = useAddresses();
-  const list = addresses ?? [];
-  const mainIndex = list.findIndex(
-    (address) => address.is_default_shipping || address.is_default_billing,
-  );
-  const main = list[mainIndex >= 0 ? mainIndex : 0];
-  const rest = list.filter((address) => address !== main);
+  const { data } = useAddresses();
+  const main = data?.main ?? null;
+  const alternatives = data?.alternatives ?? [];
 
   return (
     <Section title={t("account.addresses")}>
-      {list.length === 0 ? (
+      {!main && alternatives.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("account.noAddresses")}</p>
       ) : (
-        <div className="space-y-5">
-          {main && <AddressCard address={main} badge={t("account.mainAddress")} />}
-          {rest.length > 0 && (
-            <div className="grid gap-4 sm:grid-cols-2">
-              {rest.map((address) => (
-                <AddressCard key={address.id} address={address} />
-              ))}
-            </div>
-          )}
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div>{main && <AddressCard address={main} />}</div>
+          <div className="space-y-4">
+            {alternatives.map((address) => (
+              <AddressCard key={address.id} address={address} />
+            ))}
+          </div>
         </div>
       )}
     </Section>
