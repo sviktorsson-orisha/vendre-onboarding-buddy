@@ -54,9 +54,15 @@ export type AddressBook = {
 
 export type OrderLine = {
   id: string | number;
+  /** Store product id, used to look up the product image via VQL. */
+  product_id?: number | null;
   name: string;
   quantity: number;
   price: string;
+  /** Row total including VAT, formatted like the store's own totals. */
+  price_incl?: string;
+  /** Row total excluding VAT, exactly as the order endpoint returns it. */
+  price_excl?: string;
   /** Raw image path from the store, resolved against the store base URL when rendered. */
   image?: string | null;
 };
