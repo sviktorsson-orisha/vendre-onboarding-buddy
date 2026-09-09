@@ -361,6 +361,46 @@ function normalizeSubUser(payload: unknown, index: number): SubUser {
   };
 }
 
+/**
+ * Order lines have no image at all — only `product_id`. Look the images up in a
+ * single VQL call. A failure here must never break the order view.
+ */
+async function withLineImages(lines: OrderDetail["lines"]): Promise<OrderDetail["lines"]> {
+  const ids = Array.from(
+    new Set(lines.map((line) => line.product_id).filter((id): id is number => !!id)),
+  );
+  if (ids.length === 0) return lines;
+  try {
+    const data = await guarded(() =>
+      call<{ query?: { products?: { id: number; image?: { href?: string | null } | null }[] } }>(
+        "vql",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            query: {
+              products: {
+                filters: { where: { id: ids } },
+                fields: ["id", { image: { fields: ["id", "name", "href"] } }],
+              },
+            },
+          }),
+        },
+      ),
+    );
+    const byId = new Map<number, string | null>(
+      (data?.query?.products ?? []).map((product) => [product.id, product.image?.href ?? null]),
+    );
+    return lines.map((line) =>
+      line.image || !line.product_id
+        ? line
+        : { ...line, image: byId.get(line.product_id) ?? null },
+    );
+  } catch {
+    return lines;
+  }
+}
+
 /* ------------------------------------------------------- register body --- */
 
 /** Numeric country ids used by the store (ISO 3166-1 numeric). */
