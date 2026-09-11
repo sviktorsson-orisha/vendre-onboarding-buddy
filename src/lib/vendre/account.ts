@@ -425,7 +425,7 @@ export const COUNTRY_OPTIONS: { id: number; label: string }[] = [
   { id: 81, label: "Tyskland" },
 ];
 
-function countryId(value: RegisterInput["country"]): number {
+function countryId(value: string | number | null | undefined): number {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   const raw = String(value ?? "").trim();
   if (/^\d+$/.test(raw)) return Number(raw);
