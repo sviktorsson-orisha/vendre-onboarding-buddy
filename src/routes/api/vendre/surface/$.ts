@@ -92,11 +92,12 @@ async function proxy({ request, params }: { request: Request; params: { _splat?:
   if (cookie) headers.set("cookie", cookie);
 
   const method = request.method.toUpperCase();
-  const body = method === "GET" || method === "HEAD" ? undefined : await request.arrayBuffer();
+  const body = method === "GET" || method === "HEAD" ? null : await request.arrayBuffer();
 
   let upstream: Response;
   try {
     upstream = await fetch(target, { method, headers, body, redirect: "manual" });
+
   } catch {
     return Response.json(
       { errors: [{ code: "upstream_unreachable", title: "Butiken svarar inte just nu." }] },
