@@ -51,11 +51,12 @@ is expected — the values are verified by the connection test, not by reading
 them back.
 
 The setup modal stays open until the guide is fully verified (credentials +
-CORS confirmed + green connection test). The storefront keeps serving demo data
-until that same point: some reads (VQL) work without CORS, but session, cart
-and account calls are blocked by CORS, so credentials alone do not mean the
-store is connected. The storefront is never empty — dummy data until live data
-can be fetched.
+CORS confirmed + green connection test). All Surface traffic runs through our
+own server proxy, so CORS is not what blocks the storefront data — the guide
+still requires the CORS step because the checkout hand-off needs it. The
+storefront keeps serving demo data until the guide is verified and is never
+empty.
+
 
 
 Keys are created in Menu → Apps & Integrations → Headless → OAuth
@@ -136,9 +137,7 @@ storefront.
 Step 4 — Gate
 
 Do not create any storefront pages, components, or product/cart features
-until the test returns ok: true. Proxy-mode (a cors warning) is a
-degraded state: the app works, but checkout will start an empty session. Say so
-explicitly and keep pushing for the allowlist fix.
+until the test returns ok: true.
 
 Step 5 — Confirm
 
@@ -148,15 +147,19 @@ wants to build first (home, PLP, PDP, cart, account).
 
 Hard rules
 
-Only oauth/token and oauth/revoke run server-side.
+All Surface v2 calls go through the same-origin proxy
+src/routes/api/vendre/surface/$.ts — the browser never calls the store and
+never receives credentials, the bearer token or a third-party URL for API use.
 
-Everything else is called from the browser with credentials: "include".
+The browser client uses credentials: "same-origin"; the proxy rewrites the
+store session cookie to our own origin.
 
 Mutation protection token lives in a module variable, never localStorage.
 
 Never add mock or placeholder product data.
 
 Never fork the client in src/lib/vendre/.
+
 
 Step 6 — Storage for the guide progress (new projects)
 
@@ -171,10 +174,11 @@ The storefront switches from demo data to live data as soon as the guide is
 fully verified — the guide refreshes the storefront state itself, so no manual
 page reload is needed.
 
-The OAuth/token status and the completed browser connection test are different
-facts. A valid token may mark the credentials step green, but it must never set
-`connection_ok`: only a successful browser test of CORS, session bootstrap and
-the live Surface read may persist that flag. Persist the test result first,
-then invalidate the root loader. The storefront and guide must both use
-`resolveSetupProgress()` as their shared resolved status source so their mode
-cannot disagree.
+The server-side OAuth status and the completed browser connection test are
+different facts. A valid token may mark the credentials step green, but it must
+never set `connection_ok`: only a successful browser test of session bootstrap
+and the live Surface read (through the proxy) may persist that flag. Persist the
+test result first, then invalidate the root loader. The storefront and guide must
+both use `resolveSetupProgress()` as their shared resolved status source so their
+mode cannot disagree.
+
