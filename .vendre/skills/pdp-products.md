@@ -105,7 +105,7 @@ Variants are read with `POST /surface/2/vql`:
   enables only when every type is selected, the intersection is non-empty and the
   resolved product is not blocked by the stock rule above.
 - Listings never add a variant parent to the cart: a product with
-  `child_count > 0` (or blocked by the stock rule) shows a "Läs mer" link to the
+  `child_count > 0` (or blocked by the stock rule) shows a "Read more" link to the
   PDP instead of an add-to-cart button.
 
 ## Specifications

@@ -1,6 +1,6 @@
 ---
 name: vendre-setup
-description: Run FIRST in any newly imported/created Vendre project, and whenever the user says "get started", "hur börjar jag", "kom igång", "connect to Vendre", or mentions API keys, OAuth client, CORS or store credentials. Collects VENDRE_BASE_URL / VENDRE_CLIENT_ID / VENDRE_CLIENT_SECRET, configures CORS and verifies the connection before any storefront work.
+description: Run FIRST in any newly imported/created Vendre project, and whenever the user says "get started", "how do I start", "connect to Vendre", or mentions API keys, OAuth client, CORS or store credentials. Collects VENDRE_BASE_URL / VENDRE_CLIENT_ID / VENDRE_CLIENT_SECRET, configures CORS and verifies the connection before any storefront work.
 ---
 
 # Vendre connection setup
@@ -92,7 +92,7 @@ The store is rate limiting; wait a minute and retry. Do not mint tokens in a loo
 
 cors warning
 
-Print every origin verbatim and point at Admin → Apps & Integrations → Headless → CORS (/Admin/headless/cors) → "Tillåtna domäner". Add one row per origin (published, preview--, project--<id>, project--<id>-dev, id-preview--<id>, <id>.lovableproject.com, custom domains) and tick all feature checkboxes on each row.
+Print every origin verbatim and point at Admin → Apps & Integrations → Headless → CORS (/Admin/headless/cors) → the "Allowed domains" section. Add one row per origin (published, preview--, project--<id>, project--<id>-dev, id-preview--<id>, <id>.lovableproject.com, custom domains) and tick all feature checkboxes on each row.
 
 session failed
 
@@ -103,9 +103,9 @@ read failed
 Check the navigation_menus policy and that a menu is published.
 
 CORS is configured under Admin → Apps & Integrations → Headless → CORS
-(/Admin/headless/cors), in the "Tillåtna domäner" (Allowed domains) section.
+(/Admin/headless/cors), in the "Allowed domains" section.
 There is no JSON field any more: each origin is added as its own row via
-"Lägg till domän", with one checkbox per feature/policy on that row
+the "Add domain" button, with one checkbox per feature/policy on that row
 (Applikation, Bank id, Bootstrap, Categories, Checkout, Checkout get prices,
 Customer, Custom report, Default, Email / contact, Extended data field,
 Galleries, Internal, Login, Navigation menus, Oauth, Product, Product list,
