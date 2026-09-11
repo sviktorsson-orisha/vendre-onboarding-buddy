@@ -179,6 +179,9 @@ const liveApi: VendreApi = {
   // `quantity` is not returned by this install; `stock_allow_checkout` may be null,
   // which means the store default (checkout allowed) applies.
   getProductVariants: async (productId) => {
+    // The product read already batched this tree into its own query.
+    const cached = variantTreeCache.get(String(productId));
+    if (cached) return cached;
     try {
       const data = await guarded(() =>
         surfaceJson<VqlVariantsResponse>("vql", {
@@ -218,7 +221,9 @@ const liveApi: VendreApi = {
       );
       const types =
         data?.query?.product_variant_types ?? data?.data?.query?.product_variant_types ?? [];
-      return normalizeVariantTypes(types);
+      const normalized = normalizeVariantTypes(types);
+      variantTreeCache.set(String(productId), normalized);
+      return normalized;
     } catch {
       // VQL disabled or the product has no variants: render the page without a selector.
       return [];
@@ -227,11 +232,11 @@ const liveApi: VendreApi = {
   getVariantProduct: (productId) => vqlProduct(productId),
   getProductSpecifications: (productId) => vqlSpecifications(productId),
   getProduct: async (id, categoryId) => {
-    // Surface v2 has no products/{id} endpoint. VQL reads the product in a single
-    // call — the category scan below is only a fallback for installs without VQL,
-    // since it fetches every product of every category until the id turns up.
+    // Surface v2 has no products/{id} endpoint. VQL reads the product and its variant
+    // tree in a single call — the category scan below is only a fallback for installs
+    // without VQL, since it fetches every product of every category until the id turns up.
     if (!vqlDisabled) {
-      const direct = await vqlProduct(id);
+      const direct = await vqlProduct(id, true);
       if (direct) return direct;
     }
     const fromCategory = async (catId: number) => {
@@ -402,77 +407,135 @@ type VqlRawProduct = {
   } | null;
 };
 
+/** Field selection for a full product record. */
+const VQL_PRODUCT_FIELDS = [
+  "_all",
+  { image: { fields: ["id", "name", "href"] } },
+  { specifications: { fields: ["_all"] } },
+];
+
+/** Field selection for the variant tree of a product. */
+const VQL_VARIANT_FIELDS = [
+  "id",
+  "name",
+  "sort_order",
+  {
+    product_variant_choices: {
+      fields: [
+        "_all",
+        {
+          products: {
+            fields: ["id", "in_stock", "quantity", "stock_allow_checkout", "status"],
+          },
+        },
+      ],
+    },
+  },
+];
+
+/**
+ * Variant trees that arrived alongside a product read, keyed by the product id the
+ * tree was queried for. `getProductVariants` serves these instead of firing a second
+ * VQL call for the product the PDP just loaded.
+ */
+const variantTreeCache = new Map<string, ProductVariantType[]>();
+
+function mapVqlProduct(raw: VqlRawProduct): Product {
+  const pricing = raw.pricing ?? {};
+  const image: VendreImage | null = raw.image?.href
+    ? {
+        id: raw.image.id != null ? String(raw.image.id) : null,
+        path: raw.image.href,
+        image: raw.image.href,
+        alt: raw.image.name ?? null,
+        alt_translated: null,
+      }
+    : null;
+  const allowCheckout =
+    raw.stock_allow_checkout == null ? null : Boolean(Number(raw.stock_allow_checkout));
+  return {
+    id: String(raw.id),
+    name: raw.name ?? `#${raw.id}`,
+    model: raw.model ?? null,
+    description: raw.description ?? null,
+    description_short: raw.short_description ?? null,
+    price: pricing.price ?? pricing.original ?? null,
+    price_raw: pricing.original_raw ?? null,
+    price_original: pricing.original ?? null,
+    price_original_raw: pricing.original_raw ?? null,
+    price_special: pricing.special ?? null,
+    price_special_raw: pricing.special_raw ?? null,
+    final_price_excl_raw: pricing.final_excl_raw ?? null,
+    tax: raw.tax_rate ?? null,
+    unit: null,
+    image,
+    images: image ? [image] : [],
+    stock_total: raw.quantity ?? (raw.in_stock === false ? 0 : null),
+    stock_allow_checkout: allowCheckout,
+    seo_link: raw.seo_link ?? null,
+    categories_id: raw.category_id != null ? String(raw.category_id) : null,
+    has_attributes: false,
+    child_count: raw.child_count ?? 0,
+    parent_id: raw.parent_id ?? null,
+    specifications: (raw.specifications ?? []).filter((item) => item?.name && item?.value),
+  };
+}
+
 /**
  * Single product read through VQL. Variant children are real products of their own,
  * so the PDP re-reads the full record (name, description, image, price, stock)
  * whenever a variant is selected.
+ *
+ * `withVariants` batches the variant tree into the same query, so a normal product
+ * page load is one request instead of two. When the landed product turns out to be a
+ * variant child the tree comes back empty and the PDP reads the parent's tree
+ * separately — the tree only exists on the parent.
  */
-async function vqlProduct(id: string | number): Promise<Product | null> {
+async function vqlProduct(
+  id: string | number,
+  withVariants = false,
+): Promise<Product | null> {
   try {
     const data = await guarded(() =>
-      surfaceJson<{ query?: { products?: VqlRawProduct[] } } | null>("vql", {
+      surfaceJson<{
+        query?: { products?: VqlRawProduct[]; product_variant_types?: ProductVariantType[] };
+      } | null>("vql", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           query: {
             products: {
               filters: { where: { id: Number(id) } },
-              fields: [
-                "_all",
-                { image: { fields: ["id", "name", "href"] } },
-                { specifications: { fields: ["_all"] } },
-              ],
+              fields: VQL_PRODUCT_FIELDS,
             },
+            ...(withVariants
+              ? {
+                  product_variant_types: {
+                    filters: { where: { product_id: String(id) } },
+                    fields: VQL_VARIANT_FIELDS,
+                  },
+                }
+              : {}),
           },
         }),
       }),
     );
     const raw = data?.query?.products?.[0];
     if (!raw) return null;
-    const pricing = raw.pricing ?? {};
-    const image: VendreImage | null = raw.image?.href
-      ? {
-          id: raw.image.id != null ? String(raw.image.id) : null,
-          path: raw.image.href,
-          image: raw.image.href,
-          alt: raw.image.name ?? null,
-          alt_translated: null,
-        }
-      : null;
-    const allowCheckout =
-      raw.stock_allow_checkout == null ? null : Boolean(Number(raw.stock_allow_checkout));
-    return {
-      id: String(raw.id),
-      name: raw.name ?? `#${raw.id}`,
-      model: raw.model ?? null,
-      description: raw.description ?? null,
-      description_short: raw.short_description ?? null,
-      price: pricing.price ?? pricing.original ?? null,
-      price_raw: pricing.original_raw ?? null,
-      price_original: pricing.original ?? null,
-      price_original_raw: pricing.original_raw ?? null,
-      price_special: pricing.special ?? null,
-      price_special_raw: pricing.special_raw ?? null,
-      final_price_excl_raw: pricing.final_excl_raw ?? null,
-      tax: raw.tax_rate ?? null,
-      unit: null,
-      image,
-      images: image ? [image] : [],
-      stock_total: raw.quantity ?? (raw.in_stock === false ? 0 : null),
-      stock_allow_checkout: allowCheckout,
-      seo_link: raw.seo_link ?? null,
-      categories_id: raw.category_id != null ? String(raw.category_id) : null,
-      has_attributes: false,
-      child_count: raw.child_count ?? 0,
-      parent_id: raw.parent_id ?? null,
-      specifications: (raw.specifications ?? []).filter((item) => item?.name && item?.value),
-    };
+    if (withVariants) {
+      variantTreeCache.set(
+        String(id),
+        normalizeVariantTypes(data?.query?.product_variant_types ?? []),
+      );
+    }
+    return mapVqlProduct(raw);
   } catch {
     // VQL is off on this install (documented 500): stop trying it for product reads.
     vqlDisabled = true;
     return null;
   }
 }
+
 
 
 
