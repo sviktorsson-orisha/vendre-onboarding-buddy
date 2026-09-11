@@ -984,12 +984,20 @@ export function useFeaturedProducts(count = 4) {
   });
 }
 
-/** Resolves a store-relative image path against the connected store base URL. */
+/**
+ * Store images are served through our own origin, so the browser never sees the
+ * store hostname and the proxy can cache them. External URLs pass through.
+ */
 export function resolveImageUrl(path: string | null | undefined) {
   if (!path) return null;
-  if (/^https?:\/\//.test(path)) return path;
-  if (!storeBaseUrl) return null;
-  return `${storeBaseUrl}${path.startsWith("/") ? "" : "/"}${path}`;
+
+  if (/^https?:\/\//.test(path)) {
+    if (!storeBaseUrl || !path.startsWith(storeBaseUrl)) return path;
+    const rest = path.slice(storeBaseUrl.length).replace(/^\/+/, "");
+    return `/api/vendre/image/${rest}`;
+  }
+
+  return `/api/vendre/image/${path.replace(/^\/+/, "")}`;
 }
 
 export function formatPrice(product: Pick<Product, "price" | "price_raw">) {
