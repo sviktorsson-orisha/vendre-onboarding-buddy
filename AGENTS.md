@@ -28,7 +28,10 @@ Before performing any architectural decisions or API calls, consult the correspo
 
 **Source of truth:** `api-reference.md` is authoritative for endpoints, HTTP methods, CORS policies, required headers, mutation-token rules, and the error format. `general.md` and the skills describe usage patterns and UX — if any of them contradicts the reference, follow the reference and correct the other file.
 
+**Non-negotiable request architecture:** the browser only calls same-origin `/api/vendre/*`. All Surface v2 traffic goes through the proxy route `src/routes/api/vendre/surface/$.ts`, which adds the OAuth bearer token server-side and rewrites the store session cookie to our origin. Never call `${VENDRE_BASE_URL}/surface/2/*` from client code, never expose `client_secret`, the access token, or a third-party API URL to the browser, and never reintroduce a `/api/vendre/token` endpoint.
+
 ---
+
 
 ## 2. SKILLS ROUTING TABLE (`/.vendre/skills/`)
 
