@@ -23,6 +23,16 @@ _(Applies to all endpoints unless specified otherwise)_
 Both versions exist in the platform. Storefronts built from this template call
 **v2 only** — every path below is `/surface/2/<endpoint>`.
 
+**How this app reaches those paths:** the browser never calls the store. It
+calls the same-origin proxy `/api/vendre/surface/<endpoint>`, which maps 1:1 to
+`${VENDRE_BASE_URL}/surface/2/<endpoint>` and adds the OAuth bearer token
+server-side. Request/response schemas below are unchanged; only the host
+differs. The proxy also forwards the `Surface-Mutation-Protection-Token` header
+and the session cookie, and rewrites the store's `Set-Cookie` to our origin.
+`POST /surface/2/oauth/token` and `oauth/revoke` are called server-side only and
+are never reachable from the client.
+
+
 ### 1.2 Session Cookie (`visitorid`)
 
 All Surface requests require a valid store session cookie (`visitorid`) matching a row in the database, **except**:
