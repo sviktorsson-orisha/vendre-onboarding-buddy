@@ -80,13 +80,15 @@ export default function ProductPage({ id }: { id: string }) {
   /** Everything on screen follows the selected variant when one is loaded. */
   const view = variantProduct ?? product;
   const activeProductId = selectedVariantProductId ?? product?.id ?? null;
-  // The product read already carries specifications; only ask separately when it
-  // came from a category listing, which does not include them.
+  // A VQL-read product always carries a specifications array (possibly empty), so
+  // the separate specifications call only runs for records that came from a
+  // category listing, where the relation is absent altogether.
   const inlineSpecifications = view?.specifications ?? [];
   const { data: specificationList } = useProductSpecifications(
     activeProductId,
-    inlineSpecifications.length === 0,
+    view != null && view.specifications === undefined,
   );
+
 
 
 
