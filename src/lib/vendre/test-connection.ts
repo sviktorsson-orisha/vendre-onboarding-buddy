@@ -1,9 +1,10 @@
 import {
   VendreError,
-  getVendreToken,
+  fetchStoreBaseUrl,
   setMutationProtectionToken,
   surfaceFetch,
 } from "./client";
+
 
 export type StepId = "token" | "cors" | "session" | "read";
 export type StepStatus = "ok" | "warning" | "failed" | "skipped";
@@ -44,11 +45,11 @@ export async function testVendreConnection(): Promise<ConnectionResult> {
   let missing: string[] = [];
   let baseUrl: string | null = null;
 
-  // 1. Token (server-side minted, client_secret never leaves the server).
+  // 1. Token (server-side minted; the browser only learns whether it worked).
   try {
-    const token = await getVendreToken(true);
-    baseUrl = token.baseUrl;
-    steps.push(step("token", "ok", `OAuth-token hämtad från ${token.baseUrl}`));
+    baseUrl = await fetchStoreBaseUrl(true);
+    steps.push(step("token", "ok", `Servern är ansluten till ${baseUrl ?? "butiken"}`));
+
   } catch (error) {
     const err = error as VendreError;
     missing = err.missing ?? [];

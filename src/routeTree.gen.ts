@@ -20,7 +20,6 @@ import { Route as ProduktIdRouteImport } from './routes/produkt.$id'
 import { Route as SidaIdRouteImport } from './routes/sida.$id'
 import { Route as ApiVendreSetupProgressRouteImport } from './routes/api/vendre/setup-progress'
 import { Route as ApiVendreStatusRouteImport } from './routes/api/vendre/status'
-import { Route as ApiVendreTokenRouteImport } from './routes/api/vendre/token'
 import { Route as ApiVendreSurfaceSplatRouteImport } from './routes/api/vendre/surface/$'
 
 const IndexRoute = IndexRouteImport.update({
@@ -78,11 +77,6 @@ const ApiVendreStatusRoute = ApiVendreStatusRouteImport.update({
   path: '/api/vendre/status',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiVendreTokenRoute = ApiVendreTokenRouteImport.update({
-  id: '/api/vendre/token',
-  path: '/api/vendre/token',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiVendreSurfaceSplatRoute = ApiVendreSurfaceSplatRouteImport.update({
   id: '/api/vendre/surface/$',
   path: '/api/vendre/surface/$',
@@ -101,7 +95,6 @@ export interface FileRoutesByFullPath {
   '/mitt-konto/': typeof MittKontoIndexRoute
   '/api/vendre/setup-progress': typeof ApiVendreSetupProgressRoute
   '/api/vendre/status': typeof ApiVendreStatusRoute
-  '/api/vendre/token': typeof ApiVendreTokenRoute
   '/api/vendre/surface/$': typeof ApiVendreSurfaceSplatRoute
 }
 export interface FileRoutesByTo {
@@ -115,7 +108,6 @@ export interface FileRoutesByTo {
   '/mitt-konto': typeof MittKontoIndexRoute
   '/api/vendre/setup-progress': typeof ApiVendreSetupProgressRoute
   '/api/vendre/status': typeof ApiVendreStatusRoute
-  '/api/vendre/token': typeof ApiVendreTokenRoute
   '/api/vendre/surface/$': typeof ApiVendreSurfaceSplatRoute
 }
 export interface FileRoutesById {
@@ -131,7 +123,6 @@ export interface FileRoutesById {
   '/mitt-konto/': typeof MittKontoIndexRoute
   '/api/vendre/setup-progress': typeof ApiVendreSetupProgressRoute
   '/api/vendre/status': typeof ApiVendreStatusRoute
-  '/api/vendre/token': typeof ApiVendreTokenRoute
   '/api/vendre/surface/$': typeof ApiVendreSurfaceSplatRoute
 }
 export interface FileRouteTypes {
@@ -148,7 +139,6 @@ export interface FileRouteTypes {
     | '/mitt-konto/'
     | '/api/vendre/setup-progress'
     | '/api/vendre/status'
-    | '/api/vendre/token'
     | '/api/vendre/surface/$'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -162,7 +152,6 @@ export interface FileRouteTypes {
     | '/mitt-konto'
     | '/api/vendre/setup-progress'
     | '/api/vendre/status'
-    | '/api/vendre/token'
     | '/api/vendre/surface/$'
   id:
     | '__root__'
@@ -177,7 +166,6 @@ export interface FileRouteTypes {
     | '/mitt-konto/'
     | '/api/vendre/setup-progress'
     | '/api/vendre/status'
-    | '/api/vendre/token'
     | '/api/vendre/surface/$'
   fileRoutesById: FileRoutesById
 }
@@ -191,7 +179,6 @@ export interface RootRouteChildren {
   SidaIdRoute: typeof SidaIdRoute
   ApiVendreSetupProgressRoute: typeof ApiVendreSetupProgressRoute
   ApiVendreStatusRoute: typeof ApiVendreStatusRoute
-  ApiVendreTokenRoute: typeof ApiVendreTokenRoute
   ApiVendreSurfaceSplatRoute: typeof ApiVendreSurfaceSplatRoute
 }
 
@@ -274,13 +261,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiVendreStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/vendre/token': {
-      id: '/api/vendre/token'
-      path: '/api/vendre/token'
-      fullPath: '/api/vendre/token'
-      preLoaderRoute: typeof ApiVendreTokenRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/vendre/surface/$': {
       id: '/api/vendre/surface/$'
       path: '/api/vendre/surface/$'
@@ -315,7 +295,6 @@ const rootRouteChildren: RootRouteChildren = {
   SidaIdRoute: SidaIdRoute,
   ApiVendreSetupProgressRoute: ApiVendreSetupProgressRoute,
   ApiVendreStatusRoute: ApiVendreStatusRoute,
-  ApiVendreTokenRoute: ApiVendreTokenRoute,
   ApiVendreSurfaceSplatRoute: ApiVendreSurfaceSplatRoute,
 }
 export const routeTree = rootRouteImport
