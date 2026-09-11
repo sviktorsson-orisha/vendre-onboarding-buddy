@@ -98,29 +98,24 @@ export type SubUser = {
   role: string;
 };
 
+/**
+ * Registration payload — only the fields the API reference marks as required,
+ * plus the personal data policy consent.
+ */
 export type RegisterInput = {
-  firstname: string;
-  lastname: string;
   email_address: string;
   password: string;
   confirmation: string;
-  /** UI-only toggle between private/company — not sent to the store. */
-  type: string;
-  gender: string;
-  company?: string;
+  firstname: string;
+  lastname: string;
   street_address: string;
   postcode: string;
   city: string;
-  state: string;
   /** Numeric country id expected by the store (SE = 203). */
   country: number;
-  telephone: string;
-  mobile?: string;
-  personnummer: string;
-  vat_identification_number?: string;
-  newsletter: boolean;
   consent_personal_data_policy: boolean;
 };
+
 
 /** Field-level validation errors keyed by `source.parameter`. */
 export type FieldErrors = Record<string, string>;
