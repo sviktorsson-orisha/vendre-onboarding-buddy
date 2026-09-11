@@ -120,7 +120,9 @@ async function proxy({ request, params }: { request: Request; params: { _splat?:
   }
   outHeaders.set("cache-control", "no-store");
 
-  const secure = incoming.protocol === "https:";
+  const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
+  const secure = forwardedProto ? forwardedProto === "https" : incoming.protocol === "https:";
+
   const setCookies =
     typeof upstream.headers.getSetCookie === "function"
       ? upstream.headers.getSetCookie()
