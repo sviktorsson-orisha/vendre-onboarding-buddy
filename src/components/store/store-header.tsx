@@ -67,7 +67,74 @@ function MegaPanel({ node, onNavigate }: { node: MenuNode; onNavigate: () => voi
   );
 }
 
+/** Category list for the mobile drawer: nodes with children collapse as accordions. */
+function MobileNavList({
+  nodes,
+  onNavigate,
+  depth = 0,
+}: {
+  nodes: MenuNode[];
+  onNavigate: () => void;
+  depth?: number;
+}) {
+  const withChildren = nodes.filter((node) => node.children.length > 0);
+
+  return (
+    <div className={depth === 0 ? "" : "ml-3 border-l border-border pl-3"}>
+      <Accordion type="multiple" className="w-full">
+        {nodes.map((node) => {
+          const key = `${node.source}:${node.id}`;
+          if (node.children.length === 0) {
+            return (
+              <Link
+                key={key}
+                to="/kategori/$id"
+                params={{ id: String(node.id) }}
+                onClick={onNavigate}
+                className={cn(
+                  "block rounded-md px-2 py-2 hover:bg-accent",
+                  depth === 0
+                    ? "text-sm font-semibold text-foreground"
+                    : "text-sm text-muted-foreground",
+                )}
+              >
+                {node.name}
+              </Link>
+            );
+          }
+
+          return (
+            <AccordionItem key={key} value={key} className="border-b-0">
+              <div className="flex items-center gap-1">
+                <Link
+                  to="/kategori/$id"
+                  params={{ id: String(node.id) }}
+                  onClick={onNavigate}
+                  className={cn(
+                    "min-w-0 flex-1 truncate rounded-md px-2 py-2 hover:bg-accent",
+                    depth === 0
+                      ? "text-sm font-semibold text-foreground"
+                      : "text-sm text-muted-foreground",
+                  )}
+                >
+                  {node.name}
+                </Link>
+                <AccordionTrigger className="shrink-0 rounded-md px-2 py-2 hover:bg-accent" />
+              </div>
+              <AccordionContent className="pb-1">
+                <MobileNavList nodes={node.children} onNavigate={onNavigate} depth={depth + 1} />
+              </AccordionContent>
+            </AccordionItem>
+          );
+        })}
+      </Accordion>
+      {withChildren.length === 0 && null}
+    </div>
+  );
+}
+
 export function StoreHeader() {
+
   const { t } = useI18n();
   const tree = useCategoryMenu();
   const { data: cart } = useCart();
