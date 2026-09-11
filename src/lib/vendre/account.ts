@@ -635,19 +635,15 @@ const demoAccountApi: AccountApi = {
       firstname: input.firstname,
       lastname: input.lastname,
       email: input.email_address,
-      company: input.company ?? "",
       street_address: input.street_address,
       postcode: input.postcode,
       city: input.city,
       country: String(input.country),
-      telephone: input.telephone,
-      mobile: input.mobile ?? "",
-      newsletter: input.newsletter,
-      type: input.type,
     };
     demoAuthenticated = true;
     emitDemo();
   },
+
   forgotPassword: async () => {},
   getAccount: async () => demoAccount,
   updateAccount: async (account) => {
