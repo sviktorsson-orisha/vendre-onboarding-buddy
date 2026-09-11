@@ -261,7 +261,7 @@ export function StoreHeader() {
       </nav>
 
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="left" className="flex w-full flex-col gap-0 sm:max-w-sm lg:hidden">
+        <SheetContent side="right" className="flex w-full flex-col gap-0 sm:max-w-sm lg:hidden">
           <SheetHeader>
             <SheetTitle>{t("store.menu")}</SheetTitle>
           </SheetHeader>
