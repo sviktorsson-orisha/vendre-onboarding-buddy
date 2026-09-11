@@ -2,6 +2,12 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, ChevronDown, Menu, Search, ShoppingBag } from "lucide-react";
 
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { AccountMenu } from "@/components/store/account-menu";
 import { CartSheet } from "@/components/store/cart-sheet";
 import { SearchBox } from "@/components/store/search-box";
@@ -77,8 +83,6 @@ function MobileNavList({
   onNavigate: () => void;
   depth?: number;
 }) {
-  const withChildren = nodes.filter((node) => node.children.length > 0);
-
   return (
     <div className={depth === 0 ? "" : "ml-3 border-l border-border pl-3"}>
       <Accordion type="multiple" className="w-full">
@@ -128,7 +132,6 @@ function MobileNavList({
           );
         })}
       </Accordion>
-      {withChildren.length === 0 && null}
     </div>
   );
 }
