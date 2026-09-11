@@ -416,6 +416,15 @@ export const COUNTRY_IDS: Record<string, number> = {
   DE: 81,
 };
 
+/** Country choices shared by the register and the edit-account forms. */
+export const COUNTRY_OPTIONS: { id: number; label: string }[] = [
+  { id: 203, label: "Sverige" },
+  { id: 161, label: "Norge" },
+  { id: 59, label: "Danmark" },
+  { id: 73, label: "Finland" },
+  { id: 81, label: "Tyskland" },
+];
+
 function countryId(value: RegisterInput["country"]): number {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   const raw = String(value ?? "").trim();
