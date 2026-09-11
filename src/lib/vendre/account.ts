@@ -416,7 +416,16 @@ export const COUNTRY_IDS: Record<string, number> = {
   DE: 81,
 };
 
-function countryId(value: RegisterInput["country"]): number {
+/** Country choices shared by the register and the edit-account forms. */
+export const COUNTRY_OPTIONS: { id: number; label: string }[] = [
+  { id: 203, label: "Sverige" },
+  { id: 161, label: "Norge" },
+  { id: 59, label: "Danmark" },
+  { id: 73, label: "Finland" },
+  { id: 81, label: "Tyskland" },
+];
+
+function countryId(value: string | number | null | undefined): number {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   const raw = String(value ?? "").trim();
   if (/^\d+$/.test(raw)) return Number(raw);
@@ -503,27 +512,23 @@ const liveAccountApi: AccountApi = {
   },
   getAccount: () => guarded(() => call<unknown>("accounts/me")).then(normalizeAccount),
   updateAccount: async (account) => {
-    // Write back with the store's canonical keys when we know them.
+    // Only the field set the edit form exposes — the same fields registration
+    // requires, minus password/confirmation. Write back with the store's
+    // canonical keys when we know them.
     const body: Record<string, unknown> = {};
     const map: [keyof Account, string[]][] = [
       ["firstname", ["firstname", "first_name"]],
       ["lastname", ["lastname", "last_name"]],
-      ["email", ["email", "email_address"]],
-      ["telephone", ["telephone", "phone"]],
-      ["mobile", ["mobile"]],
-      ["company", ["company"]],
+      ["email", ["email_address", "email"]],
       ["street_address", ["street_address", "street"]],
       ["postcode", ["postcode", "zip"]],
       ["city", ["city"]],
-      ["country", ["country"]],
-      ["personnummer", ["personnummer"]],
-      ["vat_identification_number", ["vat_identification_number"]],
-      ["newsletter", ["newsletter"]],
     ];
     for (const [field, keys] of map) {
       const key = keys.find((candidate) => candidate in account.raw) ?? keys[0]!;
       body[key] = account[field];
     }
+    body["country"] = countryId(account.country);
     await guarded(() =>
       call("accounts/me", {
         method: "PUT",

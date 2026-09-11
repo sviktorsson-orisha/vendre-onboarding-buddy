@@ -5,7 +5,7 @@ import { LogOut, MapPin, Package, User, UserCog } from "lucide-react";
 import { StoreImage } from "@/components/store/store-image";
 import { StoreShell } from "@/components/store/store-shell";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -18,14 +18,16 @@ import {
 import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import {
+  COUNTRY_OPTIONS,
   useAccount,
   useAccountMutations,
   useAddresses,
   useAuth,
   useOrder,
   useOrders,
+  VendreAccountError,
 } from "@/lib/vendre/account";
-import type { Account, Address } from "@/types/vendre-account";
+import type { Account, Address, FieldErrors } from "@/types/vendre-account";
 
 export type AccountView = "oversikt" | "ordrar" | "adresser" | "konto";
 
@@ -286,6 +288,8 @@ function ProfileView() {
   const { updateAccount } = useAccountMutations();
   const [form, setForm] = useState<Account | null>(null);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
+  const [fields, setFields] = useState<FieldErrors>({});
 
   useEffect(() => {
     if (account) setForm(account);
@@ -293,7 +297,7 @@ function ProfileView() {
 
   if (!form) return <Section title={t("account.profile")}>…</Section>;
 
-  const field = (key: keyof Account, label: TranslationKey) => (
+  const field = (key: keyof Account, label: TranslationKey, errorKey: string) => (
     <div className="space-y-1.5">
       <Label htmlFor={`profile-${String(key)}`}>{t(label)}</Label>
       <Input
@@ -304,8 +308,13 @@ function ProfileView() {
           setForm((current) => (current ? { ...current, [key]: event.target.value } : current));
         }}
       />
+      {fields[errorKey] && <p className="text-xs text-destructive">{fields[errorKey]}</p>}
     </div>
   );
+
+  const countryValue = COUNTRY_OPTIONS.some((option) => String(option.id) === String(form.country))
+    ? String(form.country)
+    : "";
 
   return (
     <Section title={t("account.profile")}>
@@ -313,30 +322,52 @@ function ProfileView() {
         className="space-y-4"
         onSubmit={async (event) => {
           event.preventDefault();
-          await updateAccount.mutateAsync(form);
-          setSaved(true);
+          setError("");
+          setFields({});
+          try {
+            await updateAccount.mutateAsync(form);
+            setSaved(true);
+          } catch (err) {
+            if (err instanceof VendreAccountError) {
+              setError(err.message);
+              setFields(err.fields);
+            } else if (err instanceof Error) {
+              setError(err.message);
+            }
+          }
         }}
       >
         <div className="grid gap-4 sm:grid-cols-2">
-          {field("firstname", "account.firstname")}
-          {field("lastname", "account.lastname")}
-          {field("email", "account.email")}
-          {field("telephone", "account.phone")}
-          {field("mobile", "account.mobile")}
-          {field("company", "account.company")}
-          {field("vat_identification_number", "account.vat")}
-          {field("personnummer", "account.personnummer")}
+          {field("firstname", "account.firstname", "firstname")}
+          {field("lastname", "account.lastname", "lastname")}
+          {field("email", "account.email", "email_address")}
+          {field("street_address", "account.street", "street_address")}
+          {field("postcode", "account.postcode", "postcode")}
+          {field("city", "account.city", "city")}
+          <div className="space-y-1.5">
+            <Label htmlFor="profile-country">{t("account.country")}</Label>
+            <select
+              id="profile-country"
+              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              value={countryValue}
+              onChange={(event) => {
+                setSaved(false);
+                setForm((current) =>
+                  current ? { ...current, country: event.target.value } : current,
+                );
+              }}
+            >
+              <option value="" />
+              {COUNTRY_OPTIONS.map((option) => (
+                <option key={option.id} value={String(option.id)}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            {fields["country"] && <p className="text-xs text-destructive">{fields["country"]}</p>}
+          </div>
         </div>
-        <label className="flex items-center gap-2 text-sm text-foreground">
-          <Checkbox
-            checked={form.newsletter}
-            onCheckedChange={(value) => {
-              setSaved(false);
-              setForm((current) => (current ? { ...current, newsletter: value === true } : current));
-            }}
-          />
-          {t("account.newsletter")}
-        </label>
+        {error && <p className="text-sm text-destructive">{error}</p>}
         <div className="flex items-center gap-3">
           <Button type="submit" disabled={updateAccount.isPending}>
             {updateAccount.isPending ? t("account.saving") : t("account.save")}

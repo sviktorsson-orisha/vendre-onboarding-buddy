@@ -8,7 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useI18n } from "@/lib/i18n";
-import { useAccountMutations, useAuth, VendreAccountError } from "@/lib/vendre/account";
+import {
+  COUNTRY_OPTIONS,
+  useAccountMutations,
+  useAuth,
+  VendreAccountError,
+} from "@/lib/vendre/account";
 import type { FieldErrors, RegisterInput } from "@/types/vendre-account";
 
 function errorsOf(error: unknown): { message: string; fields: FieldErrors } {
@@ -22,13 +27,6 @@ function FieldError({ message }: { message?: string | undefined }) {
   return <p className="text-xs text-destructive">{message}</p>;
 }
 
-const COUNTRY_OPTIONS = [
-  { id: 203, label: "Sverige" },
-  { id: 161, label: "Norge" },
-  { id: 59, label: "Danmark" },
-  { id: 73, label: "Finland" },
-  { id: 81, label: "Tyskland" },
-];
 
 export default function LoginPage() {
   const { t } = useI18n();
