@@ -424,43 +424,24 @@ function countryId(value: RegisterInput["country"]): number {
 }
 
 /**
- * Maps the registration form to the exact payload the store accepts.
- * Empty optional strings are omitted; `type` is UI-only and never sent.
+ * Maps the registration form to the exact payload the store accepts: the
+ * required field set from the API reference, plus the consent flag.
  */
 export function buildRegisterBody(input: RegisterInput): Record<string, unknown> {
-  const body: Record<string, unknown> = {
-    gender: input.gender || "m",
-    firstname: input.firstname,
-    lastname: input.lastname,
-    email_address: input.email_address,
+  return {
+    email_address: input.email_address.trim(),
     password: input.password,
     confirmation: input.confirmation,
-    street_address: input.street_address,
-    postcode: input.postcode,
-    city: input.city,
-    state: input.state,
+    firstname: input.firstname.trim(),
+    lastname: input.lastname.trim(),
+    street_address: input.street_address.trim(),
+    postcode: input.postcode.trim(),
+    city: input.city.trim(),
     country: countryId(input.country),
-    telephone: input.telephone,
-    newsletter: Boolean(input.newsletter),
     consent_personal_data_policy: Boolean(input.consent_personal_data_policy),
   };
-
-  const optional: [string, string | undefined][] = [
-    ["personnummer", input.personnummer],
-    ["mobile", input.mobile],
-  ];
-  if (input.type === "company") {
-    optional.push(["company", input.company], [
-      "vat_identification_number",
-      input.vat_identification_number,
-    ]);
-  }
-  for (const [key, value] of optional) {
-    if (value && value.trim()) body[key] = value.trim();
-  }
-
-  return body;
 }
+
 
 /* ------------------------------------------------------------- adapter --- */
 
