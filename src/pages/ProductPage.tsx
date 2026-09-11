@@ -194,7 +194,9 @@ export default function ProductPage({ id }: { id: string }) {
   // Fallback for installs where VQL returns no variant types.
   const attributes = variantTypes.length > 0 ? [] : (product.attributes ?? []);
   /** Specifications follow whichever product is active (parent or selected variant). */
-  const specifications = specificationList ?? [];
+  const specifications =
+    inlineSpecifications.length > 0 ? inlineSpecifications : (specificationList ?? []);
+
   const canBuy =
     (variantTypes.length === 0 || selectedVariantProductId != null) && !soldOut && Boolean(activeProductId);
 
