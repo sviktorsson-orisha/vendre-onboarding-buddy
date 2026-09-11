@@ -789,7 +789,9 @@ export function useProduct(id: string, categoryId?: number) {
     queryKey: ["vendre", api.mode, "product", String(id), scope],
     queryFn: () => api.getProduct(id, categoryId),
     staleTime: 5 * 60 * 1000,
-    enabled: Boolean(id),
+    // The scope is part of the key, so fetching before the session context has
+    // landed would fetch once under `null` and again under the real scope.
+    enabled: Boolean(id) && scope != null,
   });
 }
 
@@ -801,7 +803,7 @@ export function useVariantProduct(productId: number | null) {
     queryKey: ["vendre", api.mode, "product", String(productId), scope],
     queryFn: () => api.getVariantProduct(productId as number),
     staleTime: 5 * 60 * 1000,
-    enabled: productId != null,
+    enabled: productId != null && scope != null,
   });
 }
 
@@ -820,7 +822,7 @@ export function useProductSpecifications(
     queryKey: ["vendre", api.mode, "product-specifications", String(productId), scope],
     queryFn: () => api.getProductSpecifications(productId as string | number),
     staleTime: 5 * 60 * 1000,
-    enabled: enabled && productId != null && productId !== "",
+    enabled: enabled && productId != null && productId !== "" && scope != null,
   });
 }
 
@@ -835,9 +837,10 @@ export function useProductVariants(id: string) {
     queryKey: ["vendre", api.mode, "product-variants", "status-filter-v2", id, scope],
     queryFn: () => api.getProductVariants(id),
     staleTime: 5 * 60 * 1000,
-    enabled: Boolean(id),
+    enabled: Boolean(id) && scope != null,
   });
 }
+
 
 /** Never cached — the cart is live state. */
 export function useCart() {
