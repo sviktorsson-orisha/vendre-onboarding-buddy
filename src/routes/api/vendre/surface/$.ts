@@ -37,8 +37,16 @@ function rewriteSetCookie(raw: string, secure: boolean): string {
   }
 
   kept.push("Path=/");
-  kept.push("SameSite=Lax");
-  if (secure) kept.push("Secure");
+  if (secure) {
+    // The preview runs inside an iframe: a Lax cookie is dropped there, so the
+    // session would be lost on every request. CHIPS keeps it partitioned.
+    kept.push("SameSite=None");
+    kept.push("Partitioned");
+    kept.push("Secure");
+  } else {
+    kept.push("SameSite=Lax");
+  }
+
 
   return [pair, ...kept].join("; ");
 }
@@ -112,7 +120,9 @@ async function proxy({ request, params }: { request: Request; params: { _splat?:
   }
   outHeaders.set("cache-control", "no-store");
 
-  const secure = incoming.protocol === "https:";
+  const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
+  const secure = forwardedProto ? forwardedProto === "https" : incoming.protocol === "https:";
+
   const setCookies =
     typeof upstream.headers.getSetCookie === "function"
       ? upstream.headers.getSetCookie()
