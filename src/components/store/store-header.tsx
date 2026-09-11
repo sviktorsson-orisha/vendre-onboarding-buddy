@@ -195,38 +195,16 @@ export function StoreHeader() {
           <SheetHeader>
             <SheetTitle>{t("store.menu")}</SheetTitle>
           </SheetHeader>
-          <nav className="-mx-2 mt-4 flex-1 overflow-y-auto px-2 pb-6">
-            <ul className="space-y-1">
-              {tree.map((node) => (
-                <li key={node.id}>
-                  <Link
-                    to="/kategori/$id"
-                    params={{ id: String(node.id) }}
-                    onClick={() => setMobileOpen(false)}
-                    className="block rounded-md px-2 py-2 text-sm font-semibold text-foreground hover:bg-accent"
-                  >
-                    {node.name}
-                  </Link>
-                  {node.children.length > 0 && (
-                    <ul className="ml-3 border-l border-border pl-3">
-                      {node.children.map((child) => (
-                        <li key={child.id}>
-                          <Link
-                            to="/kategori/$id"
-                            params={{ id: String(child.id) }}
-                            onClick={() => setMobileOpen(false)}
-                            className="block rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent"
-                          >
-                            {child.name}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </li>
-              ))}
-            </ul>
+          <nav className="mt-4 flex-1 overflow-y-auto pb-6">
+            <MobileNavList nodes={tree} onNavigate={() => setMobileOpen(false)} />
           </nav>
+          <div className="mt-auto border-t border-border pt-4">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {t("lang.label")}
+            </p>
+            <LanguagePicker />
+          </div>
+
         </SheetContent>
       </Sheet>
 
