@@ -221,7 +221,9 @@ const liveApi: VendreApi = {
       );
       const types =
         data?.query?.product_variant_types ?? data?.data?.query?.product_variant_types ?? [];
-      return normalizeVariantTypes(types);
+      const normalized = normalizeVariantTypes(types);
+      variantTreeCache.set(String(productId), normalized);
+      return normalized;
     } catch {
       // VQL disabled or the product has no variants: render the page without a selector.
       return [];
@@ -230,11 +232,11 @@ const liveApi: VendreApi = {
   getVariantProduct: (productId) => vqlProduct(productId),
   getProductSpecifications: (productId) => vqlSpecifications(productId),
   getProduct: async (id, categoryId) => {
-    // Surface v2 has no products/{id} endpoint. VQL reads the product in a single
-    // call — the category scan below is only a fallback for installs without VQL,
-    // since it fetches every product of every category until the id turns up.
+    // Surface v2 has no products/{id} endpoint. VQL reads the product and its variant
+    // tree in a single call — the category scan below is only a fallback for installs
+    // without VQL, since it fetches every product of every category until the id turns up.
     if (!vqlDisabled) {
-      const direct = await vqlProduct(id);
+      const direct = await vqlProduct(id, true);
       if (direct) return direct;
     }
     const fromCategory = async (catId: number) => {
