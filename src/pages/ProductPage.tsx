@@ -206,10 +206,21 @@ export default function ProductPage({ id }: { id: string }) {
   const canBuy =
     (variantTypes.length === 0 || selectedVariantProductId != null) && !soldOut && Boolean(activeProductId);
 
+  /** Same trail as the PLP, with the product name as the non-linked leaf. */
+  const productName = view?.name ?? product.name;
+  const categoryId = Number(view?.categories_id ?? product.categories_id ?? "");
+  const trail: Crumb[] = [
+    ...(Number.isFinite(categoryId) && categoryId > 0
+      ? buildCategoryTrail(menus ?? [], categoryId, "")
+      : []),
+    { id: Number(product.id), name: productName, current: true },
+  ];
 
   return (
     <StoreShell>
-      <div className="grid gap-10 lg:grid-cols-2">
+      <Breadcrumbs trail={trail} />
+
+      <div className="mt-4 grid gap-10 lg:grid-cols-2">
         <StoreImage
           key={view?.id ?? product.id}
           image={view?.image ?? view?.images?.[0] ?? product.image ?? product.images[0] ?? null}
