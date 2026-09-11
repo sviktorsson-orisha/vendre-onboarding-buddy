@@ -2,12 +2,15 @@ import { Link } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { Breadcrumbs, type Crumb } from "@/components/store/breadcrumbs";
 import { StoreImage } from "@/components/store/store-image";
 import { StoreShell } from "@/components/store/store-shell";
 import { useI18n } from "@/lib/i18n";
 import { ProductPrice } from "@/components/store/product-price";
+import { buildCategoryTrail } from "@/lib/vendre/breadcrumbs";
 import {
   useCartMutations,
+  useMenus,
   useProduct,
   useProductSpecifications,
   useProductVariants,
