@@ -6,7 +6,7 @@ The edit form under My account > Account should show exactly the fields the new
 API documentation lists as required when creating an account — minus password
 and confirmation. Extra fields can be added later.
 
-## Fields shown (all required)
+## Fields shown (none required)
 
 - First name
 - Last name
