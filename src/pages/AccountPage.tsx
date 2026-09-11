@@ -18,14 +18,16 @@ import {
 import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import {
+  COUNTRY_OPTIONS,
   useAccount,
   useAccountMutations,
   useAddresses,
   useAuth,
   useOrder,
   useOrders,
+  VendreAccountError,
 } from "@/lib/vendre/account";
-import type { Account, Address } from "@/types/vendre-account";
+import type { Account, Address, FieldErrors } from "@/types/vendre-account";
 
 export type AccountView = "oversikt" | "ordrar" | "adresser" | "konto";
 
