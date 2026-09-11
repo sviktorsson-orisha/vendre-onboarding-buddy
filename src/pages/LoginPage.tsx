@@ -8,7 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useI18n } from "@/lib/i18n";
-import { useAccountMutations, useAuth, VendreAccountError } from "@/lib/vendre/account";
+import {
+  COUNTRY_OPTIONS,
+  useAccountMutations,
+  useAuth,
+  VendreAccountError,
+} from "@/lib/vendre/account";
 import type { FieldErrors, RegisterInput } from "@/types/vendre-account";
 
 function errorsOf(error: unknown): { message: string; fields: FieldErrors } {
