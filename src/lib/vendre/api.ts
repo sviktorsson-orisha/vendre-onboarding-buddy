@@ -3,7 +3,7 @@
  *
  * Same function signatures in both modes:
  *   demo -> src/mock/vendreResponses.ts (cart kept in memory)
- *   live -> /surface/2/* through the browser client (Bearer + credentials: "include")
+ *   live -> /surface/2/* through our own /api/vendre/surface proxy (no token in the browser)
  *
  * All live paths, headers and error handling follow .vendre/knowledge/api-reference.md.
  * Caching follows .vendre/skills/caching.md: menus/categories are cached, cart and
