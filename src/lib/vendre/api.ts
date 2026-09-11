@@ -227,10 +227,16 @@ const liveApi: VendreApi = {
   getVariantProduct: (productId) => vqlProduct(productId),
   getProductSpecifications: (productId) => vqlSpecifications(productId),
   getProduct: async (id, categoryId) => {
-    // Surface v2 has no products/{id} endpoint; products are read from a category listing.
+    // Surface v2 has no products/{id} endpoint. VQL reads the product in a single
+    // call — the category scan below is only a fallback for installs without VQL,
+    // since it fetches every product of every category until the id turns up.
+    if (!vqlDisabled) {
+      const direct = await vqlProduct(id);
+      if (direct) return direct;
+    }
     const fromCategory = async (catId: number) => {
       const data = await liveApi.getCategory(catId, { limit: 0 });
-      return data.product_list.find((p) => String(p.id) === String(id)) ?? null;
+      return data.product_list?.find((p) => String(p.id) === String(id)) ?? null;
     };
     if (categoryId) {
       const hit = await fromCategory(categoryId);
@@ -241,9 +247,9 @@ const liveApi: VendreApi = {
       const hit = await fromCategory(item.id);
       if (hit) return hit;
     }
-    // Variant children are not listed in categories — read them through VQL instead.
-    return vqlProduct(id);
+    return null;
   },
+
   // Only the page's own description is rendered — content blocks are not used.
   // GET galleries/{id}/pages lists the pages *inside* a gallery, so the page
   // itself is found in its parent gallery's list (pagetree gives the parent).
@@ -462,9 +468,12 @@ async function vqlProduct(id: string | number): Promise<Product | null> {
       specifications: (raw.specifications ?? []).filter((item) => item?.name && item?.value),
     };
   } catch {
+    // VQL is off on this install (documented 500): stop trying it for product reads.
+    vqlDisabled = true;
     return null;
   }
 }
+
 
 
 /**
