@@ -21,12 +21,30 @@ never before, or a reload bounces the user out).
 | --- | --- |
 | Profile read | `GET /surface/2/accounts/me` |
 | Profile update | `PUT /surface/2/accounts/me` (mutation token) |
-| Addresses | `GET`/`PUT /surface/2/accounts/me/addresses` |
+| Main address | `GET /surface/2/accounts/me/addresses` (returns the customer's main address) |
+| Alternative addresses | `GET /surface/2/accounts/me/address-book` (returns only the alternative addresses) |
 | Orders | `GET /surface/2/accounts/me/order-history` |
 | Order detail | `GET /surface/2/accounts/me/order-history/{id}` |
 
 Never cache account data across sessions. React Query with
 `staleTime: 0` and cache clearing on logout.
+
+## Addresses view (current implementation)
+
+- `getAddresses()` fetches `accounts/me/addresses` and `accounts/me/address-book`
+  **in parallel** and returns `{ main: Address | null; alternatives: Address[] }`.
+  The first entry from `accounts/me/addresses` is `main`; the whole address book
+  is `alternatives`.
+- Never pick "the longest list": the address book does not contain the main
+  address, so a longest-wins merge silently promotes an alternative address to
+  main.
+- No dedupe between the two sources and no fallback — a customer always has a
+  main address.
+- The view is **read-only**: no editing, no headings, no badges and no generated
+  labels such as "Adress 2". Address cards render address lines only.
+- Layout: `grid gap-6 lg:grid-cols-2` — main address in the left column, all
+  alternatives stacked in the right column; on mobile the columns stack with the
+  main address first.
 
 ## Normalization
 

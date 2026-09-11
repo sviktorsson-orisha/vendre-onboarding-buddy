@@ -69,8 +69,26 @@ export const mockOrderDetails: Record<string, OrderDetail> = {
   "10241": {
     ...mockOrders[0]!,
     lines: [
-      { id: 1, name: "Klassisk T-shirt", quantity: 2, price: "598 kr", image: null },
-      { id: 2, name: "Canvasväska", quantity: 1, price: "900 kr", image: null },
+      {
+        id: 1,
+        product_id: 1,
+        name: "Klassisk T-shirt",
+        quantity: 2,
+        price: "598 kr",
+        price_incl: "598 kr",
+        price_excl: "478,40 kr",
+        image: null,
+      },
+      {
+        id: 2,
+        product_id: 2,
+        name: "Canvasväska",
+        quantity: 1,
+        price: "900 kr",
+        price_incl: "900 kr",
+        price_excl: "720 kr",
+        image: null,
+      },
     ],
     totals: [
       { title: "Delsumma", value: "1 498 kr" },
@@ -85,7 +103,18 @@ export const mockOrderDetails: Record<string, OrderDetail> = {
   },
   "10198": {
     ...mockOrders[1]!,
-    lines: [{ id: 1, name: "Stickad tröja", quantity: 1, price: "749 kr", image: null }],
+    lines: [
+      {
+        id: 1,
+        product_id: 3,
+        name: "Stickad tröja",
+        quantity: 1,
+        price: "749 kr",
+        price_incl: "749 kr",
+        price_excl: "599,20 kr",
+        image: null,
+      },
+    ],
     totals: [
       { title: "Delsumma", value: "700 kr" },
       { title: "Frakt", value: "49 kr" },

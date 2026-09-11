@@ -26,6 +26,7 @@ import {
 import type {
   Account,
   Address,
+  AddressBook,
   FieldErrors,
   OrderDetail,
   OrderSummary,
@@ -129,7 +130,7 @@ function normalizeAddress(payload: unknown, index: number): Address {
   const account = normalizeAccount(payload);
   return {
     id: (bag["id"] as string | number) ?? index,
-    label: pick(bag, ["label", "name", "type"]) || `Adress ${index + 1}`,
+    label: pick(bag, ["label", "name", "type"]),
     firstname: account.firstname,
     lastname: account.lastname,
     company: account.company,
@@ -274,24 +275,67 @@ function normalizeTotals(bag: Bag): { title: string; value: string }[] {
     .filter((row) => row.title || row.value);
 }
 
+/**
+ * Order lines only carry raw numbers (`price_each` / `price_total`, excl. VAT)
+ * while the totals rows are pre-formatted by the store. Reuse a total row as the
+ * formatting sample so line prices look like the rest of the order.
+ */
+function moneyFormatter(sample: string) {
+  const trimmed = (sample ?? "").trim();
+  const match = /^([^\d\s-]*)\s*[-\d\s.,\u00a0]+\s*([^\d\s]*)$/.exec(trimmed);
+  const prefix = match?.[1] ?? "";
+  const suffix = match?.[2] ?? "";
+  // Follow the store's own rounding: if the totals are shown without decimals,
+  // the line prices must be too, otherwise the rows and the total look
+  // inconsistent (e.g. "399,20 kr" rows under a "752 kr" total).
+  const decimals = /[.,](\d+)\s*[^\d]*$/.exec(trimmed)?.[1]?.length ?? 0;
+  return (value: number) => {
+    const number = new Intl.NumberFormat("sv-SE", {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }).format(value);
+    return [prefix, number, suffix].filter(Boolean).join(prefix && !suffix ? "" : " ").trim();
+  };
+}
+
+function toNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = Number(value.replace(/\s|\u00a0/g, "").replace(",", "."));
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
+}
+
 function normalizeOrderDetail(payload: unknown, id: string): OrderDetail {
   const bag = flatten(payload);
   const summary = normalizeOrder(payload, 0);
+  const totals = normalizeTotals(bag);
+  const format = moneyFormatter(totals[totals.length - 1]?.value ?? summary.total ?? "");
   const lines = asArray(
     bag["products"] ?? bag["order_products"] ?? bag["lines"] ?? bag["items"] ?? bag["rows"],
   ).map((line, index) => {
     const lineBag = flatten(line);
+    const quantity = Number(lineBag["quantity"] ?? lineBag["qty"] ?? 1);
+    const formatted = pick(lineBag, [
+      "total_final_price",
+      "final_price",
+      "row_total",
+      "total",
+      "price",
+    ]);
+    const each = toNumber(lineBag["price_each"]);
+    const rowExcl = toNumber(lineBag["price_total"]) ?? (each != null ? each * quantity : null);
+    const tax = toNumber(lineBag["tax"]) ?? 0;
+    const rowIncl = rowExcl != null ? rowExcl * (1 + tax / 100) : null;
     return {
       id: (lineBag["id"] as string | number) ?? index,
+      product_id: toNumber(lineBag["product_id"]),
       name: pick(lineBag, ["name", "product_name", "title", "model"]),
-      quantity: Number(lineBag["quantity"] ?? lineBag["qty"] ?? 1),
-      price: pick(lineBag, [
-        "total_final_price",
-        "final_price",
-        "row_total",
-        "total",
-        "price",
-      ]),
+      quantity,
+      price: rowIncl != null ? format(rowIncl) : formatted,
+      price_incl: rowIncl != null ? format(rowIncl) : formatted,
+      price_excl: rowExcl != null ? format(rowExcl) : "",
       image: pickLineImage(lineBag),
     };
   });
@@ -300,7 +344,7 @@ function normalizeOrderDetail(payload: unknown, id: string): OrderDetail {
     id: summary.id || id,
     order_number: summary.order_number || id,
     lines,
-    totals: normalizeTotals(bag),
+    totals,
     shipping_total: pick(bag, ["shipping_total", "shipping"]),
     tax_total: pick(bag, ["tax_total", "tax"]),
     shipping_address: bag["shipping_address"]
@@ -319,6 +363,46 @@ function normalizeSubUser(payload: unknown, index: number): SubUser {
     email: account.email,
     role: pick(bag, ["role", "type", "permission"]),
   };
+}
+
+/**
+ * Order lines have no image at all — only `product_id`. Look the images up in a
+ * single VQL call. A failure here must never break the order view.
+ */
+async function withLineImages(lines: OrderDetail["lines"]): Promise<OrderDetail["lines"]> {
+  const ids = Array.from(
+    new Set(lines.map((line) => line.product_id).filter((id): id is number => !!id)),
+  );
+  if (ids.length === 0) return lines;
+  try {
+    const data = await guarded(() =>
+      call<{ query?: { products?: { id: number; image?: { href?: string | null } | null }[] } }>(
+        "vql",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            query: {
+              products: {
+                filters: { where: { id: ids } },
+                fields: ["id", { image: { fields: ["id", "name", "href"] } }],
+              },
+            },
+          }),
+        },
+      ),
+    );
+    const byId = new Map<number, string | null>(
+      (data?.query?.products ?? []).map((product) => [product.id, product.image?.href ?? null]),
+    );
+    return lines.map((line) =>
+      line.image || !line.product_id
+        ? line
+        : { ...line, image: byId.get(line.product_id) ?? null },
+    );
+  } catch {
+    return lines;
+  }
 }
 
 /* ------------------------------------------------------- register body --- */
@@ -389,7 +473,7 @@ export type AccountApi = {
   forgotPassword: (email: string) => Promise<void>;
   getAccount: () => Promise<Account>;
   updateAccount: (account: Account) => Promise<void>;
-  getAddresses: () => Promise<Address[]>;
+  getAddresses: () => Promise<AddressBook>;
   updateAddress: (address: Address) => Promise<void>;
   getOrders: () => Promise<OrderSummary[]>;
   getOrder: (id: string) => Promise<OrderDetail | null>;
@@ -484,13 +568,13 @@ const liveAccountApi: AccountApi = {
       }
     };
 
-    // Some stores expose the full address book on `address-book`; older ones
-    // only on `addresses`. Prefer whichever returns the most entries.
-    const [book, legacy] = await Promise.all([
-      probe("accounts/me/address-book"),
+    // `accounts/me/addresses` holds the customer's main address; the address
+    // book holds the alternative addresses. Keep them apart.
+    const [main, alternatives] = await Promise.all([
       probe("accounts/me/addresses"),
+      probe("accounts/me/address-book"),
     ]);
-    return book.length >= legacy.length ? (book.length ? book : legacy) : legacy;
+    return { main: main[0] ?? null, alternatives };
   },
 
 
@@ -517,10 +601,11 @@ const liveAccountApi: AccountApi = {
     guarded(() => call<unknown>("accounts/me/order-history")).then((data) =>
       asArray(data, "orders", "order_history", "data").map(normalizeOrder),
     ),
-  getOrder: (id) =>
-    guarded(() => call<unknown>(`accounts/me/order-history/${id}`)).then((data) =>
-      normalizeOrderDetail(data, id),
-    ),
+  getOrder: async (id) => {
+    const data = await guarded(() => call<unknown>(`accounts/me/order-history/${id}`));
+    const order = normalizeOrderDetail(data, id);
+    return { ...order, lines: await withLineImages(order.lines) };
+  },
   getSubUsers: () =>
     guarded(() => call<unknown>("accounts/me/users"))
       .then((data) => asArray(data, "users", "data").map(normalizeSubUser))
@@ -588,7 +673,10 @@ const demoAccountApi: AccountApi = {
     demoAccount = { ...account };
     emitDemo();
   },
-  getAddresses: async () => demoAddresses,
+  getAddresses: async () => ({
+    main: demoAddresses[0] ?? null,
+    alternatives: demoAddresses.slice(1),
+  }),
   updateAddress: async (address) => {
     demoAddresses = demoAddresses.map((item) => (item.id === address.id ? address : item));
     emitDemo();

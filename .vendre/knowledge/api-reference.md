@@ -165,10 +165,30 @@ All `accounts*` endpoints resolve to the **`default`** CORS policy, not `custome
 | POST | `accounts` | `default` | yes | registration (full field set required) |
 | GET | `accounts/me` | `default` | – | profile (flat / nested / alias shapes) |
 | PUT | `accounts/me` | `default` | yes | update profile |
-| GET | `accounts/me/addresses` | `default` | – | address book |
+| GET | `accounts/me/addresses` | `default` | – | the customer's **main address** only |
+| GET | `accounts/me/address-book` | `default` | – | the **alternative** addresses only (never the main one) |
 | PUT | `accounts/me/addresses` | `default` | yes | update address |
 | GET | `accounts/me/order-history` | `default` | – | order list |
-| GET | `accounts/me/order-history/{id}` | `default` | – | single order |
+| GET | `accounts/me/order-history/{id}` | `default` | – | single order (see shape below) |
+
+**`accounts/me/order-history/{id}` response** (verified against a live store):
+the payload is wrapped in `order` and contains `id`, `status`, `date`,
+`billing_address`, `delivery_address`, `status_history`, `totals`
+(`{ class, title, text, value }`, `text` already formatted) and `products`:
+
+```json
+{ "id": 172, "product_id": 230, "name": "Blazer Slim fit", "model": "47-0956",
+  "quantity": 1, "price_each": 399.2, "price_total": 399.2, "tax": 21 }
+```
+
+Order lines carry **no image** and their prices are **excluding VAT** while the
+order totals are including VAT. Fetch line images separately with one VQL call
+filtering `products` on the collected `product_id` values.
+
+Line amounts arrive raw (`399.2`) while `totals[].text` is already rounded
+(`752 kr`). Derive the display format — currency prefix/suffix **and decimal
+precision** — from a totals row, so a store that shows whole-unit totals also
+shows whole-unit line prices. Never recompute the totals themselves.
 | GET | `accounts/me/users` | `default` | – | sub-users (B2B) |
 | GET | `accounts/me/forgot-password` | `default` | yes | password reset mail |
 | GET | `customers/current` | `default` | – | current customer record |
