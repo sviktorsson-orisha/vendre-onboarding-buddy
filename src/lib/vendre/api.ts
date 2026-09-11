@@ -179,6 +179,9 @@ const liveApi: VendreApi = {
   // `quantity` is not returned by this install; `stock_allow_checkout` may be null,
   // which means the store default (checkout allowed) applies.
   getProductVariants: async (productId) => {
+    // The product read already batched this tree into its own query.
+    const cached = variantTreeCache.get(String(productId));
+    if (cached) return cached;
     try {
       const data = await guarded(() =>
         surfaceJson<VqlVariantsResponse>("vql", {
