@@ -468,9 +468,12 @@ async function vqlProduct(id: string | number): Promise<Product | null> {
       specifications: (raw.specifications ?? []).filter((item) => item?.name && item?.value),
     };
   } catch {
+    // VQL is off on this install (documented 500): stop trying it for product reads.
+    vqlDisabled = true;
     return null;
   }
 }
+
 
 
 /**
