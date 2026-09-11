@@ -1,6 +1,6 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 
-import { Breadcrumbs, type Crumb } from "@/components/store/breadcrumbs";
+import { Breadcrumbs } from "@/components/store/breadcrumbs";
 import {
   CategoryFilters,
   type FilterProps,
