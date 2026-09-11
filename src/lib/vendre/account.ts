@@ -35,7 +35,7 @@ import type {
 } from "@/types/vendre-account";
 import type { SessionContext } from "@/types/vendre";
 
-import { guarded, resetSessionGate } from "./api";
+import { guarded, resetSessionGate, useSessionContext } from "./api";
 import { setMutationProtectionToken, surfaceFetch } from "./client";
 
 /* ------------------------------------------------------------- errors ---- */
