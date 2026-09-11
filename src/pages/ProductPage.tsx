@@ -80,7 +80,14 @@ export default function ProductPage({ id }: { id: string }) {
   /** Everything on screen follows the selected variant when one is loaded. */
   const view = variantProduct ?? product;
   const activeProductId = selectedVariantProductId ?? product?.id ?? null;
-  const { data: specificationList } = useProductSpecifications(activeProductId);
+  // The product read already carries specifications; only ask separately when it
+  // came from a category listing, which does not include them.
+  const inlineSpecifications = view?.specifications ?? [];
+  const { data: specificationList } = useProductSpecifications(
+    activeProductId,
+    inlineSpecifications.length === 0,
+  );
+
 
 
 
