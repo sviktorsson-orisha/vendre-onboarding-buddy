@@ -2,12 +2,15 @@ import { Link } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { Breadcrumbs, type Crumb } from "@/components/store/breadcrumbs";
 import { StoreImage } from "@/components/store/store-image";
 import { StoreShell } from "@/components/store/store-shell";
 import { useI18n } from "@/lib/i18n";
 import { ProductPrice } from "@/components/store/product-price";
+import { buildCategoryTrail } from "@/lib/vendre/breadcrumbs";
 import {
   useCartMutations,
+  useMenus,
   useProduct,
   useProductSpecifications,
   useProductVariants,
@@ -19,6 +22,7 @@ import type { ProductVariantChoice } from "@/types/vendre";
 export default function ProductPage({ id }: { id: string }) {
   const { t } = useI18n();
   const { data: product, isLoading } = useProduct(id);
+  const { data: menus } = useMenus();
   // A variant child carries parent_id; the variant tree only exists on the parent.
   const variantOwnerId = product ? String(product.parent_id ?? product.id) : "";
   const { data: variantTypes = [] } = useProductVariants(variantOwnerId);
@@ -202,10 +206,21 @@ export default function ProductPage({ id }: { id: string }) {
   const canBuy =
     (variantTypes.length === 0 || selectedVariantProductId != null) && !soldOut && Boolean(activeProductId);
 
+  /** Same trail as the PLP, with the product name as the non-linked leaf. */
+  const productName = view?.name ?? product.name;
+  const categoryId = Number(view?.categories_id ?? product.categories_id ?? "");
+  const trail: Crumb[] = [
+    ...(Number.isFinite(categoryId) && categoryId > 0
+      ? buildCategoryTrail(menus ?? [], categoryId, "").filter((crumb) => crumb.name)
+      : []),
+    { id: Number(product.id), name: productName, current: true },
+  ];
 
   return (
     <StoreShell>
-      <div className="grid gap-10 lg:grid-cols-2">
+      <Breadcrumbs trail={trail} />
+
+      <div className="mt-4 grid gap-10 lg:grid-cols-2">
         <StoreImage
           key={view?.id ?? product.id}
           image={view?.image ?? view?.images?.[0] ?? product.image ?? product.images[0] ?? null}

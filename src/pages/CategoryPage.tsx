@@ -1,6 +1,6 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 
-import { Breadcrumbs, type Crumb } from "@/components/store/breadcrumbs";
+import { Breadcrumbs } from "@/components/store/breadcrumbs";
 import {
   CategoryFilters,
   type FilterProps,
@@ -12,19 +12,8 @@ import { ProductCard } from "@/components/store/product-card";
 import { StoreImage } from "@/components/store/store-image";
 import { StoreShell } from "@/components/store/store-shell";
 import { useI18n } from "@/lib/i18n";
+import { buildCategoryTrail } from "@/lib/vendre/breadcrumbs";
 import { useCategory, useMenus } from "@/lib/vendre/api";
-import type { MenuItem } from "@/types/vendre";
-
-function buildTrail(menus: MenuItem[], id: number, fallbackName: string): Crumb[] {
-  const byId = new Map(menus.map((item) => [item.id, item]));
-  const trail: Crumb[] = [];
-  let current = byId.get(id);
-  while (current) {
-    trail.unshift({ id: current.id, name: current.name });
-    current = current.parent_id != null ? byId.get(current.parent_id) : undefined;
-  }
-  return trail.length ? trail : [{ id, name: fallbackName }];
-}
 
 /** URL form: "44:Bomull,44:Lin" -> { "44": ["Bomull", "Lin"] } */
 function parseSpecs(raw?: string): Record<string, string[]> {
@@ -82,7 +71,7 @@ export default function CategoryPage({ id }: { id: number }) {
     });
   };
 
-  const trail = buildTrail(menus ?? [], id, data?.header.name ?? "");
+  const trail = buildCategoryTrail(menus ?? [], id, data?.header.name ?? "");
 
   const filterProps = (response: NonNullable<typeof data>): FilterProps => ({
     filters: response.filters ?? [],
