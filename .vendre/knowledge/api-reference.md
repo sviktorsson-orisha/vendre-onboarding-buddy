@@ -192,6 +192,14 @@ All `accounts*` endpoints resolve to the **`default`** CORS policy, not `custome
 | GET | `accounts/me/quotations/{quotationId}` | `default` | – | single quotation |
 | POST | `accounts/me/shopping-cart/products` | `default` | yes | add cart products as the authenticated customer |
 
+**`PUT accounts/me` body keys** — the update body uses `firstname` / `lastname`
+(plus `email_address`, `street_address`, `postcode`, `city`, numeric `country`,
+and the optional registration fields), while `GET accounts/me` returns
+`first_name` / `last_name` and `email`. Read the aliases, but **always write the
+documented keys** — echoing the response spelling back makes the store silently
+ignore the name fields.
+
+
 **Registration body (`POST accounts`, and `POST customers`)**
 
 Required: `email_address`, `password`, `confirmation`, `firstname`, `lastname`,

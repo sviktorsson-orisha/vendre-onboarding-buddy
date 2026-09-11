@@ -513,22 +513,19 @@ const liveAccountApi: AccountApi = {
   getAccount: () => guarded(() => call<unknown>("accounts/me")).then(normalizeAccount),
   updateAccount: async (account) => {
     // Only the field set the edit form exposes — the same fields registration
-    // requires, minus password/confirmation. Write back with the store's
-    // canonical keys when we know them.
-    const body: Record<string, unknown> = {};
-    const map: [keyof Account, string[]][] = [
-      ["firstname", ["firstname", "first_name"]],
-      ["lastname", ["lastname", "last_name"]],
-      ["email", ["email_address", "email"]],
-      ["street_address", ["street_address", "street"]],
-      ["postcode", ["postcode", "zip"]],
-      ["city", ["city"]],
-    ];
-    for (const [field, keys] of map) {
-      const key = keys.find((candidate) => candidate in account.raw) ?? keys[0]!;
-      body[key] = account[field];
-    }
-    body["country"] = countryId(account.country);
+    // requires, minus password/confirmation. The documented update body uses
+    // `firstname`/`lastname` even though the profile response returns
+    // `first_name`/`last_name`, so never echo back the response spelling.
+    const body: Record<string, unknown> = {
+      firstname: account.firstname,
+      lastname: account.lastname,
+      email_address: account.email,
+      street_address: account.street_address,
+      postcode: account.postcode,
+      city: account.city,
+      country: countryId(account.country),
+    };
+
     await guarded(() =>
       call("accounts/me", {
         method: "PUT",

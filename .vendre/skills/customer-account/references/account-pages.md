@@ -63,6 +63,12 @@ function normalizeAccount(raw) {
 }
 ```
 
+When writing back with `PUT accounts/me`, never echo the response spelling:
+the update body expects `firstname` / `lastname` / `email_address`, while the
+profile response returns `first_name` / `last_name` / `email`. Sending the read
+aliases makes the store silently ignore those fields.
+
+
 Do the same for orders: the list may arrive as an array, as `{ data: [...] }`,
 or as `{ order_history: [...] }`, and order ids appear as `id`, `order_id`, or
 `increment_id`. A missing normalizer is why "orders don't show up" even though
