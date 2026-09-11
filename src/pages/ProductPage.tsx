@@ -211,7 +211,7 @@ export default function ProductPage({ id }: { id: string }) {
   const categoryId = Number(view?.categories_id ?? product.categories_id ?? "");
   const trail: Crumb[] = [
     ...(Number.isFinite(categoryId) && categoryId > 0
-      ? buildCategoryTrail(menus ?? [], categoryId, "")
+      ? buildCategoryTrail(menus ?? [], categoryId, "").filter((crumb) => crumb.name)
       : []),
     { id: Number(product.id), name: productName, current: true },
   ];
