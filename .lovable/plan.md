@@ -1,50 +1,41 @@
 # First name and last name are not saved when updating the account
 
-## What we can see in the code
+## Cause (confirmed by the documentation)
 
-When the account form is saved, most fields are sent under the exact names the
-API documentation lists, but the first name and last name are sent under
-whichever spelling happened to appear in the profile we read back from the
-store. If the store returns the name as `first_name` / `last_name` (an
-alternative spelling it does use in some responses), we send those names back,
-while the documented update expects `firstname` / `lastname`. A field the store
-does not recognise is silently ignored — which matches exactly what you see:
-everything else saves, the name does not.
+The documentation for "Update authenticated account" shows that the update body
+uses `firstname` and `lastname`, while the profile the store sends back uses
+`first_name` and `last_name`.
 
-This is the most likely cause, but it is not confirmed yet: it depends on which
-spelling your store returns, and that requires one signed-in call to check.
+Today the save reuses whichever spelling appeared in the profile response, so it
+sends `first_name` / `last_name` — names the update does not recognise, and they
+are silently ignored. Every other field happens to use the same spelling in both
+directions, which is why only the name fails to save.
 
-## Plan
+## Solution
 
-1. Verify first: sign in with a test account, read the profile, and look at
-   which key holds the name. Then send an update and read the profile again to
-   confirm whether the name changed. This tells us whether the wrong field name
-   is really the cause, or whether the store keeps the name somewhere else
-   (for example on the address record).
-2. Fix based on that result:
-   - If the field name is the problem, always send the documented names
-     (`firstname`, `lastname`, `email_address`, `street_address`, `postcode`,
-     `city`, `country`) instead of guessing from the response.
-   - If the store stores the name elsewhere, also write the name to that place
-     as part of the same save, and re-read the profile afterwards so the form
-     shows the saved values.
-3. Re-check in the app: change the first name, save, reload the page, and
-   confirm the new name is still there.
+Always send the documented field names when saving the account:
+`firstname`, `lastname`, `email_address`, `street_address`, `postcode`, `city`
+and the numeric `country`. No more guessing the key from the response.
+
+After a successful save, re-read the profile so the form shows exactly what the
+store stored.
 
 ## Technical details
 
-- `src/lib/vendre/account.ts`, `updateAccount`: today the payload key for each
-  field is picked with `keys.find(candidate => candidate in account.raw)`, so an
-  alias present in the `GET accounts/me` payload wins over the documented key.
-  The fix is to build the `PUT accounts/me` body from the documented keys only.
-- Diagnosis uses the proxy route `/api/vendre/surface/...` with a logged-in
-  session: `POST login/email`, `GET accounts/me`, `PUT accounts/me`,
-  `GET accounts/me` — mutation-protection token handling stays as it is.
-- After a successful update, ensure the account query is invalidated so the
-  form reflects what the store actually stored.
+- `src/lib/vendre/account.ts`, `updateAccount`: drop the
+  `keys.find(candidate => candidate in account.raw)` alias lookup and build the
+  `PUT accounts/me` body from fixed documented keys. Mutation-protection token
+  handling and error mapping stay unchanged.
+- Reading stays as it is: `normalizeAccount` keeps accepting both `first_name`
+  and `firstname` from `GET accounts/me`.
+- Ensure the account query is invalidated after the update (the mutation
+  already runs through `useAccountMutations`), so the form reflects the stored
+  values.
+- Update `.vendre/knowledge/api-reference.md` and the customer-account skill
+  notes: read aliases, but always write the documented keys — never echo back
+  the response spelling.
 
-## What I need from you
+## Verification
 
-A test account (email + password) on the connected store that I may change the
-name on, so I can run the verification in step 1. Without it I can only apply
-the likely fix blind.
+Change the first name in My account -> Account, save, reload the page and
+confirm the new name is still shown.
