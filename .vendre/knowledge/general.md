@@ -5,18 +5,22 @@
 
 ### Architecture & Security Rules
 
-- NEVER expose `client_secret` or OAuth token generation logic in frontend client code.
-- All calls requiring `client_secret` (`POST /surface/2/oauth/token`) MUST go through a server-side edge function / backend proxy. `client_secret` must only exist in server environment variables.
-- `POST /surface/2/login-link` lacks CORS support in Vendre and MUST also be routed through the server-side proxy.
+- NEVER expose `client_secret`, OAuth token generation or the OAuth access token in frontend client code.
+- **All Surface v2 traffic is proxied.** The browser only calls same-origin `/api/vendre/*`; the server route `src/routes/api/vendre/surface/$.ts` forwards to `${VENDRE_BASE_URL}/surface/2/*` and adds the bearer token server-side. There is no endpoint that hands the access token to the browser.
+- The proxy forwards the incoming `cookie` header upstream and rewrites the store's `Set-Cookie` to our own origin (`Domain` stripped, `Path=/`, `SameSite=Lax`, `Secure` on https) so session, login and cart work.
+- The store base URL is only exposed through `/api/vendre/status` for store-hosted links (checkout, images), never for API calls.
+- `POST /surface/2/login-link` lacks CORS support in Vendre and is covered by the same proxy.
 
 ### CORS & Admin Configuration Rules
 
-- **CORS Policies Allowlisting:** Direct browser requests to Vendre require the origin (scheme + host, no trailing slash, e.g. `https://my-store.com`) to be allowlisted under `Admin → Headless → CORS` (`/Admin/configuration?gID=232`, fields `SURFACE_CORS_ORIGINS` / `SURFACE_CORS_POLICIES`).
+- Storefront data no longer depends on CORS, because no browser request reaches the store origin. Keep the allowlist for the checkout hand-off.
+- **CORS Policies Allowlisting (when a direct browser call is used):** the origin (scheme + host, no trailing slash) must be allowlisted under `Admin → Headless → CORS` (`/Admin/configuration?gID=232`, fields `SURFACE_CORS_ORIGINS` / `SURFACE_CORS_POLICIES`).
 - **CORS Gotchas:**
   - All `/surface/2/accounts*` endpoints resolve to the `default` CORS policy (NOT `customer`).
   - `POST /surface/2/twig/render` resolves to the `default` policy.
   - `POST /surface/2/contact` requires policy `email/contact` (note the slash).
   - Gateway-level 401s (invalid Bearer or Session gate) do not carry CORS headers and appear as generic browser CORS errors.
+
 
 ### Vendre Surface v2 Core Integration Rules
 
