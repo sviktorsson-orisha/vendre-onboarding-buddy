@@ -23,7 +23,7 @@ export function Breadcrumbs({ trail }: { trail: Crumb[] }) {
         "@type": "ListItem",
         position: index + 2,
         name: crumb.name,
-        item: `/kategori/${crumb.id}`,
+        ...(crumb.current ? {} : { item: `/kategori/${crumb.id}` }),
       })),
     ],
   };
