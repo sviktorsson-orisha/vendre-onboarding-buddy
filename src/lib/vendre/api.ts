@@ -3,7 +3,7 @@
  *
  * Same function signatures in both modes:
  *   demo -> src/mock/vendreResponses.ts (cart kept in memory)
- *   live -> /surface/2/* through the browser client (Bearer + credentials: "include")
+ *   live -> /surface/2/* through our own /api/vendre/surface proxy (no token in the browser)
  *
  * All live paths, headers and error handling follow .vendre/knowledge/api-reference.md.
  * Caching follows .vendre/skills/caching.md: menus/categories are cached, cart and
@@ -49,11 +49,12 @@ import type {
 
 
 import {
-  getVendreToken,
+  fetchStoreBaseUrl,
   setMutationProtectionToken,
   surfaceJson,
   VendreError,
 } from "./client";
+
 
 export type VendreMode = "demo" | "live";
 
@@ -112,14 +113,14 @@ export function getStoreBaseUrl() {
 }
 
 async function bootstrapSession() {
-  const { baseUrl } = await getVendreToken();
-  storeBaseUrl = baseUrl;
+  storeBaseUrl = await fetchStoreBaseUrl();
   const data = await surfaceJson<{ surface_mutation_protection_token?: string }>(
     "session/bootstrap",
     { method: "POST" },
   );
   setMutationProtectionToken(data.surface_mutation_protection_token ?? null);
 }
+
 
 function ensureSession() {
   sessionReady ??= bootstrapSession().catch((error) => {
@@ -308,10 +309,11 @@ const liveApi: VendreApi = {
 
   getSessionContext: () => guarded(() => surfaceJson<SessionContext>("session/context")),
   checkoutUrl: async () => {
-    const { baseUrl } = await getVendreToken();
+    const baseUrl = await fetchStoreBaseUrl();
     storeBaseUrl = baseUrl;
-    return `${baseUrl}/checkout`;
+    return baseUrl ? `${baseUrl}/checkout` : null;
   },
+
   searchProducts: async (query, options = {}) => {
     const needle = query.trim().toLowerCase();
     const limit = options.limit ?? 12;

@@ -1,9 +1,10 @@
 import {
   VendreError,
-  getVendreToken,
+  fetchStoreBaseUrl,
   setMutationProtectionToken,
   surfaceFetch,
 } from "./client";
+
 
 export type StepId = "token" | "cors" | "session" | "read";
 export type StepStatus = "ok" | "warning" | "failed" | "skipped";
@@ -44,11 +45,11 @@ export async function testVendreConnection(): Promise<ConnectionResult> {
   let missing: string[] = [];
   let baseUrl: string | null = null;
 
-  // 1. Token (server-side minted, client_secret never leaves the server).
+  // 1. Token (server-side minted; the browser only learns whether it worked).
   try {
-    const token = await getVendreToken(true);
-    baseUrl = token.baseUrl;
-    steps.push(step("token", "ok", `OAuth-token hämtad från ${token.baseUrl}`));
+    baseUrl = await fetchStoreBaseUrl(true);
+    steps.push(step("token", "ok", `Servern är ansluten till ${baseUrl ?? "butiken"}`));
+
   } catch (error) {
     const err = error as VendreError;
     missing = err.missing ?? [];
@@ -60,14 +61,14 @@ export async function testVendreConnection(): Promise<ConnectionResult> {
           ? "Client id/secret avvisades — verifiera dem i Vendre Admin."
           : err.message;
     steps.push(step("token", "failed", detail));
-    steps.push(step("cors", "skipped", "Kördes inte — token saknas."));
-    steps.push(step("session", "skipped", "Kördes inte — token saknas."));
-    steps.push(step("read", "skipped", "Kördes inte — token saknas."));
+    steps.push(step("cors", "skipped", "Kördes inte — anslutningen saknas."));
+    steps.push(step("session", "skipped", "Kördes inte — anslutningen saknas."));
+    steps.push(step("read", "skipped", "Kördes inte — anslutningen saknas."));
     return { ok: false, steps, missing, origin, baseUrl };
   }
 
-  // 2 + 3. Session bootstrap — a network-level failure here means the origin is not allowlisted.
-  let corsOk = true;
+  // 2 + 3. Session bootstrap through our own server proxy.
+  const corsOk = true;
   try {
     const res = await surfaceFetch("session/bootstrap", { method: "POST" });
     const body = (await res.json().catch(() => null)) as
@@ -79,7 +80,13 @@ export async function testVendreConnection(): Promise<ConnectionResult> {
       | null;
 
     if (!res.ok) {
-      steps.push(step("cors", "ok", `Origin ${origin} kan nå butiken direkt.`));
+      steps.push(
+        step(
+          "cors",
+          "ok",
+          "Alla butiksanrop går via vår server — ingen CORS-allowlist krävs för butiksdatan.",
+        ),
+      );
       steps.push(
         step(
           "session",
@@ -94,7 +101,13 @@ export async function testVendreConnection(): Promise<ConnectionResult> {
 
     const token = body?.surface_mutation_protection_token ?? body?.mutationProtectionToken ?? null;
     setMutationProtectionToken(token);
-    steps.push(step("cors", "ok", `Origin ${origin} är allowlistad.`));
+    steps.push(
+      step(
+        "cors",
+        "ok",
+        `Butiksanropen går via vår server (${origin}). CORS-allowlistan behövs bara för kassans sessionsöverlämning.`,
+      ),
+    );
     steps.push(
       step(
         "session",
@@ -105,18 +118,12 @@ export async function testVendreConnection(): Promise<ConnectionResult> {
       ),
     );
   } catch {
-    corsOk = false;
-    steps.push(
-      step(
-        "cors",
-        "warning",
-        `Direktanropet blockerades — ${origin} är inte allowlistad under Surface CORS. Appen kan köras i degraderat proxy-läge, men checkout startar en tom session.`,
-      ),
-    );
-    steps.push(step("session", "failed", "session/bootstrap kunde inte nås från webbläsaren."));
+    steps.push(step("cors", "ok", "Butiksanropen går via vår server."));
+    steps.push(step("session", "failed", "session/bootstrap kunde inte nås via servern."));
     steps.push(step("read", "skipped", "Kördes inte — sessionen saknas."));
     return { ok: false, steps, missing, origin, baseUrl };
   }
+
 
   // 4. Read permission.
   try {
