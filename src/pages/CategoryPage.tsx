@@ -71,7 +71,7 @@ export default function CategoryPage({ id }: { id: number }) {
     });
   };
 
-  const trail = buildTrail(menus ?? [], id, data?.header.name ?? "");
+  const trail = buildCategoryTrail(menus ?? [], id, data?.header.name ?? "");
 
   const filterProps = (response: NonNullable<typeof data>): FilterProps => ({
     filters: response.filters ?? [],
