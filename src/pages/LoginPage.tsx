@@ -83,6 +83,11 @@ export default function LoginPage() {
       setRegisterFields({ confirmation: t("account.mismatch") });
       return;
     }
+    if (!form.consent_personal_data_policy) {
+      setRegisterFields({ consent_personal_data_policy: t("account.consent") });
+      return;
+    }
+
     try {
       await register.mutateAsync(form);
       await navigate({ to: "/mitt-konto" });
