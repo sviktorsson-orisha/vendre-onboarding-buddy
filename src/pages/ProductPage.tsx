@@ -80,7 +80,16 @@ export default function ProductPage({ id }: { id: string }) {
   /** Everything on screen follows the selected variant when one is loaded. */
   const view = variantProduct ?? product;
   const activeProductId = selectedVariantProductId ?? product?.id ?? null;
-  const { data: specificationList } = useProductSpecifications(activeProductId);
+  // A VQL-read product always carries a specifications array (possibly empty), so
+  // the separate specifications call only runs for records that came from a
+  // category listing, where the relation is absent altogether.
+  const inlineSpecifications = view?.specifications ?? [];
+  const { data: specificationList } = useProductSpecifications(
+    activeProductId,
+    view != null && view.specifications === undefined,
+  );
+
+
 
 
 
@@ -187,7 +196,9 @@ export default function ProductPage({ id }: { id: string }) {
   // Fallback for installs where VQL returns no variant types.
   const attributes = variantTypes.length > 0 ? [] : (product.attributes ?? []);
   /** Specifications follow whichever product is active (parent or selected variant). */
-  const specifications = specificationList ?? [];
+  const specifications =
+    inlineSpecifications.length > 0 ? inlineSpecifications : (specificationList ?? []);
+
   const canBuy =
     (variantTypes.length === 0 || selectedVariantProductId != null) && !soldOut && Boolean(activeProductId);
 

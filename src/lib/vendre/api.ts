@@ -782,37 +782,50 @@ export function useCategory(id: number, query?: CategoryQuery) {
 
 export function useProduct(id: string, categoryId?: number) {
   const api = useVendreApi();
+  const scope = useCacheScope();
   return useQuery({
-    queryKey: ["vendre", api.mode, "product", id, categoryId ?? null],
+    // categoryId only steers the fallback lookup, not the result, so it stays
+    // out of the key — parent and variant reads then share one cache entry.
+    queryKey: ["vendre", api.mode, "product", String(id), scope],
     queryFn: () => api.getProduct(id, categoryId),
     staleTime: 5 * 60 * 1000,
-    enabled: Boolean(id),
+    // The scope is part of the key, so fetching before the session context has
+    // landed would fetch once under `null` and again under the real scope.
+    enabled: Boolean(id) && scope != null,
   });
 }
 
-/** Variant children are separate products: re-read the whole record on selection. */
+/** Variant children are separate products, cached under the same product key. */
 export function useVariantProduct(productId: number | null) {
   const api = useVendreApi();
   const scope = useCacheScope();
   return useQuery({
-    queryKey: ["vendre", api.mode, "variant-product", productId, scope],
+    queryKey: ["vendre", api.mode, "product", String(productId), scope],
     queryFn: () => api.getVariantProduct(productId as number),
     staleTime: 5 * 60 * 1000,
-    enabled: productId != null,
+    enabled: productId != null && scope != null,
   });
 }
 
-/** Specifications for the product currently shown on the PDP (parent or variant). */
-export function useProductSpecifications(productId: string | number | null) {
+/**
+ * Specifications for the product currently shown on the PDP. The product read
+ * already carries them, so this only runs when the record came from a category
+ * listing (which has no specifications).
+ */
+export function useProductSpecifications(
+  productId: string | number | null,
+  enabled = true,
+) {
   const api = useVendreApi();
   const scope = useCacheScope();
   return useQuery({
     queryKey: ["vendre", api.mode, "product-specifications", String(productId), scope],
     queryFn: () => api.getProductSpecifications(productId as string | number),
     staleTime: 5 * 60 * 1000,
-    enabled: productId != null && productId !== "",
+    enabled: enabled && productId != null && productId !== "" && scope != null,
   });
 }
+
 
 export function useProductVariants(id: string) {
   const api = useVendreApi();
@@ -824,9 +837,10 @@ export function useProductVariants(id: string) {
     queryKey: ["vendre", api.mode, "product-variants", "status-filter-v2", id, scope],
     queryFn: () => api.getProductVariants(id),
     staleTime: 5 * 60 * 1000,
-    enabled: Boolean(id),
+    enabled: Boolean(id) && scope != null,
   });
 }
+
 
 /** Never cached — the cart is live state. */
 export function useCart() {
