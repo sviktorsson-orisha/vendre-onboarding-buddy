@@ -3,7 +3,12 @@ import { ChevronRight } from "lucide-react";
 
 import { useI18n } from "@/lib/i18n";
 
-export type Crumb = { id: number; name: string };
+export type Crumb = {
+  id: number;
+  name: string;
+  /** Leaf that is not a category (e.g. the product name) — never linked. */
+  current?: boolean;
+};
 
 /** Category breadcrumbs + BreadcrumbList JSON-LD (see .vendre/skills/ecommerce-seo.md). */
 export function Breadcrumbs({ trail }: { trail: Crumb[] }) {
