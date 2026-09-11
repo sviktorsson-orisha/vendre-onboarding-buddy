@@ -2,7 +2,7 @@
 
 Complete technical reference for all Surface API endpoints (`/surface/1/*` and `/surface/2/*`).
 
-_Source: Static code analysis of `cadre/application/Routes/Http/SurfaceApi/**` and `cadre/application/Http/Controllers/SurfaceApi/**` (branch `2026_project_phoenix`). A machine-generated OpenAPI 3.2 document is also available live at `GET /surface/1/openapi` (use query `?v=1` or `?v=2` to filter by version)._
+_Source: the machine-generated OpenAPI 3.2 document (51 v2 paths), available live at `GET /surface/1/openapi` (use query `?v=1` or `?v=2` to filter by version), plus static code analysis of `cadre/application/Routes/Http/SurfaceApi/**` and `cadre/application/Http/Controllers/SurfaceApi/**` (branch `2026_project_phoenix`)._
 
 > **Source of truth.** This document is authoritative for endpoints, HTTP methods,
 > CORS policies, required headers, and the error format. The skill files under
@@ -144,6 +144,9 @@ off for ~60s and keep using the existing token.
 ## 2. Endpoint Catalogue (v2)
 
 `Token` = `Surface-Mutation-Protection-Token` required per the client rule in §1.6.
+The catalogue below is synchronised with the current OpenAPI document (51 paths).
+Rows marked _unverified_ are used by this app but are not present in that
+document — keep them, but re-check before relying on them.
 
 ### 2.1 OAuth
 
@@ -161,8 +164,11 @@ Server-side only — they carry `client_secret`.
 | POST | `session/bootstrap` | `bootstrap` | – | establish session, issue mutation token |
 | GET | `session` | `session` | – | compact status (authenticated, cart item count) |
 | GET | `session/context` | `session` | – | extended context and store config |
-| POST | `session` | `session` | yes | change market / currency / language / VAT |
+| POST | `session` | `session` | yes | update store context |
 | POST | `session/end` | `session` | yes | clear customer identity, keep visitor session |
+
+`POST session` body fields: `market`, `currency`, `language`,
+`prices_include_vat`.
 
 Skills: `session-context.md`, `session-store-context.md`, `mutation-tokens.md`.
 
@@ -173,15 +179,34 @@ All `accounts*` endpoints resolve to the **`default`** CORS policy, not `custome
 | Method | Path | CORS policy | Token | Purpose |
 | --- | --- | --- | --- | --- |
 | POST | `accounts` | `default` | yes | registration (full field set required) |
+| POST | `customers` | `default` | yes | legacy v1-backed registration alias (same body, plus `email_addresses`) |
 | GET | `accounts/me` | `default` | – | profile (flat / nested / alias shapes) |
 | PUT | `accounts/me` | `default` | yes | update profile |
 | GET | `accounts/me/addresses` | `default` | – | the customer's **main address** only |
 | GET | `accounts/me/address-book` | `default` | – | the **alternative** addresses only (never the main one) |
 | PUT | `accounts/me/addresses` | `default` | yes | update address |
+| PUT | `accounts/me/address-book` | `default` | yes | upsert alternative addresses, body `{ addresses: [...] }` |
 | GET | `accounts/me/order-history` | `default` | – | order list |
-| GET | `accounts/me/order-history/{id}` | `default` | – | single order (see shape below) |
+| GET | `accounts/me/order-history/{orderId}` | `default` | – | single order (see shape below) |
+| GET | `accounts/me/quotations` | `default` | – | quotation list (B2B) |
+| GET | `accounts/me/quotations/{quotationId}` | `default` | – | single quotation |
+| POST | `accounts/me/shopping-cart/products` | `default` | yes | add cart products as the authenticated customer |
 
-**`accounts/me/order-history/{id}` response** (verified against a live store):
+**Registration body (`POST accounts`, and `POST customers`)**
+
+Required: `email_address`, `password`, `confirmation`, `firstname`, `lastname`,
+`street_address`, `postcode`, `city`, `country`.
+
+Optional: `type`, `gender`, `company`, `street_address2`, `suburb`,
+`personnummer`, `state`, `telephone`, `fax`, `mobile`, `alias`,
+`customers_group_id`, `vat_identification_number`, `newsletter`,
+`consent_personal_data_policy`. `POST customers` additionally accepts
+`email_addresses`.
+
+`country` is the numeric country id (e.g. Sweden = `203`). A partial field set
+returns `SURFACE_ACCOUNT_MALFORMED_BODY` (422).
+
+**`accounts/me/order-history/{orderId}` response** (verified against a live store):
 the payload is wrapped in `order` and contains `id`, `status`, `date`,
 `billing_address`, `delivery_address`, `status_history`, `totals`
 (`{ class, title, text, value }`, `text` already formatted) and `products`:
@@ -199,14 +224,27 @@ Line amounts arrive raw (`399.2`) while `totals[].text` is already rounded
 (`752 kr`). Derive the display format — currency prefix/suffix **and decimal
 precision** — from a totals row, so a store that shows whole-unit totals also
 shows whole-unit line prices. Never recompute the totals themselves.
-| GET | `accounts/me/users` | `default` | – | sub-users (B2B) |
-| GET | `accounts/me/forgot-password` | `default` | yes | password reset mail |
+
+**Login, sub-users and password reset**
+
+| Method | Path | CORS policy | Token | Purpose |
+| --- | --- | --- | --- | --- |
+| GET | `accounts/me/forgot-password` | `default` | yes | password reset mail (token required despite being a GET) |
+| GET | `accounts/me/users` | `default` | – | sub-users (B2B) — _unverified_ |
 | GET | `customers/current` | `default` | – | current customer record |
 | POST | `login/email` | `login` | yes | login with `{ email, password }` |
-| GET | `login/google-sso` | `login` | – | Google SSO redirect |
-| GET | `login/microsoft-sso` | `login` | – | Microsoft SSO redirect |
+| GET | `login/google-sso` | `login` | – | Google SSO redirect — _unverified_ |
+| GET | `login/microsoft-sso` | `login` | – | Microsoft SSO redirect — _unverified_ |
 | POST | `login-link` | **no CORS** | yes | magic login link — server proxy only |
 | POST | `logout` | `login` | yes | logout, rotates the mutation token |
+
+**BankID**
+
+| Method | Path | CORS policy | Token | Purpose |
+| --- | --- | --- | --- | --- |
+| POST | `bankid/login` | `default` | yes | start a BankID login |
+| GET | `bankid/status` | `default` | – | poll the BankID order status |
+| GET | `bankid/qr-token` | `default` | – | animated QR token for the current order |
 
 Auth state is read from `GET session/context`, never from the login response
 alone. Skills: `account-auth.md`, `customer-account/SKILL.md`,
@@ -217,30 +255,45 @@ alone. Skills: `account-auth.md`, `customer-account/SKILL.md`,
 | Method | Path | CORS policy | Token | Purpose |
 | --- | --- | --- | --- | --- |
 | GET | `shopping-cart` | `shopping_cart` | – | lines, totals, coupons (never cache) |
-| POST | `shopping-cart/products` | `shopping_cart` | yes | add / set quantity, batch `{ products: [...] }` |
-| DELETE | `shopping-cart` | `shopping_cart` | yes | **clears the whole cart** — remove a single line with `POST shopping-cart/products` and `quantity: 0` |
+| DELETE | `shopping-cart` | `shopping_cart` | yes | **clears the whole cart** — remove a single line with a products mutation and `quantity: 0` |
+| GET | `shopping-cart/products` | `shopping_cart` | – | cart lines only |
+| PUT | `shopping-cart/products` | `shopping_cart` | yes | add / set quantity, body `{ products: [...], empty }` |
+| POST | `shopping-cart/products` | `shopping_cart` | yes | legacy alias of the `PUT` above, identical body |
+| GET | `shopping-cart/coupons` | `shopping_cart` | – | active coupons |
 | POST | `shopping-cart/coupons/activate` | `shopping_cart` | yes | apply coupon |
 | POST | `shopping-cart/coupons/deactivate` | `shopping_cart` | yes | remove coupon |
 | POST | `shopping-cart/coupons/reset` | `shopping_cart` | yes | clear coupons |
 | POST | `shopping-cart/coupons/check` | `shopping_cart` | **no** | validate coupon code |
 | POST | `checkout/upsell/get-prices` | `checkout` | yes | upsell pricing |
 | POST | `checkout/upsell/add-products` | `checkout` | yes | add upsell products |
+| POST | `checkout/upsell/finalize` | `checkout` | yes | finalise the upsell, body `{ order_id }` |
 
-Checkout itself is a **browser navigation** to the store's checkout page, never
-`fetch`. Skills: `cart-checkout.md`, `cart-sync.md`.
+`empty: true` in a products mutation clears the cart before applying the new
+lines. Checkout itself is a **browser navigation** to the store's checkout page,
+never `fetch`. Skills: `cart-checkout.md`, `cart-sync.md`.
 
 ### 2.5 Catalogue
 
 | Method | Path | CORS policy | Token | Purpose |
 | --- | --- | --- | --- | --- |
+| GET | `products` | `categories` | – | products by id, with optional variant expansion |
+| GET | `products/associated` | `categories` | – | associated / related products |
 | GET | `categories/{id}` | `categories` | – | category tree, product listing, filters |
 | POST | `vql` | `vendre_query_language` | – | multi-resource query language |
 
-`POST vql` returns `500` for every body shape on installs where it is not
-enabled — fall back to `categories/{id}`. Skills: `category-plp.md`,
-`pdp-products.md`, `vql-queries.md`.
+- `GET products` query params: `id`, `order_by`, `mode`, `include_variants`,
+  `fill_variant_products`. A direct product endpoint now exists, so a product
+  lookup must never scan categories and does not depend on VQL being enabled.
+- `GET products/associated` query params: `product_id` (required), `type_id`,
+  `order_by`, `replace_variants`.
+- `GET categories/{id}` query params: `sort_by`, `sort_order`, `page`, `limit`,
+  `filter`, `f`, `pfrom`, `pto`, `tags` (array, bracket syntax).
+- `POST vql` returns `500` for every body shape on installs where it is not
+  enabled — fall back to `products` / `categories/{id}`.
 
-### 2.6 Navigation, CMS and SEO
+Skills: `category-plp.md`, `pdp-products.md`, `vql-queries.md`.
+
+### 2.6 Navigation, CMS, Localisation and SEO
 
 | Method | Path | CORS policy | Token | Purpose |
 | --- | --- | --- | --- | --- |
@@ -250,20 +303,32 @@ enabled — fall back to `categories/{id}`. Skills: `category-plp.md`,
 | GET | `galleries/{id}/content-blocks` | `galleries` | – | content blocks |
 | GET | `galleries/boxes` | `galleries` | – | boxes / widgets |
 | POST | `twig/render` | `default` | – | render a Twig block |
-| GET | `sitemap` | `sitemap` | – | sitemap data |
+| POST | `galleries/twig/render` | `galleries` | – | render a Twig block in a gallery context |
+| GET | `language-strings` | `default` | – | translated UI strings, query `locale` |
+| GET | `translations` | `default` | – | alias of `language-strings`, query `locale` |
+| GET | `sitemap` | `sitemap` | – | sitemap data, query `type`, `language`, `page` |
 
 Menu items of type `information_page` point to galleries, not products.
 Content-block image paths are relative and must be resolved against the store
 base URL. Skills: `navigation-menus.md`, `cms-pages.md`, `cms-galleries.md`,
 `ecommerce-seo.md`.
 
-### 2.7 Contact
+### 2.7 Favorites
+
+| Method | Path | CORS policy | Token | Purpose |
+| --- | --- | --- | --- | --- |
+| GET | `favorites/lists` | `default` | – | favorite lists for the current customer |
+| PUT | `favorites/lists/products` | `default` | yes | mutate list products, body `{ products: [...], empty }` |
+| POST | `favorites/lists/products` | `default` | yes | alias of the `PUT` above |
+
+### 2.8 Contact
 
 | Method | Path | CORS policy | Token | Purpose |
 | --- | --- | --- | --- | --- |
 | POST | `contact` | `email/contact` | yes | contact form submission |
 
 Note the slash in the policy name. Skill: `contact-forms.md`.
+
 
 ---
 
