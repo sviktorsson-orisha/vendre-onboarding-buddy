@@ -2,7 +2,7 @@
 
 Complete technical reference for all Surface API endpoints (`/surface/1/*` and `/surface/2/*`).
 
-_Source: Static code analysis of `cadre/application/Routes/Http/SurfaceApi/**` and `cadre/application/Http/Controllers/SurfaceApi/**` (branch `2026_project_phoenix`). A machine-generated OpenAPI 3.2 document is also available live at `GET /surface/1/openapi` (use query `?v=1` or `?v=2` to filter by version)._
+_Source: the machine-generated OpenAPI 3.2 document (51 v2 paths), available live at `GET /surface/1/openapi` (use query `?v=1` or `?v=2` to filter by version), plus static code analysis of `cadre/application/Routes/Http/SurfaceApi/**` and `cadre/application/Http/Controllers/SurfaceApi/**` (branch `2026_project_phoenix`)._
 
 > **Source of truth.** This document is authoritative for endpoints, HTTP methods,
 > CORS policies, required headers, and the error format. The skill files under
