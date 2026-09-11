@@ -42,26 +42,18 @@ export default function LoginPage() {
   const [resetSent, setResetSent] = useState(false);
 
   const [form, setForm] = useState<RegisterInput>({
-    firstname: "",
-    lastname: "",
     email_address: "",
     password: "",
     confirmation: "",
-    type: "private",
-    gender: "m",
-    company: "",
+    firstname: "",
+    lastname: "",
     street_address: "",
     postcode: "",
     city: "",
-    state: "",
     country: 203,
-    telephone: "",
-    mobile: "",
-    personnummer: "",
-    vat_identification_number: "",
-    newsletter: false,
     consent_personal_data_policy: false,
   });
+
   const [registerError, setRegisterError] = useState("");
   const [registerFields, setRegisterFields] = useState<FieldErrors>({});
 
@@ -234,69 +226,22 @@ export default function LoginPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="type">{t("account.type")}</Label>
-                <select
-                  id="type"
-                  className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm"
-                  value={form.type}
-                  onChange={(event) => set("type", event.target.value)}
-                >
-                  <option value="private">{t("account.typePrivate")}</option>
-                  <option value="company">{t("account.typeCompany")}</option>
-                </select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="gender">{t("account.gender")}</Label>
-                <select
-                  id="gender"
-                  className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm"
-                  value={form.gender}
-                  onChange={(event) => set("gender", event.target.value)}
-                >
-                  <option value="m">{t("account.genderMale")}</option>
-                  <option value="f">{t("account.genderFemale")}</option>
-                </select>
-                <FieldError message={registerFields["gender"]} />
-              </div>
-
-              {form.type === "company" && (
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="company">{t("account.company")}</Label>
-                    <Input
-                      id="company"
-                      value={form.company}
-                      onChange={(event) => set("company", event.target.value)}
-                    />
-                    <FieldError message={registerFields["company"]} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="vat">{t("account.vat")}</Label>
-                    <Input
-                      id="vat"
-                      value={form.vat_identification_number}
-                      onChange={(event) => set("vat_identification_number", event.target.value)}
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-1.5">
                 <Label htmlFor="street">{t("account.street")}</Label>
                 <Input
                   id="street"
+                  required
                   value={form.street_address}
                   onChange={(event) => set("street_address", event.target.value)}
                 />
                 <FieldError message={registerFields["street_address"]} />
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="postcode">{t("account.postcode")}</Label>
                   <Input
                     id="postcode"
+                    required
                     value={form.postcode}
                     onChange={(event) => set("postcode", event.target.value)}
                   />
@@ -306,19 +251,11 @@ export default function LoginPage() {
                   <Label htmlFor="city">{t("account.city")}</Label>
                   <Input
                     id="city"
+                    required
                     value={form.city}
                     onChange={(event) => set("city", event.target.value)}
                   />
                   <FieldError message={registerFields["city"]} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="state">{t("account.state")}</Label>
-                  <Input
-                    id="state"
-                    value={form.state}
-                    onChange={(event) => set("state", event.target.value)}
-                  />
-                  <FieldError message={registerFields["state"]} />
                 </div>
               </div>
 
@@ -326,6 +263,7 @@ export default function LoginPage() {
                 <Label htmlFor="country">{t("account.country")}</Label>
                 <select
                   id="country"
+                  required
                   className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm"
                   value={form.country}
                   onChange={(event) => set("country", Number(event.target.value))}
@@ -339,45 +277,6 @@ export default function LoginPage() {
                 <FieldError message={registerFields["country"]} />
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label htmlFor="telephone">{t("account.phone")}</Label>
-                  <Input
-                    id="telephone"
-                    value={form.telephone}
-                    onChange={(event) => set("telephone", event.target.value)}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="mobile">{t("account.mobile")}</Label>
-                  <Input
-                    id="mobile"
-                    value={form.mobile}
-                    onChange={(event) => set("mobile", event.target.value)}
-                  />
-                </div>
-              </div>
-
-              {form.type !== "company" && (
-                <div className="space-y-1.5">
-                  <Label htmlFor="personnummer">{t("account.personnummer")}</Label>
-                  <Input
-                    id="personnummer"
-                    value={form.personnummer}
-                    onChange={(event) => set("personnummer", event.target.value)}
-                  />
-                  <FieldError message={registerFields["personnummer"]} />
-                </div>
-              )}
-
-              <label className="flex items-center gap-2 text-sm text-foreground">
-                <Checkbox
-                  checked={form.newsletter}
-                  onCheckedChange={(value) => set("newsletter", value === true)}
-                />
-                {t("account.newsletter")}
-              </label>
-
               <label className="flex items-center gap-2 text-sm text-foreground">
                 <Checkbox
                   checked={form.consent_personal_data_policy}
@@ -386,6 +285,7 @@ export default function LoginPage() {
                 {t("account.consent")}
               </label>
               <FieldError message={registerFields["consent_personal_data_policy"]} />
+
 
               <FieldError message={registerError} />
               <Button
