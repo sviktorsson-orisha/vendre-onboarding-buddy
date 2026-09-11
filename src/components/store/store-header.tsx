@@ -93,20 +93,15 @@ export function StoreHeader() {
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-card/90 backdrop-blur">
       <div className="mx-auto flex w-full max-w-6xl items-center gap-4 px-5 py-3 sm:px-6">
-        <button
-          type="button"
-          className="brand-button-ghost lg:hidden"
-          aria-label="Menu"
-          onClick={() => setMobileOpen((value) => !value)}
-        >
-          <Menu className="size-4" />
-        </button>
-
-        <Link to="/" className="flex items-center" aria-label={storeName}>
+        <Link to="/" className="flex min-w-0 items-center" aria-label={storeName}>
           {logoUrl ? (
-            <img src={logoUrl} alt={storeName} className="h-8 w-auto max-w-[180px] object-contain" />
+            <img
+              src={logoUrl}
+              alt={storeName}
+              className="h-6 w-auto max-w-[130px] object-contain lg:h-8 lg:max-w-[180px]"
+            />
           ) : (
-            <span className="brand-wordmark text-2xl text-foreground">vendre</span>
+            <span className="brand-wordmark text-xl text-foreground lg:text-2xl">vendre</span>
           )}
         </Link>
 
@@ -122,7 +117,9 @@ export function StoreHeader() {
           >
             <Search className="size-4" />
           </button>
-          <LanguagePicker />
+          <div className="hidden lg:block">
+            <LanguagePicker />
+          </div>
           <AccountMenu />
           <button
             type="button"
@@ -137,8 +134,17 @@ export function StoreHeader() {
               </span>
             )}
           </button>
+          <button
+            type="button"
+            className="brand-button-ghost lg:hidden"
+            aria-label={t("store.menu")}
+            onClick={() => setMobileOpen((value) => !value)}
+          >
+            <Menu className="size-4" />
+          </button>
         </div>
       </div>
+
 
       {searchOpen && (
         <div className="mx-auto w-full max-w-6xl px-5 pb-3 sm:px-6 md:hidden">
