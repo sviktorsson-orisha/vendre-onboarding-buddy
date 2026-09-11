@@ -285,15 +285,34 @@ function AddressesView() {
 function ProfileView() {
   const { t } = useI18n();
   const { data: account } = useAccount();
+  const { data: addresses } = useAddresses();
   const { updateAccount } = useAccountMutations();
   const [form, setForm] = useState<Account | null>(null);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const [fields, setFields] = useState<FieldErrors>({});
 
+  // The profile endpoint carries name/email; street address, postcode and city
+  // live on the customer's main address. Seed the form from both, profile first.
+  const main = addresses?.main ?? null;
   useEffect(() => {
-    if (account) setForm(account);
-  }, [account]);
+    if (!account) return;
+    setForm((current) => {
+      const base = current ?? account;
+      // Only fill blanks, so a later address load never overwrites edits.
+      const fill = (value: string, ...fallbacks: (string | undefined)[]) =>
+        value && value.trim() ? value : (fallbacks.find((v) => v && v.trim()) ?? "");
+      return {
+        ...base,
+        street_address: fill(base.street_address, main?.street_address),
+        postcode: fill(base.postcode, main?.postcode),
+        city: fill(base.city, main?.city),
+        country: fill(base.country, main?.country),
+      };
+    });
+  }, [account, main]);
+
+
 
   if (!form) return <Section title={t("account.profile")}>…</Section>;
 
