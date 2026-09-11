@@ -22,6 +22,7 @@ import type { ProductVariantChoice } from "@/types/vendre";
 export default function ProductPage({ id }: { id: string }) {
   const { t } = useI18n();
   const { data: product, isLoading } = useProduct(id);
+  const { data: menus } = useMenus();
   // A variant child carries parent_id; the variant tree only exists on the parent.
   const variantOwnerId = product ? String(product.parent_id ?? product.id) : "";
   const { data: variantTypes = [] } = useProductVariants(variantOwnerId);
