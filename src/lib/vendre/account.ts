@@ -35,7 +35,7 @@ import type {
 } from "@/types/vendre-account";
 import type { SessionContext } from "@/types/vendre";
 
-import { guarded, resetSessionGate } from "./api";
+import { guarded, resetSessionGate, useSessionContext } from "./api";
 import { setMutationProtectionToken, surfaceFetch } from "./client";
 
 /* ------------------------------------------------------------- errors ---- */
@@ -698,17 +698,32 @@ const NO_CACHE = { staleTime: 0, gcTime: 0 } as const;
 export function useAuth() {
   const api = useAccountApi();
   const demoAuth = useDemoAuthenticated();
-  const query = useQuery({
-    queryKey: ["vendre", api.mode, "auth", api.mode === "demo" ? demoAuth : null],
-    queryFn: () => api.getSession(),
+
+  // Live mode reads the session that the storefront already fetches, so a page
+  // load makes one GET session/context call instead of two identical ones.
+  const session = useSessionContext();
+  const demoQuery = useQuery({
+    queryKey: ["vendre", "demo", "auth", demoAuth],
+    queryFn: () => demoAccountApi.getSession(),
+    enabled: api.mode === "demo",
     ...NO_CACHE,
   });
 
+  if (api.mode === "demo") {
+    return {
+      mode: api.mode,
+      isLoading: demoQuery.isLoading,
+      isAuthenticated: demoQuery.data?.authenticated ?? false,
+      name: demoQuery.data?.name ?? "",
+    };
+  }
+
+  const customer = session.data?.customer;
   return {
     mode: api.mode,
-    isLoading: query.isLoading,
-    isAuthenticated: query.data?.authenticated ?? false,
-    name: query.data?.name ?? "",
+    isLoading: session.isLoading,
+    isAuthenticated: Boolean(session.data?.authenticated),
+    name: [customer?.first_name, customer?.last_name].filter(Boolean).join(" "),
   };
 }
 
