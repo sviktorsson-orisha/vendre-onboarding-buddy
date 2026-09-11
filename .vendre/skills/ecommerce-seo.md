@@ -16,7 +16,9 @@ from API data — never a shared static head. Use the route `head()` option.
 - **PDP:** `Product` with `name`, `image`, `description`, `sku` and `offers`
   (`price`, `priceCurrency`, `availability`). Prices must match the VAT mode
   from session context.
-- **PLP and CMS:** `BreadcrumbList` from the category/page hierarchy.
+- **PLP, PDP and CMS:** `BreadcrumbList` from the category/page hierarchy. The
+  PDP trail is built from the product's `category_id` against the menu tree and
+  ends with the product name as a non-linked leaf (no `item` URL for that entry).
 - **Store:** `Organization`/`WebSite` on the home route.
 
 ## Sitemap
