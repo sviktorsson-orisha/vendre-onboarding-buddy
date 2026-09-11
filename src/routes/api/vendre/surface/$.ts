@@ -37,8 +37,16 @@ function rewriteSetCookie(raw: string, secure: boolean): string {
   }
 
   kept.push("Path=/");
-  kept.push("SameSite=Lax");
-  if (secure) kept.push("Secure");
+  if (secure) {
+    // The preview runs inside an iframe: a Lax cookie is dropped there, so the
+    // session would be lost on every request. CHIPS keeps it partitioned.
+    kept.push("SameSite=None");
+    kept.push("Partitioned");
+    kept.push("Secure");
+  } else {
+    kept.push("SameSite=Lax");
+  }
+
 
   return [pair, ...kept].join("; ");
 }
