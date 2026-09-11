@@ -298,18 +298,20 @@ function ProfileView() {
   useEffect(() => {
     if (!account) return;
     setForm((current) => {
-      if (current) return current;
-      const fill = (value: string, fallback: string | undefined) =>
-        value && value.trim() ? value : (fallback ?? "");
+      const base = current ?? account;
+      // Only fill blanks, so a later address load never overwrites edits.
+      const fill = (value: string, ...fallbacks: (string | undefined)[]) =>
+        value && value.trim() ? value : (fallbacks.find((v) => v && v.trim()) ?? "");
       return {
-        ...account,
-        street_address: fill(account.street_address, main?.street_address),
-        postcode: fill(account.postcode, main?.postcode),
-        city: fill(account.city, main?.city),
-        country: fill(account.country, main?.country),
+        ...base,
+        street_address: fill(base.street_address, main?.street_address),
+        postcode: fill(base.postcode, main?.postcode),
+        city: fill(base.city, main?.city),
+        country: fill(base.country, main?.country),
       };
     });
   }, [account, main]);
+
 
 
   if (!form) return <Section title={t("account.profile")}>…</Section>;
