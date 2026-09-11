@@ -2,6 +2,12 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, ChevronDown, Menu, Search, ShoppingBag } from "lucide-react";
 
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { AccountMenu } from "@/components/store/account-menu";
 import { CartSheet } from "@/components/store/cart-sheet";
 import { SearchBox } from "@/components/store/search-box";
@@ -67,7 +73,71 @@ function MegaPanel({ node, onNavigate }: { node: MenuNode; onNavigate: () => voi
   );
 }
 
+/** Category list for the mobile drawer: nodes with children collapse as accordions. */
+function MobileNavList({
+  nodes,
+  onNavigate,
+  depth = 0,
+}: {
+  nodes: MenuNode[];
+  onNavigate: () => void;
+  depth?: number;
+}) {
+  return (
+    <div className={depth === 0 ? "" : "ml-3 border-l border-border pl-3"}>
+      <Accordion type="multiple" className="w-full">
+        {nodes.map((node) => {
+          const key = `${node.source}:${node.id}`;
+          if (node.children.length === 0) {
+            return (
+              <Link
+                key={key}
+                to="/kategori/$id"
+                params={{ id: String(node.id) }}
+                onClick={onNavigate}
+                className={cn(
+                  "block rounded-md px-2 py-2 hover:bg-accent",
+                  depth === 0
+                    ? "text-sm font-semibold text-foreground"
+                    : "text-sm text-muted-foreground",
+                )}
+              >
+                {node.name}
+              </Link>
+            );
+          }
+
+          return (
+            <AccordionItem key={key} value={key} className="border-b-0">
+              <div className="flex items-center gap-1">
+                <Link
+                  to="/kategori/$id"
+                  params={{ id: String(node.id) }}
+                  onClick={onNavigate}
+                  className={cn(
+                    "min-w-0 flex-1 truncate rounded-md px-2 py-2 hover:bg-accent",
+                    depth === 0
+                      ? "text-sm font-semibold text-foreground"
+                      : "text-sm text-muted-foreground",
+                  )}
+                >
+                  {node.name}
+                </Link>
+                <AccordionTrigger className="shrink-0 rounded-md px-2 py-2 hover:bg-accent" />
+              </div>
+              <AccordionContent className="pb-1">
+                <MobileNavList nodes={node.children} onNavigate={onNavigate} depth={depth + 1} />
+              </AccordionContent>
+            </AccordionItem>
+          );
+        })}
+      </Accordion>
+    </div>
+  );
+}
+
 export function StoreHeader() {
+
   const { t } = useI18n();
   const tree = useCategoryMenu();
   const { data: cart } = useCart();
@@ -93,20 +163,15 @@ export function StoreHeader() {
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-card/90 backdrop-blur">
       <div className="mx-auto flex w-full max-w-6xl items-center gap-4 px-5 py-3 sm:px-6">
-        <button
-          type="button"
-          className="brand-button-ghost lg:hidden"
-          aria-label="Menu"
-          onClick={() => setMobileOpen((value) => !value)}
-        >
-          <Menu className="size-4" />
-        </button>
-
-        <Link to="/" className="flex items-center" aria-label={storeName}>
+        <Link to="/" className="flex min-w-0 items-center" aria-label={storeName}>
           {logoUrl ? (
-            <img src={logoUrl} alt={storeName} className="h-8 w-auto max-w-[180px] object-contain" />
+            <img
+              src={logoUrl}
+              alt={storeName}
+              className="h-6 w-auto max-w-[130px] object-contain lg:h-8 lg:max-w-[180px]"
+            />
           ) : (
-            <span className="brand-wordmark text-2xl text-foreground">vendre</span>
+            <span className="brand-wordmark text-xl text-foreground lg:text-2xl">vendre</span>
           )}
         </Link>
 
@@ -122,7 +187,9 @@ export function StoreHeader() {
           >
             <Search className="size-4" />
           </button>
-          <LanguagePicker />
+          <div className="hidden lg:block">
+            <LanguagePicker />
+          </div>
           <AccountMenu />
           <button
             type="button"
@@ -137,8 +204,17 @@ export function StoreHeader() {
               </span>
             )}
           </button>
+          <button
+            type="button"
+            className="brand-button-ghost lg:hidden"
+            aria-label={t("store.menu")}
+            onClick={() => setMobileOpen((value) => !value)}
+          >
+            <Menu className="size-4" />
+          </button>
         </div>
       </div>
+
 
       {searchOpen && (
         <div className="mx-auto w-full max-w-6xl px-5 pb-3 sm:px-6 md:hidden">
@@ -189,38 +265,16 @@ export function StoreHeader() {
           <SheetHeader>
             <SheetTitle>{t("store.menu")}</SheetTitle>
           </SheetHeader>
-          <nav className="-mx-2 mt-4 flex-1 overflow-y-auto px-2 pb-6">
-            <ul className="space-y-1">
-              {tree.map((node) => (
-                <li key={node.id}>
-                  <Link
-                    to="/kategori/$id"
-                    params={{ id: String(node.id) }}
-                    onClick={() => setMobileOpen(false)}
-                    className="block rounded-md px-2 py-2 text-sm font-semibold text-foreground hover:bg-accent"
-                  >
-                    {node.name}
-                  </Link>
-                  {node.children.length > 0 && (
-                    <ul className="ml-3 border-l border-border pl-3">
-                      {node.children.map((child) => (
-                        <li key={child.id}>
-                          <Link
-                            to="/kategori/$id"
-                            params={{ id: String(child.id) }}
-                            onClick={() => setMobileOpen(false)}
-                            className="block rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent"
-                          >
-                            {child.name}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </li>
-              ))}
-            </ul>
+          <nav className="mt-4 flex-1 overflow-y-auto pb-6">
+            <MobileNavList nodes={tree} onNavigate={() => setMobileOpen(false)} />
           </nav>
+          <div className="mt-auto border-t border-border pt-4">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {t("lang.label")}
+            </p>
+            <LanguagePicker />
+          </div>
+
         </SheetContent>
       </Sheet>
 
