@@ -6,7 +6,7 @@ The edit form under My account > Account should show exactly the fields the new
 API documentation lists as required when creating an account — minus password
 and confirmation. Extra fields can be added later.
 
-## Fields shown (all required)
+## Fields shown (none required)
 
 - First name
 - Last name
@@ -25,7 +25,8 @@ since the documentation still exposes no country-list endpoint in the store API.
 ## Behaviour
 
 - The form is pre-filled from the customer's current profile.
-- Saving is blocked until every field has a value; email must look like an email.
+- No field is mandatory: the documentation marks none of them required when
+  updating the profile, so the form saves whatever the customer leaves in it.
 - Saving sends the update to the store and shows the existing "saved" confirmation.
 - Errors from the store are shown in the form, per field when the store points at one.
 
