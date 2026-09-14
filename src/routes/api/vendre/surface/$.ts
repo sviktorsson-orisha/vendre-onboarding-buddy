@@ -13,7 +13,11 @@ const FORWARD_REQUEST_HEADERS = [
   "accept",
   "accept-language",
   "surface-mutation-protection-token",
+  // session/handover identifies the calling storefront from these.
+  "origin",
+  "referer",
 ];
+
 
 const FORWARD_RESPONSE_HEADERS = [
   "content-type",

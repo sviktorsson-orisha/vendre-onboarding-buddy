@@ -1,5 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Loader2, Minus, Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
+
 
 import { ProductPrice } from "@/components/store/product-price";
 import { StoreImage } from "@/components/store/store-image";
@@ -18,8 +20,9 @@ export function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
   const { t } = useI18n();
   const api = useVendreApi();
   const { isConfigured } = useOnboarding();
-  const { data: cart, isLoading } = useCart();
+  const { data: cart, isLoading, refetch } = useCart();
   const { update, remove } = useCartMutations();
+  const [checkoutPending, setCheckoutPending] = useState(false);
   const lines = cart?.products ?? [];
 
   // The total always comes from the store — never summed in the frontend.
@@ -29,10 +32,19 @@ export function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
 
 
   const goToCheckout = async () => {
-    // Checkout is a real browser navigation so the store session cookie follows.
-    const url = await api.checkoutUrl();
-    if (url) window.location.href = url;
+    setCheckoutPending(true);
+    try {
+      // Flush pending cart changes and read the store's truth before leaving.
+      await refetch();
+      // Checkout is a real browser navigation so the handover token (or the
+      // store session cookie) follows.
+      const url = await api.checkoutUrl();
+      if (url) window.location.href = url;
+    } finally {
+      setCheckoutPending(false);
+    }
   };
+
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -124,11 +136,13 @@ export function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
           <button
             type="button"
             className="brand-button mt-4 w-full justify-center"
-            disabled={!isConfigured || lines.length === 0}
+            disabled={!isConfigured || lines.length === 0 || checkoutPending}
             onClick={() => void goToCheckout()}
           >
+            {checkoutPending && <Loader2 className="size-4 animate-spin" />}
             {t("store.checkout")}
           </button>
+
           {!isConfigured && <p className="mt-2 text-xs text-muted-foreground">{t("store.checkoutDemo")}</p>}
         </div>
       </SheetContent>
