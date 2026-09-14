@@ -19,10 +19,27 @@ another v1 path without an explicit decision.
   `POST /surface/2/session/bootstrap` established, so bootstrap must have run.
 - **No mutation protection token** (it is a GET, and not one of the documented
   GET exceptions).
-- **Parameters:** the generated spec declares none. Verified against a live
-  store the endpoint answers `200` with `[]` when no logged prices exist, both
-  with and without query parameters. Pass product identifiers through and read
-  the response defensively.
+- **Parameters:** repeated `id[]=<products_id>` — one per product, several per
+  call. No other parameter name works; the store answers with an empty result
+  instead of an error.
+- **Response:** an object keyed by product id, verified live:
+
+  ```json
+  {
+    "222": {
+      "product_id": 222,
+      "price_list_id": null,
+      "currency_id": null,
+      "products_tax_class_id": 2,
+      "price_log_price_ex_vat_raw": 39.2,
+      "price_log_price_raw": 49,
+      "price_log_price": "49 kr"
+    }
+  }
+  ```
+
+  Products without a logged price are omitted. `price_log_price` is already
+  formatted in the session currency — render it as is.
 
 ## How the app reaches it
 
@@ -43,21 +60,20 @@ bearer header.
 `src/lib/vendre/price-log.ts` (re-exported from `@/lib/vendre`):
 
 ```ts
-import { getPriceLogPrices, usePriceLogPrices } from "@/lib/vendre";
+import { getPriceLogPrice, getPriceLogPrices, usePriceLogPrices } from "@/lib/vendre";
 
-// imperative
-const entries = await getPriceLogPrices({ products_id: product.id });
+// imperative — one product, or many in one call
+const entry = await getPriceLogPrice(product.id);
+const map = await getPriceLogPrices(products.map((p) => p.id));
 
 // react-query; disabled by default so no page gains a call by accident
-const { data } = usePriceLogPrices(
-  { products_id: product.id },
-  { enabled: Boolean(product.id) },
-);
+const { data } = usePriceLogPrices([product.id], { enabled: Boolean(product.id) });
+const logged = data?.[String(product.id)];
 ```
 
-- Array values are serialised as repeated `key[]=value` pairs.
-- Entries are returned as `Record<string, unknown>[]` — the store's field names
-  are not fixed by the spec, so map them where you render.
+- Ids are serialised as repeated `id[]=...` pairs.
+- `getPriceLogPrices` returns a `PriceLogMap` keyed by product id; a missing key
+  means the product has no logged price. `getPriceLogPrice` returns `null` then.
 - Non-2xx responses throw `VendreError` with the store's error `title`/`code`.
 
 ## Rendering guidance

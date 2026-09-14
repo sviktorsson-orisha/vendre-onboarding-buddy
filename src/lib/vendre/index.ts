@@ -10,10 +10,11 @@ export {
 
 
 export {
+  getPriceLogPrice,
   getPriceLogPrices,
   usePriceLogPrices,
-  type PriceLogEntry,
-  type PriceLogParams,
+  type PriceLogMap,
+  type PriceLogPrice,
 } from "./price-log";
 
 export {

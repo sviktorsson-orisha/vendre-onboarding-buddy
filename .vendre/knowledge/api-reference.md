@@ -151,10 +151,28 @@ added to v1.
   `401 SURFACE_SESSION_UNAUTHORIZED`, so `POST /surface/2/session/bootstrap`
   must have run first. The cookie is shared between v1 and v2.
 - **No mutation protection token** (GET, and not a documented GET exception).
-- **Parameters:** the generated spec declares none. Verified live, the endpoint
-  answers `200` with `[]` when the store has no logged prices, with or without
-  query parameters. Field names in a non-empty response are store dependent —
-  read them defensively.
+- **Parameters:** repeated `id[]=<products_id>`, one per product. The generated
+  spec declares none, but this is the parameter the store reads; any other name
+  (`products_id`, `product_id`, `ids`) silently returns an empty result.
+- **Response:** an object keyed by product id. Products without a logged price
+  are omitted, so a missing key means "no logged price".
+
+  ```json
+  {
+    "222": {
+      "product_id": 222,
+      "price_list_id": null,
+      "currency_id": null,
+      "products_tax_class_id": 2,
+      "price_log_price_ex_vat_raw": 39.2,
+      "price_log_price_raw": 49,
+      "price_log_price": "49 kr"
+    }
+  }
+  ```
+
+  `price_log_price` is already formatted in the session currency — never format
+  or recalculate it in the frontend.
 - **Proxy path:** `GET /api/vendre/surface1/products/price-log-prices` →
   `${VENDRE_BASE_URL}/surface/1/products/price-log-prices`, implemented in
   `src/routes/api/vendre/surface1/products/price-log-prices.ts`. Same guards as
