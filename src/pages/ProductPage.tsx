@@ -238,7 +238,6 @@ export default function ProductPage({ id }: { id: string }) {
           )}
           <ProductPrice
             product={buyableProduct ?? product}
-            productId={(buyableProduct ?? product).id}
             size="lg"
             className="mt-5"
           />

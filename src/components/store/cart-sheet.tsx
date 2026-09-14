@@ -77,7 +77,6 @@ export function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
                     {line.product_data && (
                       <ProductPrice
                         product={line.product_data}
-                        productId={line.product_data.id ?? line.productId}
                         size="sm"
                         className="mt-1 flex"
                       />
