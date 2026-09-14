@@ -319,11 +319,34 @@ const liveApi: VendreApi = {
   },
 
   getSessionContext: () => guarded(() => surfaceJson<SessionContext>("session/context")),
+  // POST session/handover mints a short-lived token (~30s) and returns a ready
+  // checkout URL, so the cart follows even when the store session cookie does
+  // not survive the jump to the store domain. return_url/failure_url must be
+  // absolute URLs on the same host as the request origin.
   checkoutUrl: async () => {
+    if (typeof window !== "undefined") {
+      try {
+        const origin = window.location.origin;
+        const handover = await guarded(() =>
+          surfaceJson<{ checkout_url?: string | null }>("session/handover", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              return_url: `${origin}/`,
+              failure_url: `${origin}/`,
+            }),
+          }),
+        );
+        if (handover?.checkout_url) return handover.checkout_url;
+      } catch {
+        // Fall back to the plain checkout link below so the button never dead-ends.
+      }
+    }
     const baseUrl = await fetchStoreBaseUrl();
     storeBaseUrl = baseUrl;
     return baseUrl ? `${baseUrl}/checkout` : null;
   },
+
 
   searchProducts: async (query, options = {}) => {
     const needle = query.trim().toLowerCase();

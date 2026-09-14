@@ -207,9 +207,32 @@ Server-side only — they carry `client_secret`.
 | GET | `session/context` | `session` | – | extended context and store config |
 | POST | `session` | `session` | yes | update store context |
 | POST | `session/end` | `session` | yes | clear customer identity, keep visitor session |
+| POST | `session/handover` | `session` | yes | mint a checkout hand-over token |
+
+`POST session/handover` body: `{ "return_url": "<absolute url>", "failure_url":
+"<absolute url>" }`. Both must be full `http(s)` URLs on the **same host as the
+request origin**, so the proxy has to forward the browser's `Origin`/`Referer`
+headers upstream. An empty or `{}` body answers
+`400 SURFACE_SESSION_HANDOVER_MALFORMED_BODY`; a missing origin answers
+`400 SURFACE_SESSION_HANDOVER_UNKNOWN_ORIGIN`.
+
+Response:
+
+```json
+{
+  "handover_key": "sLIkOPo5…",
+  "checkout_url": "https://<store>/checkout.php?session_token=sLIkOPo5…",
+  "expires_at": 1789391315,
+  "expires_in": 30
+}
+```
+
+The token lives ~30 seconds, so mint it at the moment of navigation — never in
+advance. Navigate the browser to `checkout_url`.
 
 `POST session` body fields: `market`, `currency`, `language`,
 `prices_include_vat`.
+
 
 Skills: `session-context.md`, `session-store-context.md`, `mutation-tokens.md`.
 
