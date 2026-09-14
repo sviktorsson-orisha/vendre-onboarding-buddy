@@ -21,7 +21,8 @@ _(Applies to all endpoints unless specified otherwise)_
 - **v2:** Base path `/surface/2/`
 
 Both versions exist in the platform. Storefronts built from this template call
-**v2 only** — every path below is `/surface/2/<endpoint>`.
+**v2 only** — every path below is `/surface/2/<endpoint>` — with exactly one
+documented exception: logged prices, see §1.10.
 
 **How this app reaches those paths:** the browser never calls the store. It
 calls the same-origin proxy `/api/vendre/surface/<endpoint>`, which maps 1:1 to
