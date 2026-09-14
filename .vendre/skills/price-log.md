@@ -60,21 +60,20 @@ bearer header.
 `src/lib/vendre/price-log.ts` (re-exported from `@/lib/vendre`):
 
 ```ts
-import { getPriceLogPrices, usePriceLogPrices } from "@/lib/vendre";
+import { getPriceLogPrice, getPriceLogPrices, usePriceLogPrices } from "@/lib/vendre";
 
-// imperative
-const entries = await getPriceLogPrices({ products_id: product.id });
+// imperative — one product, or many in one call
+const entry = await getPriceLogPrice(product.id);
+const map = await getPriceLogPrices(products.map((p) => p.id));
 
 // react-query; disabled by default so no page gains a call by accident
-const { data } = usePriceLogPrices(
-  { products_id: product.id },
-  { enabled: Boolean(product.id) },
-);
+const { data } = usePriceLogPrices([product.id], { enabled: Boolean(product.id) });
+const logged = data?.[String(product.id)];
 ```
 
-- Array values are serialised as repeated `key[]=value` pairs.
-- Entries are returned as `Record<string, unknown>[]` — the store's field names
-  are not fixed by the spec, so map them where you render.
+- Ids are serialised as repeated `id[]=...` pairs.
+- `getPriceLogPrices` returns a `PriceLogMap` keyed by product id; a missing key
+  means the product has no logged price. `getPriceLogPrice` returns `null` then.
 - Non-2xx responses throw `VendreError` with the store's error `title`/`code`.
 
 ## Rendering guidance
