@@ -2,9 +2,9 @@
 
 A headless storefront template that connects to a Vendre store via Surface API v2.
 
-## Kom igång / Get started
+## Get started
 
-Open this project in Lovable and send any message (for example "kom igång").
+Open this project in Lovable and send any message (for example "get started").
 The agent automatically runs the setup skill in `.vendre/skills/setup.md`,
 which collects your Vendre credentials, configures CORS and verifies the
 connection before any storefront code is written.
@@ -40,11 +40,11 @@ npm i
 npm run dev
 ```
 
-## Secrets och .env
+## Secrets and .env
 
-`.env` innehåller endast **publika** värden (projekt-URL, projekt-ID och den
-publicerbara nyckeln) och kan tryggt ligga i GitHub.
+`.env` contains **public** values only (project URL, project ID and the
+publishable key) and is safe to keep in GitHub.
 
-Lägg **aldrig** in `VENDRE_BASE_URL`, `VENDRE_CLIENT_ID`, `VENDRE_CLIENT_SECRET`
-eller service role-nyckeln i `.env` – de lagras i Lovables secrets och läses
-bara server-side via `process.env`.
+**Never** put `VENDRE_BASE_URL`, `VENDRE_CLIENT_ID`, `VENDRE_CLIENT_SECRET`
+or the service role key in `.env` — they are stored in Lovable secrets and read
+server-side only via `process.env`.

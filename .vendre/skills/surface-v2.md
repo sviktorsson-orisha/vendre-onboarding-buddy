@@ -14,34 +14,35 @@ retried. Page-level endpoints live in the feature skills (`vendre-session-contex
 We work **exclusively against Surface API version 2** — every path is
 `/surface/2/<endpoint>`. Never v1, never other Vendre APIs.
 
-## Request topology
+## Request topology (server proxy only)
 
 ```text
-browser ──GET /api/vendre/token──> server route (client_secret stays here)
-   │                                    └─ POST /surface/2/oauth/token, cached ~1h
-   ├──direct──> https://<store>/surface/2/*   (Bearer + credentials:"include")
-   │              └─ Set-Cookie: session cookie → visitor's own cookie jar
-   └──fallback──> /api/vendre/*   (same-origin proxy, only when CORS blocks)
+browser ──/api/vendre/surface/<path>──> our server route
+   │                                       ├─ adds Bearer (token cached ~1h, server-side)
+   │                                       ├─ forwards cookie → store, rewrites Set-Cookie to our origin
+   │                                       └─ POST https://<store>/surface/2/<path>
+   └──/api/vendre/status──> booleans + store base URL (links/images only, no token)
 ```
 
-1. **Only `oauth/token` and `oauth/revoke` run server-side** — they need
-   `client_secret`. A tiny route returns `{ access_token, base_url }` with
-   `cache-control: no-store`. The secret never reaches the browser.
-2. **Everything else is called directly from the browser** with
-   `credentials: "include"`, `mode: "cors"` and `Authorization: Bearer <token>`.
-   This is the only way the store session cookie lands in the visitor's own
-   cookie jar for the store domain.
-3. **Keep a same-origin catch-all proxy as a silent fallback.** If a direct call
-   throws (origin not allowlisted), flip a module flag to proxy mode and retry
-   there. Never surface a CORS error to the user.
-4. **Checkout is a real browser navigation** (`window.location.href`, `<a>`, or
-   a form submit) to the store's own checkout page — never `fetch`/XHR. Passing
-   the session id as a query parameter does **not** work; only the cookie does.
-   If the app is stuck in proxy mode, checkout starts a fresh empty session —
-   that is the signal the origin needs allowlisting.
-5. **Env vars:** `VENDRE_BASE_URL`, `VENDRE_CLIENT_ID`, `VENDRE_CLIENT_SECRET`
-   (secret, server-only). Read them inside handlers, not at module scope.
-6. **Array query params use brackets**: `tags[]=64&tags[]=81`.
+1. **No Surface call is made from the browser to the store.** Every call goes to
+   the same-origin catch-all `src/routes/api/vendre/surface/$.ts`, which mints
+   and attaches the bearer token server-side.
+2. **No credential, access token or bearer ever reaches the client.** There is
+   no `/api/vendre/token` route; the browser only learns whether the store is
+   connected and the public store base URL (for checkout links and images).
+3. **The session cookie is same-origin.** The proxy forwards the incoming
+   `cookie` header upstream and rewrites the store's `Set-Cookie` (`Domain`
+   stripped, `Path=/`, `SameSite=Lax`, `Secure` on https) so login and cart work.
+4. **Checkout is still a real browser navigation** to the store's own checkout
+   page. Because the session cookie now lives on our origin, the store may start
+   a fresh session there — handle checkout hand-off separately if the cart must
+   follow.
+5. **CORS is no longer required for storefront data**, since the browser never
+   calls the store origin. Keep the allowlist for the checkout hand-off.
+6. **Env vars:** `VENDRE_BASE_URL`, `VENDRE_CLIENT_ID`, `VENDRE_CLIENT_SECRET`
+   (server-only). Read them inside handlers, not at module scope.
+7. **Array query params use brackets**: `tags[]=64&tags[]=81`.
+
 
 ## OAuth token lifecycle and quota
 
@@ -109,19 +110,22 @@ The most common source of silent failures in Vendre frontends.
 
 ## CORS allowlist (Admin → Headless → CORS, `/Admin/configuration?gID=232`)
 
-Add every frontend origin (scheme + host, no trailing slash: dev, preview and
-production) to the policies: `oauth`, `bootstrap`, `session`, `customer`,
-`shopping_cart`, `default` (this is where `accounts*` **and** Twig rendering
-resolve), `categories`, `navigation_menus`, `sitemap`, `vendre_query_language`,
-`galleries`, `login`, `email/contact`.
+Storefront data no longer depends on this, because all Surface traffic is
+server-to-server through our proxy. Keep the allowlist configured for the
+checkout hand-off and any future direct browser call: add every frontend origin
+(scheme + host, no trailing slash) to `oauth`, `bootstrap`, `session`,
+`customer`, `shopping_cart`, `default` (where `accounts*` and Twig render
+resolve), `categories`, `navigation_menus`, `sitemap`,
+`vendre_query_language`, `galleries`, `login`, `email/contact`.
 
 ## Build order
 
-1. Server token helper + `/api/vendre/token` route + `/api/vendre/*` proxy
-   fallback with cookie rewrite (`vendre-session-context`).
-2. Browser client: direct-first request, proxy fallback, mutation token, retry
-   and backoff, one-shot re-bootstrap on session 401.
+1. Server token helper (`token.server.ts`) + `/api/vendre/status` +
+   the catch-all proxy `/api/vendre/surface/$` with cookie rewrite.
+2. Browser client: `surfaceFetch` → proxy with `credentials: "same-origin"`,
+   mutation token in a module variable, one-shot re-bootstrap on session 401.
 3. Session provider that bootstraps once and gates every other call.
 4. Feature routes: home, category (PLP), product (PDP), cart, account, CMS.
+
 
 Related: `vendre-caching`, `vendre-store-troubleshooting`.

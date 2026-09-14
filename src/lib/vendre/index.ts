@@ -1,13 +1,13 @@
 export {
   VendreError,
-  getVendreToken,
+  fetchStoreBaseUrl,
   getMutationProtectionToken,
   setMutationProtectionToken,
   resetVendreClient,
   surfaceFetch,
   surfaceJson,
-  type VendreToken,
 } from "./client";
+
 
 export {
   testVendreConnection,

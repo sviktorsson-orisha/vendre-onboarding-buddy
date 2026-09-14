@@ -1,17 +1,16 @@
 /**
  * Minimal Vendre Surface v2 browser client.
  *
- * Rules (from .vendre/knowledge/general.md):
- * - client_secret never reaches the browser: only /oauth/token runs server-side.
- * - Everything else is called directly from the browser with credentials: "include".
+ * Rules:
+ * - The browser never talks to the store directly. Every Surface call goes to
+ *   our own /api/vendre/surface/* proxy, which adds the OAuth token server-side.
+ * - No credential, access token or store URL is exposed to the client.
  * - The mutation protection token lives in a module variable, never localStorage.
  */
 
-export type VendreToken = { accessToken: string; baseUrl: string; expiresAt: number };
-
-let tokenState: VendreToken | null = null;
-let tokenInflight: Promise<VendreToken> | null = null;
 let mutationProtectionToken: string | null = null;
+let baseUrlState: string | null = null;
+let baseUrlInflight: Promise<string | null> | null = null;
 
 export class VendreError extends Error {
   constructor(
@@ -34,66 +33,54 @@ export function setMutationProtectionToken(token: string | null) {
 }
 
 export function resetVendreClient() {
-  tokenState = null;
-  tokenInflight = null;
   mutationProtectionToken = null;
+  baseUrlState = null;
+  baseUrlInflight = null;
 }
 
-async function fetchToken(): Promise<VendreToken> {
-  const res = await fetch("/api/vendre/token", { headers: { accept: "application/json" } });
-  const data = (await res.json().catch(() => ({}))) as {
-    access_token?: string;
-    base_url?: string;
-    expires_at?: number;
-    error?: string;
-    message?: string;
-    missing?: string[];
-  };
+/**
+ * The store base URL, read from our own status endpoint. Only used for
+ * store-hosted links (checkout, images) — never for API calls.
+ */
+export async function fetchStoreBaseUrl(force = false): Promise<string | null> {
+  if (!force && baseUrlState) return baseUrlState;
+  if (baseUrlInflight) return baseUrlInflight;
 
-  if (!res.ok || !data.access_token || !data.base_url) {
-    throw new VendreError(
-      data.message ?? data.error ?? `Kunde inte hämta OAuth-token (${res.status})`,
-      res.status,
-      data.error,
-      data.missing ?? [],
-    );
-  }
-
-  return {
-    accessToken: data.access_token,
-    baseUrl: data.base_url.replace(/\/+$/, ""),
-    expiresAt: data.expires_at ?? Date.now() + 3_000_000,
-  };
-}
-
-export async function getVendreToken(force = false): Promise<VendreToken> {
-  if (!force && tokenState && tokenState.expiresAt > Date.now()) return tokenState;
-  if (tokenInflight) return tokenInflight;
-
-  tokenInflight = fetchToken()
-    .then((state) => {
-      tokenState = state;
-      return state;
+  baseUrlInflight = fetch("/api/vendre/status", { headers: { accept: "application/json" } })
+    .then(async (res) => {
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        baseUrl?: string | null;
+        missing?: string[];
+      };
+      if (!res.ok || !data.ok) {
+        throw new VendreError(
+          "Butiken är inte ansluten.",
+          res.status,
+          "not_connected",
+          data.missing ?? [],
+        );
+      }
+      baseUrlState = data.baseUrl ? data.baseUrl.replace(/\/+$/, "") : null;
+      return baseUrlState;
     })
     .finally(() => {
-      tokenInflight = null;
+      baseUrlInflight = null;
     });
 
-  return tokenInflight;
+  return baseUrlInflight;
 }
 
 const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
-/** Calls a Surface v2 endpoint directly from the browser. `path` is relative to /surface/2/. */
+/** Calls a Surface v2 endpoint through our server proxy. `path` is relative to /surface/2/. */
 export async function surfaceFetch(
   path: string,
   init: RequestInit & { method?: string } = {},
 ): Promise<Response> {
-  const { accessToken, baseUrl } = await getVendreToken();
   const method = (init.method ?? "GET").toUpperCase();
 
   const headers = new Headers(init.headers);
-  headers.set("Authorization", `Bearer ${accessToken}`);
   headers.set("Accept", "application/json");
 
   // Mutating calls — plus the documented GET exception — carry the protection token.
@@ -102,14 +89,14 @@ export async function surfaceFetch(
     headers.set("Surface-Mutation-Protection-Token", mutationProtectionToken);
   }
 
-  return fetch(`${baseUrl}/surface/2/${path.replace(/^\/+/, "")}`, {
+  return fetch(`/api/vendre/surface/${path.replace(/^\/+/, "")}`, {
     ...init,
     method,
     headers,
-    mode: "cors",
-    credentials: "include",
+    credentials: "same-origin",
   });
 }
+
 
 export async function surfaceJson<T = unknown>(
   path: string,

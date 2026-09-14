@@ -105,7 +105,7 @@ Variants are read with `POST /surface/2/vql`:
   enables only when every type is selected, the intersection is non-empty and the
   resolved product is not blocked by the stock rule above.
 - Listings never add a variant parent to the cart: a product with
-  `child_count > 0` (or blocked by the stock rule) shows a "Läs mer" link to the
+  `child_count > 0` (or blocked by the stock rule) shows a "Read more" link to the
   PDP instead of an add-to-cart button.
 
 ## Specifications
@@ -125,3 +125,11 @@ Rows look like `{ id, parent_id, name, type, short_value, value }`. Drop entries
 without both `name` and `value`, and render them as a name/value list under the
 description. Because each variant is its own product, the list must refetch when
 the selection changes — the PDP hook is keyed on the active product id.
+
+## Breadcrumbs
+
+The PDP renders the same breadcrumb component as the PLP: Home > category chain
+> product name. The chain is built from the product's `category_id` (VQL `_all`)
+resolved against the cached `navigation/menus` tree — no extra API call. The
+product name is the current page and is never a link; when a variant is selected
+the trail follows the active product's category, falling back to the parent's.

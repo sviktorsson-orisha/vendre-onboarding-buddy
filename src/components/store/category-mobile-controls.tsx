@@ -68,7 +68,7 @@ export function CategoryMobileControls({
       )}
 
       <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
-        <SheetContent side="left" className="w-[85vw] max-w-sm overflow-y-auto">
+        <SheetContent side="right" className="w-[85vw] max-w-sm overflow-y-auto">
           <SheetHeader>
             <SheetTitle>{t("store.filters")}</SheetTitle>
           </SheetHeader>
@@ -86,7 +86,7 @@ export function CategoryMobileControls({
       </Sheet>
 
       <Sheet open={sortOpen} onOpenChange={setSortOpen}>
-        <SheetContent side="bottom" className="max-h-[70vh] overflow-y-auto">
+        <SheetContent side="right" className="w-[85vw] max-w-sm overflow-y-auto">
           <SheetHeader>
             <SheetTitle>{t("store.sort")}</SheetTitle>
           </SheetHeader>

@@ -35,7 +35,7 @@ import type {
 } from "@/types/vendre-account";
 import type { SessionContext } from "@/types/vendre";
 
-import { guarded, resetSessionGate } from "./api";
+import { guarded, resetSessionGate, useSessionContext } from "./api";
 import { setMutationProtectionToken, surfaceFetch } from "./client";
 
 /* ------------------------------------------------------------- errors ---- */
@@ -416,7 +416,16 @@ export const COUNTRY_IDS: Record<string, number> = {
   DE: 81,
 };
 
-function countryId(value: RegisterInput["country"]): number {
+/** Country choices shared by the register and the edit-account forms. */
+export const COUNTRY_OPTIONS: { id: number; label: string }[] = [
+  { id: 203, label: "Sverige" },
+  { id: 161, label: "Norge" },
+  { id: 59, label: "Danmark" },
+  { id: 73, label: "Finland" },
+  { id: 81, label: "Tyskland" },
+];
+
+function countryId(value: string | number | null | undefined): number {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   const raw = String(value ?? "").trim();
   if (/^\d+$/.test(raw)) return Number(raw);
@@ -424,43 +433,24 @@ function countryId(value: RegisterInput["country"]): number {
 }
 
 /**
- * Maps the registration form to the exact payload the store accepts.
- * Empty optional strings are omitted; `type` is UI-only and never sent.
+ * Maps the registration form to the exact payload the store accepts: the
+ * required field set from the API reference, plus the consent flag.
  */
 export function buildRegisterBody(input: RegisterInput): Record<string, unknown> {
-  const body: Record<string, unknown> = {
-    gender: input.gender || "m",
-    firstname: input.firstname,
-    lastname: input.lastname,
-    email_address: input.email_address,
+  return {
+    email_address: input.email_address.trim(),
     password: input.password,
     confirmation: input.confirmation,
-    street_address: input.street_address,
-    postcode: input.postcode,
-    city: input.city,
-    state: input.state,
+    firstname: input.firstname.trim(),
+    lastname: input.lastname.trim(),
+    street_address: input.street_address.trim(),
+    postcode: input.postcode.trim(),
+    city: input.city.trim(),
     country: countryId(input.country),
-    telephone: input.telephone,
-    newsletter: Boolean(input.newsletter),
     consent_personal_data_policy: Boolean(input.consent_personal_data_policy),
   };
-
-  const optional: [string, string | undefined][] = [
-    ["personnummer", input.personnummer],
-    ["mobile", input.mobile],
-  ];
-  if (input.type === "company") {
-    optional.push(["company", input.company], [
-      "vat_identification_number",
-      input.vat_identification_number,
-    ]);
-  }
-  for (const [key, value] of optional) {
-    if (value && value.trim()) body[key] = value.trim();
-  }
-
-  return body;
 }
+
 
 /* ------------------------------------------------------------- adapter --- */
 
@@ -522,27 +512,20 @@ const liveAccountApi: AccountApi = {
   },
   getAccount: () => guarded(() => call<unknown>("accounts/me")).then(normalizeAccount),
   updateAccount: async (account) => {
-    // Write back with the store's canonical keys when we know them.
-    const body: Record<string, unknown> = {};
-    const map: [keyof Account, string[]][] = [
-      ["firstname", ["firstname", "first_name"]],
-      ["lastname", ["lastname", "last_name"]],
-      ["email", ["email", "email_address"]],
-      ["telephone", ["telephone", "phone"]],
-      ["mobile", ["mobile"]],
-      ["company", ["company"]],
-      ["street_address", ["street_address", "street"]],
-      ["postcode", ["postcode", "zip"]],
-      ["city", ["city"]],
-      ["country", ["country"]],
-      ["personnummer", ["personnummer"]],
-      ["vat_identification_number", ["vat_identification_number"]],
-      ["newsletter", ["newsletter"]],
-    ];
-    for (const [field, keys] of map) {
-      const key = keys.find((candidate) => candidate in account.raw) ?? keys[0]!;
-      body[key] = account[field];
-    }
+    // Only the field set the edit form exposes — the same fields registration
+    // requires, minus password/confirmation. The documented update body uses
+    // `firstname`/`lastname` even though the profile response returns
+    // `first_name`/`last_name`, so never echo back the response spelling.
+    const body: Record<string, unknown> = {
+      firstname: account.firstname,
+      lastname: account.lastname,
+      email_address: account.email,
+      street_address: account.street_address,
+      postcode: account.postcode,
+      city: account.city,
+      country: countryId(account.country),
+    };
+
     await guarded(() =>
       call("accounts/me", {
         method: "PUT",
@@ -654,19 +637,15 @@ const demoAccountApi: AccountApi = {
       firstname: input.firstname,
       lastname: input.lastname,
       email: input.email_address,
-      company: input.company ?? "",
       street_address: input.street_address,
       postcode: input.postcode,
       city: input.city,
       country: String(input.country),
-      telephone: input.telephone,
-      mobile: input.mobile ?? "",
-      newsletter: input.newsletter,
-      type: input.type,
     };
     demoAuthenticated = true;
     emitDemo();
   },
+
   forgotPassword: async () => {},
   getAccount: async () => demoAccount,
   updateAccount: async (account) => {
@@ -698,17 +677,32 @@ const NO_CACHE = { staleTime: 0, gcTime: 0 } as const;
 export function useAuth() {
   const api = useAccountApi();
   const demoAuth = useDemoAuthenticated();
-  const query = useQuery({
-    queryKey: ["vendre", api.mode, "auth", api.mode === "demo" ? demoAuth : null],
-    queryFn: () => api.getSession(),
+
+  // Live mode reads the session that the storefront already fetches, so a page
+  // load makes one GET session/context call instead of two identical ones.
+  const session = useSessionContext();
+  const demoQuery = useQuery({
+    queryKey: ["vendre", "demo", "auth", demoAuth],
+    queryFn: () => demoAccountApi.getSession(),
+    enabled: api.mode === "demo",
     ...NO_CACHE,
   });
 
+  if (api.mode === "demo") {
+    return {
+      mode: api.mode,
+      isLoading: demoQuery.isLoading,
+      isAuthenticated: demoQuery.data?.authenticated ?? false,
+      name: demoQuery.data?.name ?? "",
+    };
+  }
+
+  const customer = session.data?.customer;
   return {
     mode: api.mode,
-    isLoading: query.isLoading,
-    isAuthenticated: query.data?.authenticated ?? false,
-    name: query.data?.name ?? "",
+    isLoading: session.isLoading,
+    isAuthenticated: Boolean(session.data?.authenticated),
+    name: [customer?.first_name, customer?.last_name].filter(Boolean).join(" "),
   };
 }
 

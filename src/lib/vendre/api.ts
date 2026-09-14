@@ -3,7 +3,7 @@
  *
  * Same function signatures in both modes:
  *   demo -> src/mock/vendreResponses.ts (cart kept in memory)
- *   live -> /surface/2/* through the browser client (Bearer + credentials: "include")
+ *   live -> /surface/2/* through our own /api/vendre/surface proxy (no token in the browser)
  *
  * All live paths, headers and error handling follow .vendre/knowledge/api-reference.md.
  * Caching follows .vendre/skills/caching.md: menus/categories are cached, cart and
@@ -49,11 +49,12 @@ import type {
 
 
 import {
-  getVendreToken,
+  fetchStoreBaseUrl,
   setMutationProtectionToken,
   surfaceJson,
   VendreError,
 } from "./client";
+
 
 export type VendreMode = "demo" | "live";
 
@@ -112,14 +113,14 @@ export function getStoreBaseUrl() {
 }
 
 async function bootstrapSession() {
-  const { baseUrl } = await getVendreToken();
-  storeBaseUrl = baseUrl;
+  storeBaseUrl = await fetchStoreBaseUrl();
   const data = await surfaceJson<{ surface_mutation_protection_token?: string }>(
     "session/bootstrap",
     { method: "POST" },
   );
   setMutationProtectionToken(data.surface_mutation_protection_token ?? null);
 }
+
 
 function ensureSession() {
   sessionReady ??= bootstrapSession().catch((error) => {
@@ -178,6 +179,9 @@ const liveApi: VendreApi = {
   // `quantity` is not returned by this install; `stock_allow_checkout` may be null,
   // which means the store default (checkout allowed) applies.
   getProductVariants: async (productId) => {
+    // The product read already batched this tree into its own query.
+    const cached = variantTreeCache.get(String(productId));
+    if (cached) return cached;
     try {
       const data = await guarded(() =>
         surfaceJson<VqlVariantsResponse>("vql", {
@@ -217,7 +221,9 @@ const liveApi: VendreApi = {
       );
       const types =
         data?.query?.product_variant_types ?? data?.data?.query?.product_variant_types ?? [];
-      return normalizeVariantTypes(types);
+      const normalized = normalizeVariantTypes(types);
+      variantTreeCache.set(String(productId), normalized);
+      return normalized;
     } catch {
       // VQL disabled or the product has no variants: render the page without a selector.
       return [];
@@ -226,10 +232,16 @@ const liveApi: VendreApi = {
   getVariantProduct: (productId) => vqlProduct(productId),
   getProductSpecifications: (productId) => vqlSpecifications(productId),
   getProduct: async (id, categoryId) => {
-    // Surface v2 has no products/{id} endpoint; products are read from a category listing.
+    // Surface v2 has no products/{id} endpoint. VQL reads the product and its variant
+    // tree in a single call — the category scan below is only a fallback for installs
+    // without VQL, since it fetches every product of every category until the id turns up.
+    if (!vqlDisabled) {
+      const direct = await vqlProduct(id, true);
+      if (direct) return direct;
+    }
     const fromCategory = async (catId: number) => {
       const data = await liveApi.getCategory(catId, { limit: 0 });
-      return data.product_list.find((p) => String(p.id) === String(id)) ?? null;
+      return data.product_list?.find((p) => String(p.id) === String(id)) ?? null;
     };
     if (categoryId) {
       const hit = await fromCategory(categoryId);
@@ -240,9 +252,9 @@ const liveApi: VendreApi = {
       const hit = await fromCategory(item.id);
       if (hit) return hit;
     }
-    // Variant children are not listed in categories — read them through VQL instead.
-    return vqlProduct(id);
+    return null;
   },
+
   // Only the page's own description is rendered — content blocks are not used.
   // GET galleries/{id}/pages lists the pages *inside* a gallery, so the page
   // itself is found in its parent gallery's list (pagetree gives the parent).
@@ -308,10 +320,11 @@ const liveApi: VendreApi = {
 
   getSessionContext: () => guarded(() => surfaceJson<SessionContext>("session/context")),
   checkoutUrl: async () => {
-    const { baseUrl } = await getVendreToken();
+    const baseUrl = await fetchStoreBaseUrl();
     storeBaseUrl = baseUrl;
-    return `${baseUrl}/checkout`;
+    return baseUrl ? `${baseUrl}/checkout` : null;
   },
+
   searchProducts: async (query, options = {}) => {
     const needle = query.trim().toLowerCase();
     const limit = options.limit ?? 12;
@@ -394,75 +407,136 @@ type VqlRawProduct = {
   } | null;
 };
 
+/** Field selection for a full product record. */
+const VQL_PRODUCT_FIELDS = [
+  "_all",
+  { image: { fields: ["id", "name", "href"] } },
+  { specifications: { fields: ["_all"] } },
+];
+
+/** Field selection for the variant tree of a product. */
+const VQL_VARIANT_FIELDS = [
+  "id",
+  "name",
+  "sort_order",
+  {
+    product_variant_choices: {
+      fields: [
+        "_all",
+        {
+          products: {
+            fields: ["id", "in_stock", "quantity", "stock_allow_checkout", "status"],
+          },
+        },
+      ],
+    },
+  },
+];
+
+/**
+ * Variant trees that arrived alongside a product read, keyed by the product id the
+ * tree was queried for. `getProductVariants` serves these instead of firing a second
+ * VQL call for the product the PDP just loaded.
+ */
+const variantTreeCache = new Map<string, ProductVariantType[]>();
+
+function mapVqlProduct(raw: VqlRawProduct): Product {
+  const pricing = raw.pricing ?? {};
+  const image: VendreImage | null = raw.image?.href
+    ? {
+        id: raw.image.id != null ? String(raw.image.id) : null,
+        path: raw.image.href,
+        image: raw.image.href,
+        alt: raw.image.name ?? null,
+        alt_translated: null,
+      }
+    : null;
+  const allowCheckout =
+    raw.stock_allow_checkout == null ? null : Boolean(Number(raw.stock_allow_checkout));
+  return {
+    id: String(raw.id),
+    name: raw.name ?? `#${raw.id}`,
+    model: raw.model ?? null,
+    description: raw.description ?? null,
+    description_short: raw.short_description ?? null,
+    price: pricing.price ?? pricing.original ?? null,
+    price_raw: pricing.original_raw ?? null,
+    price_original: pricing.original ?? null,
+    price_original_raw: pricing.original_raw ?? null,
+    price_special: pricing.special ?? null,
+    price_special_raw: pricing.special_raw ?? null,
+    final_price_excl_raw: pricing.final_excl_raw ?? null,
+    tax: raw.tax_rate ?? null,
+    unit: null,
+    image,
+    images: image ? [image] : [],
+    stock_total: raw.quantity ?? (raw.in_stock === false ? 0 : null),
+    stock_allow_checkout: allowCheckout,
+    seo_link: raw.seo_link ?? null,
+    categories_id: raw.category_id != null ? String(raw.category_id) : null,
+    has_attributes: false,
+    child_count: raw.child_count ?? 0,
+    parent_id: raw.parent_id ?? null,
+    specifications: (raw.specifications ?? []).filter((item) => item?.name && item?.value),
+  };
+}
+
 /**
  * Single product read through VQL. Variant children are real products of their own,
  * so the PDP re-reads the full record (name, description, image, price, stock)
  * whenever a variant is selected.
+ *
+ * `withVariants` batches the variant tree into the same query, so a normal product
+ * page load is one request instead of two. When the landed product turns out to be a
+ * variant child the tree comes back empty and the PDP reads the parent's tree
+ * separately — the tree only exists on the parent.
  */
-async function vqlProduct(id: string | number): Promise<Product | null> {
+async function vqlProduct(
+  id: string | number,
+  withVariants = false,
+): Promise<Product | null> {
   try {
     const data = await guarded(() =>
-      surfaceJson<{ query?: { products?: VqlRawProduct[] } } | null>("vql", {
+      surfaceJson<{
+        query?: { products?: VqlRawProduct[]; product_variant_types?: ProductVariantType[] };
+      } | null>("vql", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           query: {
             products: {
               filters: { where: { id: Number(id) } },
-              fields: [
-                "_all",
-                { image: { fields: ["id", "name", "href"] } },
-                { specifications: { fields: ["_all"] } },
-              ],
+              fields: VQL_PRODUCT_FIELDS,
             },
+            ...(withVariants
+              ? {
+                  product_variant_types: {
+                    filters: { where: { product_id: String(id) } },
+                    fields: VQL_VARIANT_FIELDS,
+                  },
+                }
+              : {}),
           },
         }),
       }),
     );
     const raw = data?.query?.products?.[0];
     if (!raw) return null;
-    const pricing = raw.pricing ?? {};
-    const image: VendreImage | null = raw.image?.href
-      ? {
-          id: raw.image.id != null ? String(raw.image.id) : null,
-          path: raw.image.href,
-          image: raw.image.href,
-          alt: raw.image.name ?? null,
-          alt_translated: null,
-        }
-      : null;
-    const allowCheckout =
-      raw.stock_allow_checkout == null ? null : Boolean(Number(raw.stock_allow_checkout));
-    return {
-      id: String(raw.id),
-      name: raw.name ?? `#${raw.id}`,
-      model: raw.model ?? null,
-      description: raw.description ?? null,
-      description_short: raw.short_description ?? null,
-      price: pricing.price ?? pricing.original ?? null,
-      price_raw: pricing.original_raw ?? null,
-      price_original: pricing.original ?? null,
-      price_original_raw: pricing.original_raw ?? null,
-      price_special: pricing.special ?? null,
-      price_special_raw: pricing.special_raw ?? null,
-      final_price_excl_raw: pricing.final_excl_raw ?? null,
-      tax: raw.tax_rate ?? null,
-      unit: null,
-      image,
-      images: image ? [image] : [],
-      stock_total: raw.quantity ?? (raw.in_stock === false ? 0 : null),
-      stock_allow_checkout: allowCheckout,
-      seo_link: raw.seo_link ?? null,
-      categories_id: raw.category_id != null ? String(raw.category_id) : null,
-      has_attributes: false,
-      child_count: raw.child_count ?? 0,
-      parent_id: raw.parent_id ?? null,
-      specifications: (raw.specifications ?? []).filter((item) => item?.name && item?.value),
-    };
+    if (withVariants) {
+      variantTreeCache.set(
+        String(id),
+        normalizeVariantTypes(data?.query?.product_variant_types ?? []),
+      );
+    }
+    return mapVqlProduct(raw);
   } catch {
+    // VQL is off on this install (documented 500): stop trying it for product reads.
+    vqlDisabled = true;
     return null;
   }
 }
+
+
 
 
 /**
@@ -771,37 +845,50 @@ export function useCategory(id: number, query?: CategoryQuery) {
 
 export function useProduct(id: string, categoryId?: number) {
   const api = useVendreApi();
+  const scope = useCacheScope();
   return useQuery({
-    queryKey: ["vendre", api.mode, "product", id, categoryId ?? null],
+    // categoryId only steers the fallback lookup, not the result, so it stays
+    // out of the key — parent and variant reads then share one cache entry.
+    queryKey: ["vendre", api.mode, "product", String(id), scope],
     queryFn: () => api.getProduct(id, categoryId),
     staleTime: 5 * 60 * 1000,
-    enabled: Boolean(id),
+    // The scope is part of the key, so fetching before the session context has
+    // landed would fetch once under `null` and again under the real scope.
+    enabled: Boolean(id) && scope != null,
   });
 }
 
-/** Variant children are separate products: re-read the whole record on selection. */
+/** Variant children are separate products, cached under the same product key. */
 export function useVariantProduct(productId: number | null) {
   const api = useVendreApi();
   const scope = useCacheScope();
   return useQuery({
-    queryKey: ["vendre", api.mode, "variant-product", productId, scope],
+    queryKey: ["vendre", api.mode, "product", String(productId), scope],
     queryFn: () => api.getVariantProduct(productId as number),
     staleTime: 5 * 60 * 1000,
-    enabled: productId != null,
+    enabled: productId != null && scope != null,
   });
 }
 
-/** Specifications for the product currently shown on the PDP (parent or variant). */
-export function useProductSpecifications(productId: string | number | null) {
+/**
+ * Specifications for the product currently shown on the PDP. The product read
+ * already carries them, so this only runs when the record came from a category
+ * listing (which has no specifications).
+ */
+export function useProductSpecifications(
+  productId: string | number | null,
+  enabled = true,
+) {
   const api = useVendreApi();
   const scope = useCacheScope();
   return useQuery({
     queryKey: ["vendre", api.mode, "product-specifications", String(productId), scope],
     queryFn: () => api.getProductSpecifications(productId as string | number),
     staleTime: 5 * 60 * 1000,
-    enabled: productId != null && productId !== "",
+    enabled: enabled && productId != null && productId !== "" && scope != null,
   });
 }
+
 
 export function useProductVariants(id: string) {
   const api = useVendreApi();
@@ -813,9 +900,10 @@ export function useProductVariants(id: string) {
     queryKey: ["vendre", api.mode, "product-variants", "status-filter-v2", id, scope],
     queryFn: () => api.getProductVariants(id),
     staleTime: 5 * 60 * 1000,
-    enabled: Boolean(id),
+    enabled: Boolean(id) && scope != null,
   });
 }
+
 
 /** Never cached — the cart is live state. */
 export function useCart() {
@@ -896,12 +984,20 @@ export function useFeaturedProducts(count = 4) {
   });
 }
 
-/** Resolves a store-relative image path against the connected store base URL. */
+/**
+ * Store images are served through our own origin, so the browser never sees the
+ * store hostname and the proxy can cache them. External URLs pass through.
+ */
 export function resolveImageUrl(path: string | null | undefined) {
   if (!path) return null;
-  if (/^https?:\/\//.test(path)) return path;
-  if (!storeBaseUrl) return null;
-  return `${storeBaseUrl}${path.startsWith("/") ? "" : "/"}${path}`;
+
+  if (/^https?:\/\//.test(path)) {
+    if (!storeBaseUrl || !path.startsWith(storeBaseUrl)) return path;
+    const rest = path.slice(storeBaseUrl.length).replace(/^\/+/, "");
+    return `/api/vendre/image/${rest}`;
+  }
+
+  return `/api/vendre/image/${path.replace(/^\/+/, "")}`;
 }
 
 export function formatPrice(product: Pick<Product, "price" | "price_raw">) {
