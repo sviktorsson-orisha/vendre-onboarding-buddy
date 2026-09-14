@@ -62,12 +62,19 @@ The checkout button must not navigate immediately:
 
 1. Flush all pending/debounced mutations and await them.
 2. Fresh `GET /surface/2/shopping-cart`.
-3. Compare lines and quantities with local state.
-   - Match → **real browser navigation** to the store's checkout page (never
-     `fetch`; the session cookie is what carries the cart over).
-   - Mismatch → update the view and let the customer confirm instead of sending
-     them into checkout with the wrong order.
+3. Mint a hand-over token with
+   `POST /surface/2/session/handover` (mutation token required), body
+   `{ "return_url": "<origin>/", "failure_url": "<origin>/" }` — both absolute
+   URLs on the same host as the browser origin. The response carries
+   `checkout_url` (and `handover_key`), valid for ~30 seconds, so mint it at the
+   moment of navigation, never in advance.
+4. **Real browser navigation** to `checkout_url` (never `fetch`). The token
+   carries the cart across even when the session cookie does not.
+5. If the hand-over call fails, fall back to `<store base>/checkout` so the
+   button never dead-ends.
 
 Show the button in a short pending state while this runs; it is the one place
-where waiting is correct. An empty cart at checkout means the session cookie
-lives only in the proxy's jar — see `vendre-store-troubleshooting`.
+where waiting is correct. The proxy must forward the browser's `Origin` and
+`Referer` headers, otherwise the store answers
+`400 SURFACE_SESSION_HANDOVER_UNKNOWN_ORIGIN`.
+
