@@ -136,11 +136,13 @@ export function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
           <button
             type="button"
             className="brand-button mt-4 w-full justify-center"
-            disabled={!isConfigured || lines.length === 0}
+            disabled={!isConfigured || lines.length === 0 || checkoutPending}
             onClick={() => void goToCheckout()}
           >
+            {checkoutPending && <Loader2 className="size-4 animate-spin" />}
             {t("store.checkout")}
           </button>
+
           {!isConfigured && <p className="mt-2 text-xs text-muted-foreground">{t("store.checkoutDemo")}</p>}
         </div>
       </SheetContent>
