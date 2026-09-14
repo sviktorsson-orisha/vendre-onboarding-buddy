@@ -340,14 +340,6 @@ const liveApi: VendreApi = {
   },
 };
 
-type VqlProductsResponse = {
-  products?: Product[];
-  product_list?: Product[];
-  data?: { products?: Product[] };
-  product_count?: number;
-  page_index?: number;
-  page_count?: number;
-} | null;
 
 type VqlRawProduct = {
   id: number;
