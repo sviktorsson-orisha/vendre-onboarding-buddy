@@ -1,28 +1,30 @@
 ---
 name: vendre-price-log
-description: Logged prices (price history) from the single allowed Surface v1 endpoint GET /surface/1/products/price-log-prices - proxy route, fetch helper, hook, caching and how to surface price history on a product view. Use when a customer asks for lowest/previous price display.
+description: Reference for logged prices (price history) via the single allowed Surface v1 endpoint GET /surface/1/products/price_log_prices - request shape, session requirement and response format. Not implemented in this template; use when a customer asks for lowest/previous price display.
 ---
 
-# Logged prices (Surface v1)
+# Logged prices (Surface v1) — reference only
 
-This is the **only** Surface v1 endpoint the template uses. Everything else —
-products, categories, cart, account, VQL, CMS — stays on Surface v2. Never add
-another v1 path without an explicit decision.
+**Nothing in this template implements this.** There is no proxy route, no
+helper, no hook and no UI for logged prices. This file documents how to call the
+endpoint so it can be built when a customer asks for it.
+
+This is the **only** Surface v1 endpoint that may ever be used. Everything else —
+products, categories, cart, account, VQL, CMS — stays on Surface v2.
 
 ## Endpoint
 
-`GET /surface/1/products/price-log-prices`
+`GET /surface/1/products/price_log_prices`
 
 - **No OAuth bearer.** v1 never uses the `Authorization` header.
-- **Session cookie required.** Without the store `visitorid` cookie it returns
-  `401 SURFACE_SESSION_UNAUTHORIZED`. The cookie is the same one
+- **Session cookie required.** Without the store session cookie it returns
+  `401 SURFACE_SESSION_UNAUTHORIZED`. That cookie is the one
   `POST /surface/2/session/bootstrap` established, so bootstrap must have run.
-- **No mutation protection token** (it is a GET, and not one of the documented
-  GET exceptions).
-- **Parameters:** repeated `id[]=<products_id>` — one per product, several per
-  call. No other parameter name works; the store answers with an empty result
-  instead of an error.
-- **Response:** an object keyed by product id, verified live:
+- **No mutation protection token** (it is a GET).
+- **Parameters:** repeated `id[]=<products_id>`, one per product, several per
+  call. Other parameter names return an empty result instead of an error.
+- **Response:** an object keyed by product id (verified live against product
+  222 / model `36-7246`):
 
   ```json
   {
@@ -38,75 +40,17 @@ another v1 path without an explicit decision.
   }
   ```
 
-  Products without a logged price are omitted. `price_log_price` is already
-  formatted in the session currency — render it as is.
+  Products without a logged price are omitted from the object.
+  `price_log_price` is already formatted in the session currency — render it as
+  is, never compute a fallback in the frontend.
 
-## How the app reaches it
+## If it is implemented again
 
-The browser never calls the store. It calls the same-origin proxy:
-
-```text
-GET /api/vendre/surface1/products/price-log-prices[?...]
-   -> ${VENDRE_BASE_URL}/surface/1/products/price-log-prices[?...]
-```
-
-Route: `src/routes/api/vendre/surface1/products/price-log-prices.ts`. It mirrors
-the v2 proxy: same-origin guard, per-IP rate limit, cookie forwarding,
-`Set-Cookie` rewritten to our origin, `cache-control: no-store`, and **no**
-bearer header.
-
-## Client helpers
-
-`src/lib/vendre/price-log.ts` (re-exported from `@/lib/vendre`):
-
-```ts
-import { getPriceLogPrice, getPriceLogPrices, usePriceLogPrices } from "@/lib/vendre";
-
-// imperative — one product, or many in one call
-const entry = await getPriceLogPrice(product.id);
-const map = await getPriceLogPrices(products.map((p) => p.id));
-
-// react-query; disabled by default so no page gains a call by accident
-const { data } = usePriceLogPrices([product.id], { enabled: Boolean(product.id) });
-const logged = data?.[String(product.id)];
-```
-
-- Ids are serialised as repeated `id[]=...` pairs.
-- `getPriceLogPrices` returns a `PriceLogMap` keyed by product id; a missing key
-  means the product has no logged price. `getPriceLogPrice` returns `null` then.
-- Non-2xx responses throw `VendreError` with the store's error `title`/`code`.
-
-## Rendering in the storefront
-
-The storefront renders logged prices as a "Lägsta pris 30 dagar: <amount>" line
-under the price, everywhere `ProductPrice` is used (product cards, PDP, search
-autocomplete, cart lines). Order lines under My account are excluded — they show
-the prices captured when the order was placed.
-
-Rules:
-
-1. The line is shown **only when the product is on sale** (the shared rule in
-   `.vendre/skills/product-price.md`).
-2. Only when the store returns a logged price for that id; a missing key renders
-   nothing. Never compute a fallback in the frontend.
-3. `price_log_price` is already formatted — print it as is.
-4. Demo mode never fetches: the batching provider is live-mode only.
-
-### Batching
-
-`src/components/store/price-log-provider.tsx` (mounted once in `StoreShell`)
-collects the ids of discounted price rows, debounces ~50 ms and issues **one**
-`getPriceLogPrices(ids)` call per page, cached 5 minutes via react-query. Price
-rows opt in through `usePriceLogEntry(id, onSale)` — never fetch per row.
-`ProductPrice` takes an optional `productId` prop; without it no logged price is
-requested or shown.
-
-## Caching
-
-Logged prices change rarely: `staleTime` of a few minutes is fine client-side.
-The proxy response itself is `no-store` because it depends on the session.
-
-## CORS
-
-Not applicable — the browser only talks to our own origin. The store side needs
-no extra CORS policy for this call.
+- The browser must never call the store directly. Add a same-origin proxy route
+  (for example `/api/vendre/surface1/products/price-log-prices`) that mirrors the
+  v2 proxy: same-origin guard, per-IP rate limit, cookie forwarding, `Set-Cookie`
+  rewritten to our origin, `cache-control: no-store`, and **no** bearer header.
+- Batch ids into one call per page instead of one call per price row, and cache
+  a few minutes client-side; logged prices change rarely.
+- Only show the value for discounted products, and never in demo mode.
+- CORS is not applicable — the browser only talks to our own origin.
