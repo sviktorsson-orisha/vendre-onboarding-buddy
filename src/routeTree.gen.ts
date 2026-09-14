@@ -22,6 +22,7 @@ import { Route as ApiVendreSetupProgressRouteImport } from './routes/api/vendre/
 import { Route as ApiVendreStatusRouteImport } from './routes/api/vendre/status'
 import { Route as ApiVendreImageSplatRouteImport } from './routes/api/vendre/image/$'
 import { Route as ApiVendreSurfaceSplatRouteImport } from './routes/api/vendre/surface/$'
+import { Route as ApiVendreSurface1ProductsPriceLogPricesRouteImport } from './routes/api/vendre/surface1/products/price-log-prices'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -88,6 +89,12 @@ const ApiVendreSurfaceSplatRoute = ApiVendreSurfaceSplatRouteImport.update({
   path: '/api/vendre/surface/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiVendreSurface1ProductsPriceLogPricesRoute =
+  ApiVendreSurface1ProductsPriceLogPricesRouteImport.update({
+    id: '/api/vendre/surface1/products/price-log-prices',
+    path: '/api/vendre/surface1/products/price-log-prices',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -103,6 +110,7 @@ export interface FileRoutesByFullPath {
   '/api/vendre/status': typeof ApiVendreStatusRoute
   '/api/vendre/image/$': typeof ApiVendreImageSplatRoute
   '/api/vendre/surface/$': typeof ApiVendreSurfaceSplatRoute
+  '/api/vendre/surface1/products/price-log-prices': typeof ApiVendreSurface1ProductsPriceLogPricesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -117,6 +125,7 @@ export interface FileRoutesByTo {
   '/api/vendre/status': typeof ApiVendreStatusRoute
   '/api/vendre/image/$': typeof ApiVendreImageSplatRoute
   '/api/vendre/surface/$': typeof ApiVendreSurfaceSplatRoute
+  '/api/vendre/surface1/products/price-log-prices': typeof ApiVendreSurface1ProductsPriceLogPricesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -133,6 +142,7 @@ export interface FileRoutesById {
   '/api/vendre/status': typeof ApiVendreStatusRoute
   '/api/vendre/image/$': typeof ApiVendreImageSplatRoute
   '/api/vendre/surface/$': typeof ApiVendreSurfaceSplatRoute
+  '/api/vendre/surface1/products/price-log-prices': typeof ApiVendreSurface1ProductsPriceLogPricesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -150,6 +160,7 @@ export interface FileRouteTypes {
     | '/api/vendre/status'
     | '/api/vendre/image/$'
     | '/api/vendre/surface/$'
+    | '/api/vendre/surface1/products/price-log-prices'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -164,6 +175,7 @@ export interface FileRouteTypes {
     | '/api/vendre/status'
     | '/api/vendre/image/$'
     | '/api/vendre/surface/$'
+    | '/api/vendre/surface1/products/price-log-prices'
   id:
     | '__root__'
     | '/'
@@ -179,6 +191,7 @@ export interface FileRouteTypes {
     | '/api/vendre/status'
     | '/api/vendre/image/$'
     | '/api/vendre/surface/$'
+    | '/api/vendre/surface1/products/price-log-prices'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -193,6 +206,7 @@ export interface RootRouteChildren {
   ApiVendreStatusRoute: typeof ApiVendreStatusRoute
   ApiVendreImageSplatRoute: typeof ApiVendreImageSplatRoute
   ApiVendreSurfaceSplatRoute: typeof ApiVendreSurfaceSplatRoute
+  ApiVendreSurface1ProductsPriceLogPricesRoute: typeof ApiVendreSurface1ProductsPriceLogPricesRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -288,6 +302,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiVendreSurfaceSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/vendre/surface1/products/price-log-prices': {
+      id: '/api/vendre/surface1/products/price-log-prices'
+      path: '/api/vendre/surface1/products/price-log-prices'
+      fullPath: '/api/vendre/surface1/products/price-log-prices'
+      preLoaderRoute: typeof ApiVendreSurface1ProductsPriceLogPricesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -317,6 +338,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiVendreStatusRoute: ApiVendreStatusRoute,
   ApiVendreImageSplatRoute: ApiVendreImageSplatRoute,
   ApiVendreSurfaceSplatRoute: ApiVendreSurfaceSplatRoute,
+  ApiVendreSurface1ProductsPriceLogPricesRoute:
+    ApiVendreSurface1ProductsPriceLogPricesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

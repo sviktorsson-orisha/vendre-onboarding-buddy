@@ -10,6 +10,13 @@ export {
 
 
 export {
+  getPriceLogPrices,
+  usePriceLogPrices,
+  type PriceLogEntry,
+  type PriceLogParams,
+} from "./price-log";
+
+export {
   testVendreConnection,
   type ConnectionResult,
   type ConnectionStep,

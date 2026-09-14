@@ -21,7 +21,8 @@ _(Applies to all endpoints unless specified otherwise)_
 - **v2:** Base path `/surface/2/`
 
 Both versions exist in the platform. Storefronts built from this template call
-**v2 only** — every path below is `/surface/2/<endpoint>`.
+**v2 only** — every path below is `/surface/2/<endpoint>` — with exactly one
+documented exception: logged prices, see §1.10.
 
 **How this app reaches those paths:** the browser never calls the store. It
 calls the same-origin proxy `/api/vendre/surface/<endpoint>`, which maps 1:1 to
@@ -138,6 +139,28 @@ off for ~60s and keep using the existing token.
 - **Listing parameters:** `page`, `limit`, `sort_by`, `sort_order`,
   `filter` / `f`, `pfrom`, `pto`. Filter, sort and paginate on the server and
   render counts from the response — never on an already-paginated client list.
+
+### 1.10 The Only Allowed v1 Call: Logged Prices
+
+`GET /surface/1/products/price-log-prices` — logged prices (price history).
+This is the single Surface v1 endpoint this template uses; nothing else may be
+added to v1.
+
+- **No OAuth bearer** — v1 never sends `Authorization`.
+- **Session cookie required** — without the store `visitorid` cookie it returns
+  `401 SURFACE_SESSION_UNAUTHORIZED`, so `POST /surface/2/session/bootstrap`
+  must have run first. The cookie is shared between v1 and v2.
+- **No mutation protection token** (GET, and not a documented GET exception).
+- **Parameters:** the generated spec declares none. Verified live, the endpoint
+  answers `200` with `[]` when the store has no logged prices, with or without
+  query parameters. Field names in a non-empty response are store dependent —
+  read them defensively.
+- **Proxy path:** `GET /api/vendre/surface1/products/price-log-prices` →
+  `${VENDRE_BASE_URL}/surface/1/products/price-log-prices`, implemented in
+  `src/routes/api/vendre/surface1/products/price-log-prices.ts`. Same guards as
+  the v2 proxy, minus the bearer header. Responses are `no-store`.
+
+Usage patterns live in `.vendre/skills/price-log.md`.
 
 ---
 
