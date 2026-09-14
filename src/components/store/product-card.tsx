@@ -35,6 +35,7 @@ export function ProductCard({ product }: { product: Product }) {
         >
           {product.name}
         </Link>
+        <ProductPrice product={product} size="md" />
         {readMoreOnly ? (
           <Link
             to="/produkt/$id"
