@@ -76,17 +76,30 @@ const logged = data?.[String(product.id)];
   means the product has no logged price. `getPriceLogPrice` returns `null` then.
 - Non-2xx responses throw `VendreError` with the store's error `title`/`code`.
 
-## Rendering guidance
+## Rendering in the storefront
 
-Nothing in the storefront shows price history today. When a customer asks for
-it (typically "lowest price in the last 30 days" next to a discounted price):
+The storefront renders logged prices as a "Lägsta pris 30 dagar: <amount>" line
+under the price, everywhere `ProductPrice` is used (product cards, PDP, search
+autocomplete, cart lines). Order lines under My account are excluded — they show
+the prices captured when the order was placed.
 
-1. Call the hook on the product page for the **active** product or variant id,
-   so the value follows variant selection.
-2. Show it only when the product is actually on sale — the shared price rules
-   live in `.vendre/skills/product-price.md`.
-3. Treat an empty array as "no logged price" and render nothing; never compute
-   a fallback in the frontend.
+Rules:
+
+1. The line is shown **only when the product is on sale** (the shared rule in
+   `.vendre/skills/product-price.md`).
+2. Only when the store returns a logged price for that id; a missing key renders
+   nothing. Never compute a fallback in the frontend.
+3. `price_log_price` is already formatted — print it as is.
+4. Demo mode never fetches: the batching provider is live-mode only.
+
+### Batching
+
+`src/components/store/price-log-provider.tsx` (mounted once in `StoreShell`)
+collects the ids of discounted price rows, debounces ~50 ms and issues **one**
+`getPriceLogPrices(ids)` call per page, cached 5 minutes via react-query. Price
+rows opt in through `usePriceLogEntry(id, onSale)` — never fetch per row.
+`ProductPrice` takes an optional `productId` prop; without it no logged price is
+requested or shown.
 
 ## Caching
 
