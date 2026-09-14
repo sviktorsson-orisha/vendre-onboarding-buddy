@@ -331,39 +331,10 @@ const liveApi: VendreApi = {
     const page = options.page ?? 1;
     if (needle.length < SEARCH_MIN_CHARS) return paginate([], limit, 1);
 
-    // 1) VQL, when the install has it enabled.
-    if (!vqlDisabled) {
-      try {
-        const data = await guarded(() =>
-          surfaceJson<VqlProductsResponse>("vql", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({
-              resource: "products",
-              query: needle,
-              search: needle,
-              page,
-              limit,
-            }),
-          }),
-        );
-        const list = data?.products ?? data?.product_list ?? data?.data?.products ?? null;
-        if (Array.isArray(list)) {
-          return {
-            products: list,
-            product_count: data?.product_count ?? list.length,
-            page_index: data?.page_index ?? page,
-            page_count: data?.page_count ?? Math.max(1, Math.ceil((data?.product_count ?? list.length) / limit)),
-          };
-        }
-        vqlDisabled = true;
-      } catch {
-        // VQL is off on this install (documented 500) — fall back for good.
-        vqlDisabled = true;
-      }
-    }
-
-    // 2) Fallback: match over the catalogue read from categories/{id}.
+    // Search runs over the catalogue read from categories/{id}. VQL has no
+    // supported free-text search on this Surface version — the previous
+    // `{ resource, query }` body made the store answer 500, which also switched
+    // VQL off for product and variant reads.
     const all = await liveCatalogue();
     return paginate(all.filter((p) => matchesQuery(p, needle)), limit, page);
   },
