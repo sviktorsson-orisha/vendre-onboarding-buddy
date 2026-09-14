@@ -19,10 +19,27 @@ another v1 path without an explicit decision.
   `POST /surface/2/session/bootstrap` established, so bootstrap must have run.
 - **No mutation protection token** (it is a GET, and not one of the documented
   GET exceptions).
-- **Parameters:** the generated spec declares none. Verified against a live
-  store the endpoint answers `200` with `[]` when no logged prices exist, both
-  with and without query parameters. Pass product identifiers through and read
-  the response defensively.
+- **Parameters:** repeated `id[]=<products_id>` — one per product, several per
+  call. No other parameter name works; the store answers with an empty result
+  instead of an error.
+- **Response:** an object keyed by product id, verified live:
+
+  ```json
+  {
+    "222": {
+      "product_id": 222,
+      "price_list_id": null,
+      "currency_id": null,
+      "products_tax_class_id": 2,
+      "price_log_price_ex_vat_raw": 39.2,
+      "price_log_price_raw": 49,
+      "price_log_price": "49 kr"
+    }
+  }
+  ```
+
+  Products without a logged price are omitted. `price_log_price` is already
+  formatted in the session currency — render it as is.
 
 ## How the app reaches it
 
