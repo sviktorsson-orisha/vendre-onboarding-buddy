@@ -50,36 +50,23 @@ export function resolvePrice(fields: PriceFields) {
 
 export function ProductPrice({
   product,
-  productId,
   size = "md",
   className,
 }: {
   product: PriceFields;
-  /** Enables the "lowest price 30 days" line for discounted products. */
-  productId?: string | number | null;
   size?: Size;
   className?: string;
 }) {
-  const { t } = useI18n();
   const { onSale, current, original } = resolvePrice(product);
-  const logged = usePriceLogEntry(productId, onSale);
-  const loggedText = onSale ? logged?.price_log_price : null;
 
   return (
-    <span className={cn("inline-flex flex-col", className)}>
-      <span className="inline-flex items-baseline gap-2">
-        <span className={cn(currentSize[size], onSale ? "text-destructive" : "text-foreground")}>
-          {current}
-        </span>
-        {onSale && original && (
-          <span className={cn(originalSize[size], "text-muted-foreground line-through")}>
-            {original}
-          </span>
-        )}
+    <span className={cn("inline-flex items-baseline gap-2", className)}>
+      <span className={cn(currentSize[size], onSale ? "text-destructive" : "text-foreground")}>
+        {current}
       </span>
-      {loggedText && (
-        <span className="text-xs text-muted-foreground">
-          {t("store.lowestPrice30Days")}: {loggedText}
+      {onSale && original && (
+        <span className={cn(originalSize[size], "text-muted-foreground line-through")}>
+          {original}
         </span>
       )}
     </span>
