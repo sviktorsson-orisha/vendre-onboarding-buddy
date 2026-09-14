@@ -130,7 +130,12 @@ export function SearchBox({ className, autoFocus }: { className?: string; autoFo
                     <span className="min-w-0 grow truncate text-sm text-foreground">
                       {product.name}
                     </span>
-                    <ProductPrice product={product} size="sm" className="shrink-0" />
+                    <ProductPrice
+                      product={product}
+                      productId={product.id}
+                      size="sm"
+                      className="shrink-0"
+                    />
                   </Link>
                 </li>
               ))}
