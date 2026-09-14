@@ -54,6 +54,8 @@ Colours are semantic tokens only — never `text-red-500` or similar.
 <ProductPrice product={product} size="md" className="mt-5" />
 ```
 
+
+
 - `product`: `PriceFields` = `Pick<Product, "price" | "price_raw">` plus optional
   `price_special` / `price_special_raw`. A full `Product` satisfies it, and so
   does a loose object for places without a product (e.g. cart lines).

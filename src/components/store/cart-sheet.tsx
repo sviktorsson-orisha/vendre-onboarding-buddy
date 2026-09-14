@@ -75,7 +75,11 @@ export function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
                       {line.product_data?.name ?? `#${line.productId}`}
                     </Link>
                     {line.product_data && (
-                      <ProductPrice product={line.product_data} size="sm" className="mt-1 flex" />
+                      <ProductPrice
+                        product={line.product_data}
+                        size="sm"
+                        className="mt-1 flex"
+                      />
                     )}
 
                     <div className="mt-2 flex items-center gap-2">

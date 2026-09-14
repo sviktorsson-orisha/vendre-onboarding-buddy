@@ -236,7 +236,11 @@ export default function ProductPage({ id }: { id: string }) {
               {view?.description_short || product.description_short}
             </p>
           )}
-          <ProductPrice product={buyableProduct ?? product} size="lg" className="mt-5" />
+          <ProductPrice
+            product={buyableProduct ?? product}
+            size="lg"
+            className="mt-5"
+          />
           {(variantTypes.length === 0 || allSelected) && (
             <p
               className={cn(

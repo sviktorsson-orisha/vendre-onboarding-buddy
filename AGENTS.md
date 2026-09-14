@@ -62,6 +62,7 @@ Always read the matching skill file **before** starting work in that area.
 | Cart UX: optimistic state, sync, flush before checkout | `.vendre/skills/cart-sync.md`              |
 | Category pages (PLP), filters, sorting, pagination     | `.vendre/skills/category-plp.md`           |
 | Product pages (PDP), variants, pricing, VAT            | `.vendre/skills/pdp-products.md`           |
+| Logged prices / price history (only Surface v1 call)   | `.vendre/skills/price-log.md`              |
 | VQL search & multi-resource queries                    | `.vendre/skills/vql-queries.md`            |
 | Header/footer navigation, mega menus, breadcrumbs      | `.vendre/skills/navigation-menus.md`       |
 | CMS pages & content blocks                             | `.vendre/skills/cms-pages.md`              |
