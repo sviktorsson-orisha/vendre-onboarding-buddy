@@ -140,19 +140,19 @@ off for ~60s and keep using the existing token.
   `filter` / `f`, `pfrom`, `pto`. Filter, sort and paginate on the server and
   render counts from the response — never on an already-paginated client list.
 
-### 1.10 The Only Allowed v1 Call: Logged Prices
+### 1.10 The Only Allowed v1 Call: Logged Prices (not implemented)
 
-`GET /surface/1/products/price-log-prices` — logged prices (price history).
-This is the single Surface v1 endpoint this template uses; nothing else may be
-added to v1.
+`GET /surface/1/products/price_log_prices` — logged prices (price history).
+This is the single Surface v1 endpoint that may ever be used; nothing else may
+be added to v1. **The template does not implement it** — there is no proxy
+route, helper or UI. The details below exist so it can be built on request.
 
 - **No OAuth bearer** — v1 never sends `Authorization`.
-- **Session cookie required** — without the store `visitorid` cookie it returns
+- **Session cookie required** — without the store session cookie it returns
   `401 SURFACE_SESSION_UNAUTHORIZED`, so `POST /surface/2/session/bootstrap`
   must have run first. The cookie is shared between v1 and v2.
 - **No mutation protection token** (GET, and not a documented GET exception).
-- **Parameters:** repeated `id[]=<products_id>`, one per product. The generated
-  spec declares none, but this is the parameter the store reads; any other name
+- **Parameters:** repeated `id[]=<products_id>`, one per product. Any other name
   (`products_id`, `product_id`, `ids`) silently returns an empty result.
 - **Response:** an object keyed by product id. Products without a logged price
   are omitted, so a missing key means "no logged price".
@@ -173,12 +173,12 @@ added to v1.
 
   `price_log_price` is already formatted in the session currency — never format
   or recalculate it in the frontend.
-- **Proxy path:** `GET /api/vendre/surface1/products/price-log-prices` →
-  `${VENDRE_BASE_URL}/surface/1/products/price-log-prices`, implemented in
-  `src/routes/api/vendre/surface1/products/price-log-prices.ts`. Same guards as
-  the v2 proxy, minus the bearer header. Responses are `no-store`.
+- **If implemented:** route it through a same-origin proxy like all other store
+  traffic, with the same guards as the v2 proxy minus the bearer header, and
+  `no-store` responses.
 
-Usage patterns live in `.vendre/skills/price-log.md`.
+Details live in `.vendre/skills/price-log.md`.
+
 
 ---
 

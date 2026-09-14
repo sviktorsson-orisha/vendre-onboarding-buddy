@@ -132,7 +132,6 @@ export function SearchBox({ className, autoFocus }: { className?: string; autoFo
                     </span>
                     <ProductPrice
                       product={product}
-                      productId={product.id}
                       size="sm"
                       className="shrink-0"
                     />

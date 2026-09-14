@@ -51,13 +51,10 @@ Colours are semantic tokens only — never `text-red-500` or similar.
 ## API
 
 ```tsx
-<ProductPrice product={product} productId={product.id} size="md" className="mt-5" />
+<ProductPrice product={product} size="md" className="mt-5" />
 ```
 
-- `productId`: optional. When set **and** the product is on sale, the component
-  shows a "Lägsta pris 30 dagar: <amount>" line under the price, sourced from
-  the Surface v1 logged prices through the batching `PriceLogProvider`
-  (see `.vendre/skills/price-log.md`). Omit it to render price only.
+
 
 - `product`: `PriceFields` = `Pick<Product, "price" | "price_raw">` plus optional
   `price_special` / `price_special_raw`. A full `Product` satisfies it, and so
