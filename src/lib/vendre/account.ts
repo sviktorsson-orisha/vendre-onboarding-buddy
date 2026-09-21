@@ -622,29 +622,31 @@ const liveAccountApi: AccountApi = {
     if (token) setMutationProtectionToken(token);
     else resetSessionGate();
   },
-  getRegisterConstraints: async () => {
-    for (const path of CONSTRAINT_PATHS) {
-      try {
-        return normalizeRegisterConstraints(await guarded(() => call<unknown>(path)));
-      } catch {
-        // Older installs do not serve constraints yet — try the next path.
-      }
-    }
-    return DEFAULT_REGISTER_CONSTRAINTS;
-  },
+  getRegisterConstraints: () => loadRegisterConstraints(),
   register: async (input) => {
-    const constraints = await liveAccountApi.getRegisterConstraints();
+    const constraints = await loadRegisterConstraints();
     const data = await guarded(() =>
-      call<{ status?: string }>("accounts", {
+      call<unknown>("accounts", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(buildRegisterBody(input, constraints)),
       }),
     );
-    // "pending" means the store keeps the account inactive until it is reviewed,
-    // so there is no session to sign in to yet.
-    return { status: data?.status === "pending" ? "pending" : "active" };
+
+    const explicit = registrationStatus(data);
+    if (explicit) return { status: explicit };
+
+    // The answer did not say either way: an approved account is signed in
+    // straight away, a pending one is not. Ask the store which it is.
+    resetSessionGate();
+    try {
+      const context = await guarded(() => call<SessionContext>("session/context"));
+      return { status: context.authenticated ? "active" : "pending" };
+    } catch {
+      return { status: "pending" };
+    }
   },
+
   forgotPassword: async (email) => {
     await guarded(() =>
       call(`accounts/me/forgot-password?email=${encodeURIComponent(email)}`),
