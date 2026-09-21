@@ -93,14 +93,14 @@ export default function LoginPage() {
   const optionalField = (
     field: keyof RegisterInput & string,
     labelKey: TranslationKey,
-    options?: { force?: boolean; forceRequired?: boolean; hide?: boolean },
+    options?: { hide?: boolean },
   ) =>
-    !options?.hide && (shown(field) || options?.force) ? (
+    !options?.hide && shown(field) ? (
       <div key={field} className="space-y-1.5">
         <Label htmlFor={field}>{t(labelKey)}</Label>
         <Input
           id={field}
-          required={needed(field) || Boolean(options?.forceRequired)}
+          required={needed(field)}
           {...limit(field)}
           value={String(form[field] ?? "")}
           onChange={(event) => set(field, event.target.value as RegisterInput[typeof field])}
