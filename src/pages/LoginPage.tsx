@@ -93,9 +93,9 @@ export default function LoginPage() {
   const optionalField = (
     field: keyof RegisterInput & string,
     labelKey: TranslationKey,
-    options?: { force?: boolean; forceRequired?: boolean },
+    options?: { force?: boolean; forceRequired?: boolean; hide?: boolean },
   ) =>
-    shown(field) || options?.force ? (
+    !options?.hide && (shown(field) || options?.force) ? (
       <div key={field} className="space-y-1.5">
         <Label htmlFor={field}>{t(labelKey)}</Label>
         <Input
@@ -325,7 +325,9 @@ export default function LoginPage() {
                 force: isBusiness,
                 forceRequired: isBusiness,
               })}
-              {optionalField("vat_identification_number", "account.vat")}
+              {optionalField("vat_identification_number", "account.vat", {
+                hide: !isBusiness,
+              })}
 
               {(shown("telephone") || shown("mobile")) && (
                 <div className="grid gap-4 sm:grid-cols-2">
