@@ -88,7 +88,7 @@ function isBag(value: unknown): value is Bag {
 function flatten(payload: unknown): Bag {
   if (!isBag(payload)) return {};
   const out: Bag = { ...payload };
-  for (const key of ["account", "customer", "address", "data", "attributes", "order"]) {
+  for (const key of ["account", "customer", "address", "default_address", "data", "attributes", "order"]) {
     const nested = payload[key];
     if (isBag(nested)) Object.assign(out, flatten(nested));
   }
@@ -114,6 +114,7 @@ export function normalizeAccount(payload: unknown): Account {
     mobile: pick(bag, ["mobile", "cellphone", "phone_mobile"]),
     company: pick(bag, ["company", "company_name"]),
     street_address: pick(bag, ["street_address", "street", "address", "address_1"]),
+    street_address2: pick(bag, ["street_address2", "address_2", "street2"]),
     postcode: pick(bag, ["postcode", "zip", "postal_code", "zipcode"]),
     city: pick(bag, ["city", "town"]),
     country: pick(bag, ["country", "country_code"]),
