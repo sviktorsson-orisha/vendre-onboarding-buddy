@@ -287,7 +287,8 @@ const liveApi: VendreApi = {
   addToCart: async (productId, quantity = 1) => {
     await guarded(() =>
       surfaceJson("shopping-cart/products", {
-        method: "POST",
+        // PUT is the current contract; POST remains only as a legacy alias.
+        method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ products: [{ id: Number(productId), quantity }] }),
       }),
@@ -296,7 +297,8 @@ const liveApi: VendreApi = {
   updateQty: async (line, quantity) => {
     await guarded(() =>
       surfaceJson("shopping-cart/products", {
-        method: "POST",
+        // PUT is the current contract; POST remains only as a legacy alias.
+        method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           products: [{ id: line.productId, quantity, attributes: line.attributes }],
@@ -309,7 +311,8 @@ const liveApi: VendreApi = {
   removeLine: async (line) => {
     await guarded(() =>
       surfaceJson("shopping-cart/products", {
-        method: "POST",
+        // PUT is the current contract; POST remains only as a legacy alias.
+        method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           products: [{ id: line.productId, quantity: 0, attributes: line.attributes }],
