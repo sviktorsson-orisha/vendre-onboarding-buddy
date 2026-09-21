@@ -120,7 +120,6 @@ export type RegisterInput = {
   vat_identification_number?: string;
   telephone?: string;
   mobile?: string;
-  fax?: string;
   street_address2?: string;
   consent_personal_data_policy: boolean;
 };

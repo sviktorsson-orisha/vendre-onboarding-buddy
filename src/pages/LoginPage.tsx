@@ -57,7 +57,6 @@ export default function LoginPage() {
     vat_identification_number: "",
     telephone: "",
     mobile: "",
-    fax: "",
     consent_personal_data_policy: false,
   });
 
@@ -299,7 +298,6 @@ export default function LoginPage() {
                   {optionalField("mobile", "account.mobile")}
                 </div>
               )}
-              {optionalField("fax", "account.fax")}
 
               {shown("street_address") && (
               <div className="space-y-1.5">
