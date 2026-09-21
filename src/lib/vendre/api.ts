@@ -182,6 +182,21 @@ function categoryQuery(query?: CategoryQuery) {
   return qs ? `?${qs}` : "";
 }
 
+/**
+ * Every product in a category. Surface caps a page at MAX_PAGE_SIZE, so the
+ * pages are walked until a short one arrives (with a hard stop as a guard).
+ */
+async function allCategoryProducts(catId: number): Promise<Product[]> {
+  const out: Product[] = [];
+  for (let page = 1; page <= 20; page += 1) {
+    const data = await liveApi.getCategory(catId, { limit: MAX_PAGE_SIZE, page });
+    const list = data.product_list ?? [];
+    out.push(...list);
+    if (list.length < MAX_PAGE_SIZE) break;
+  }
+  return out;
+}
+
 const liveApi: VendreApi = {
   mode: "live",
   getMenus: () =>
@@ -618,10 +633,7 @@ function liveCatalogue(): Promise<Product[]> {
     const categories = menus.filter((item) => item.menu_type === "category");
     const lists = await Promise.all(
       categories.map((item) =>
-        liveApi
-          .getCategory(item.id, { limit: 0 })
-          .then((data) => data.product_list ?? [])
-          .catch(() => [] as Product[]),
+        allCategoryProducts(item.id).catch(() => [] as Product[]),
       ),
     );
     const byId = new Map<string, Product>();
