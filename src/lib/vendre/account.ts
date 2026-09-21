@@ -889,6 +889,19 @@ export function useAccountMutations() {
   return { login, logout, register, forgotPassword, updateAccount, updateAddress };
 }
 
+/**
+ * The store decides which registration fields are shown and required. Cached
+ * for the session — it is configuration, not customer data.
+ */
+export function useRegisterConstraints() {
+  const api = useAccountApi();
+  return useQuery({
+    queryKey: ["vendre", api.mode, "register-constraints"],
+    queryFn: () => api.getRegisterConstraints(),
+    staleTime: 10 * 60 * 1000,
+  });
+}
+
 export function useAccount(enabled = true) {
   const api = useAccountApi();
   return useQuery({
