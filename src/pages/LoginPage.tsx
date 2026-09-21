@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, type TranslationKey } from "@/lib/i18n";
 import {
   COUNTRY_OPTIONS,
   DEFAULT_REGISTER_CONSTRAINTS,
@@ -87,7 +87,7 @@ export default function LoginPage() {
     setForm((current) => ({ ...current, [key]: value }));
 
   /** Renders a text field the store can switch on or off in admin. */
-  const optionalField = (field: keyof RegisterInput & string, labelKey: string) =>
+  const optionalField = (field: keyof RegisterInput & string, labelKey: TranslationKey) =>
     shown(field) ? (
       <div key={field} className="space-y-1.5">
         <Label htmlFor={field}>{t(labelKey)}</Label>
