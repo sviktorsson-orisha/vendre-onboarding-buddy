@@ -112,14 +112,26 @@ export function getStoreBaseUrl() {
   return storeBaseUrl;
 }
 
+function transient(error: unknown) {
+  // A 502/503/504 from the proxy means the store (or its OAuth endpoint)
+  // hiccupped, not that the session is invalid — one retry usually recovers.
+  if (!(error instanceof VendreError)) return true;
+  return error.status === 0 || error.status === 429 || error.status >= 502;
+}
+
 async function bootstrapSession() {
   storeBaseUrl = await fetchStoreBaseUrl();
-  const data = await surfaceJson<{ surface_mutation_protection_token?: string }>(
-    "session/bootstrap",
-    { method: "POST" },
-  );
+  let data: { surface_mutation_protection_token?: string };
+  try {
+    data = await surfaceJson("session/bootstrap", { method: "POST" });
+  } catch (error) {
+    if (!transient(error)) throw error;
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    data = await surfaceJson("session/bootstrap", { method: "POST" });
+  }
   setMutationProtectionToken(data.surface_mutation_protection_token ?? null);
 }
+
 
 
 function ensureSession() {
