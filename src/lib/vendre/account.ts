@@ -449,6 +449,7 @@ export const DEFAULT_REGISTER_CONSTRAINTS: RegisterConstraints = {
     "email_address",
     "password",
     "confirmation",
+    "personnummer",
     "street_address",
     "postcode",
     "city",
@@ -461,6 +462,7 @@ export const DEFAULT_REGISTER_CONSTRAINTS: RegisterConstraints = {
     "email_address",
     "password",
     "confirmation",
+    "personnummer",
     "street_address",
     "postcode",
     "city",
@@ -468,6 +470,7 @@ export const DEFAULT_REGISTER_CONSTRAINTS: RegisterConstraints = {
     "consent_personal_data_policy",
   ],
 };
+
 
 /**
  * Maps the registration form to the payload the store accepts. The store
