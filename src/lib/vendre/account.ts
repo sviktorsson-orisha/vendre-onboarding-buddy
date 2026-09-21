@@ -757,6 +757,17 @@ const liveAccountApi: AccountApi = {
       }),
     );
 
+    const company = String(input.company ?? "").trim();
+    if (Number(input.customer_type ?? 0) === 1 && company) {
+      // Registration is signed in straight away, so the address write works
+      // here; a failure must never break an otherwise successful sign-up.
+      try {
+        await saveCompanyOnAddress(company);
+      } catch {
+        /* keep the account, the company name can be set from My account */
+      }
+    }
+
     const explicit = registrationStatus(data);
     if (explicit) return { status: explicit };
 
