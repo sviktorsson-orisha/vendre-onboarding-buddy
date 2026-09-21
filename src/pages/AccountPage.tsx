@@ -338,16 +338,16 @@ function ProfileView() {
     key: keyof Account,
     label: TranslationKey,
     errorKey: string,
-    options?: { constrained?: boolean; hide?: boolean },
+    options?: { constrained?: boolean; hide?: boolean; as?: string },
   ) => {
-    const name = String(key);
+    const name = options?.as ?? String(key);
     if (options?.hide) return null;
     if (options?.constrained && !shown(name)) return null;
     return (
       <div className="space-y-1.5">
-        <Label htmlFor={`profile-${name}`}>{t(label)}</Label>
+        <Label htmlFor={`profile-${String(key)}`}>{t(label)}</Label>
         <Input
-          id={`profile-${name}`}
+          id={`profile-${String(key)}`}
           {...(options?.constrained && { required: needed(name), ...limit(name) })}
           value={String(form[key] ?? "")}
           onChange={(event) => {
@@ -408,7 +408,10 @@ function ProfileView() {
         <div className="grid gap-4 sm:grid-cols-2">
           {field("firstname", "account.firstname", "firstname", { constrained: true })}
           {field("lastname", "account.lastname", "lastname", { constrained: true })}
-          {field("email", "account.email", "email_address", { constrained: true })}
+          {field("email", "account.email", "email_address", {
+            constrained: true,
+            as: "email_address",
+          })}
           {field(
             "personnummer",
             isBusiness ? "account.orgnumber" : "account.personnummer",
