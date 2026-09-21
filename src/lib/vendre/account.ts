@@ -560,6 +560,7 @@ export function buildRegisterBody(
   input: RegisterInput,
   constraints: RegisterConstraints = DEFAULT_REGISTER_CONSTRAINTS,
 ): Record<string, unknown> {
+  const isBusiness = Number(input.customer_type ?? 0) === 1;
   const body: Record<string, unknown> = {
     email_address: input.email_address.trim(),
     password: input.password,
@@ -571,17 +572,22 @@ export function buildRegisterBody(
     city: input.city.trim(),
     // accounts/form names this field `country_id`; the store rejects `country`.
     country_id: countryId(input.country),
+    // Customer type: 0 = private person, 1 = business.
+    type: isBusiness ? 1 : 0,
     consent_personal_data_policy: Boolean(input.consent_personal_data_policy),
   };
 
   for (const field of OPTIONAL_FIELDS) {
-    if (!constraints.visible.includes(field)) continue;
+    // A business customer always sends its company name, even when the store
+    // keeps the field switched off for private customers.
+    if (!constraints.visible.includes(field) && !(isBusiness && field === "company")) continue;
     const value = String((input as Record<string, unknown>)[field] ?? "").trim();
     if (value) body[field] = value;
   }
 
   return body;
 }
+
 
 
 
