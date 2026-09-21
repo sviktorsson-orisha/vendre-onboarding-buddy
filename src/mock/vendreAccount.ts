@@ -14,7 +14,6 @@ export const mockAccount: Account = {
   city: "Stockholm",
   country: "SE",
   personnummer: "",
-  vat_identification_number: "SE556677889901",
   type: "company",
   newsletter: true,
   raw: {},

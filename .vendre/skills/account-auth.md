@@ -42,8 +42,8 @@ Writing back: `PUT /surface/2/accounts/me` and
 `POST /surface/2/accounts` with the field set the store asks for —
 `firstname`, `lastname`, `email_address`, `password`, `confirmation`,
 `street_address`, `postcode`, `city`, `country_id` (numeric), plus the optional
-fields the store enables (`company`, `personnummer`,
-`vat_identification_number`, `telephone`, `mobile`, `fax`, `street_address2`).
+fields the store enables (`company`, `personnummer`, `telephone`, `mobile`,
+`street_address2`).
 Map validation errors from each error's `source.parameter` to the matching
 field.
 
@@ -52,8 +52,10 @@ switches between the two; a business customer uses the same `personnummer` key
 for its organisation number, labelled "Organisationsnummer" in the UI.
 `company` follows `accounts/form` like every other optional field — it is only
 shown, required and sent when the store reports `display: true`.
-`vat_identification_number` is a business-only field — hide it and leave it out
-of the body for private customers.
+`vat_identification_number` is intentionally not part of this frontend: the
+store never returns it from `accounts/me` or the address book and PUT updates
+do not persist it, so the field was removed from both registration and the
+profile form.
 
 **`company` is dropped by the store when `accounts/form` reports it as
 `display: false`** — the account is created with `company: null`, which is why
