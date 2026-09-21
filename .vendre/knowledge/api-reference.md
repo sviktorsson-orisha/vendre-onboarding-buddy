@@ -303,6 +303,12 @@ Required: `email_address`, `password`, `confirmation`, `firstname`, `lastname`,
 Optional: `type`, `gender`, `company`, `street_address2`, `suburb`,
 `personnummer`, `state`, `telephone`, `fax`, `mobile`, `alias`,
 `customers_group_id`, `vat_identification_number`, `newsletter`,
+
+`type` is the customer type: `0` = private person, `1` = business (both
+verified against a live store). A business customer sends its company name in
+`company` and its organisation number in the same `personnummer` field a
+private customer uses for the personal ID number.
+
 `consent_personal_data_policy`. `POST customers` additionally accepts
 `email_addresses`.
 
