@@ -578,8 +578,8 @@ export function buildRegisterBody(
   };
 
   for (const field of OPTIONAL_FIELDS) {
-    // VAT numbers only apply to business customers.
-    if (!isBusiness && field === "vat_identification_number") continue;
+    // Company name and VAT number only apply to business customers.
+    if (!isBusiness && (field === "company" || field === "vat_identification_number")) continue;
     // Every other optional field follows the store's own accounts/form list.
     if (!constraints.visible.includes(field)) continue;
     const value = String((input as Record<string, unknown>)[field] ?? "").trim();

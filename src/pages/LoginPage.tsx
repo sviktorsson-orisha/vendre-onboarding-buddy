@@ -317,7 +317,7 @@ export default function LoginPage() {
                 "personnummer",
                 isBusiness ? "account.orgnumber" : "account.personnummer",
               )}
-              {optionalField("company", "account.company")}
+              {optionalField("company", "account.company", { hide: !isBusiness })}
               {optionalField("vat_identification_number", "account.vat", {
                 hide: !isBusiness,
               })}
