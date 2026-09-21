@@ -46,14 +46,13 @@ Writing back: `PUT /surface/2/accounts/me` and
 `newsletter`, `consent_personal_data_policy`. Map validation errors from each
 error's `source.parameter` to the matching field.
 
-Which of those fields the form actually shows comes from
-`GET /surface/2/accounts/constraints`. Admin settings such as "allow customers
-to enter company" and "organisation / personal number" are **not** exposed
-anywhere else: as of 2026-09-21 `session/context.configuration` returns only
-`STORE_NAME` and `SHOP_LOGO`, and the constraints endpoint 404s on the current
-store. So `company` and `personnummer` stay hidden (defaults) until the store
-answers constraints — never hardcode them visible and never add a manual
-toggle to fake the setting.
+Which fields the form shows is a local constant for now. Admin settings such as
+"allow customers to enter company" and "organisation / personal number" are not
+exposed by the API: as of 2026-09-21 `session/context.configuration` returns
+only `STORE_NAME` and `SHOP_LOGO`, and no confirmed endpoint lists the
+registration fields. Do not guess a path (`accounts/constraints` and
+`accounts/create/constraints` were tried and 404). `company` and `personnummer`
+stay hidden until backend confirms how to read the setting.
 
 ## Orders and password reset
 

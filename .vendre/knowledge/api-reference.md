@@ -251,24 +251,21 @@ All `accounts*` endpoints resolve to the **`default`** CORS policy, not `custome
 
 | Method | Path | CORS policy | Token | Purpose |
 | --- | --- | --- | --- | --- |
-| POST | `accounts` | `default` | yes | registration — fields per the constraints endpoint, `password` optional |
-| GET | `accounts/constraints` | `default` | – | which registration fields the store shows and requires |
+| POST | `accounts` | `default` | yes | registration — documented field set, `password` optional |
 
 **Account creation status.** A store may create the account with status
 `pending`: it is inactive until a human approves it, so there is no session to
 sign in to. Read `status` from the response and tell the customer instead of
-redirecting to the account area. `password` is optional when the constraints
-say so; the store then sets it later.
+redirecting to the account area. `password` may be optional; the store then
+sets it later.
 
 **Store-driven optional fields (verified 2026-09-21).** Admin can allow
 customers to enter a company name and an organisation / personal number, but
 that setting is not readable from the API: `session/context.configuration`
-returns only `STORE_NAME` and `SHOP_LOGO`, and `accounts/constraints` (plus
-`accounts/create/constraints`, `configuration`, `settings`,
-`store/configuration`, `session/configuration`) answer 404 on the current
-store. Those fields therefore stay hidden in registration and My account until
-the store reports them; the registration form already builds itself from the
-constraints response, so it picks them up as soon as that endpoint answers.
+returns only `STORE_NAME` and `SHOP_LOGO`, and there is **no known endpoint**
+that reports the registration field list — the backend team has not confirmed
+one. Do not invent a path. Until then the storefront sends the documented
+required field set and company / organisation number stay hidden.
 | GET | `accounts/me` | `default` | – | profile (flat / nested / alias shapes) |
 | PUT | `accounts/me` | `default` | yes | update profile |
 | GET | `accounts/me/addresses` | `default` | – | the customer's **main address** only |

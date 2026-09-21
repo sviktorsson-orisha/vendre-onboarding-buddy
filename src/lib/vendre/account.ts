@@ -436,9 +436,9 @@ function countryId(value: string | number | null | undefined): number {
 
 /**
  * Which fields the create-account form shows and which of them are required.
- * The store owns this: Surface v2 exposes the dynamically configured
- * constraints, and we only fall back to the documented required set when the
- * install does not serve them yet.
+ * Surface v2 has no known endpoint for this yet, so the documented required set
+ * below is the single source of truth. When the store exposes a field-list
+ * endpoint, fill this object from it and the form follows automatically.
  */
 export type RegisterConstraints = { visible: string[]; required: string[] };
 
@@ -468,68 +468,6 @@ export const DEFAULT_REGISTER_CONSTRAINTS: RegisterConstraints = {
     "consent_personal_data_policy",
   ],
 };
-
-/** Paths tried in order; installs differ until every store runs the new build. */
-const CONSTRAINT_PATHS = ["accounts/constraints", "accounts/create/constraints"];
-
-/** Response alias names mapped onto our form field names. */
-const FIELD_ALIASES: Record<string, string> = {
-  first_name: "firstname",
-  last_name: "lastname",
-  email: "email_address",
-  password_confirmation: "confirmation",
-  street: "street_address",
-  zip: "postcode",
-};
-
-function fieldName(name: string) {
-  return FIELD_ALIASES[name] ?? name;
-}
-
-/**
- * Accepts both shapes seen in the wild: a map keyed by field name and a list of
- * `{ name, required, visible }` entries.
- */
-export function normalizeRegisterConstraints(payload: unknown): RegisterConstraints {
-  const root = isBag(payload) ? payload : {};
-  const raw = (root["fields"] ?? root["properties"] ?? root["constraints"] ?? root) as unknown;
-  const visible: string[] = [];
-  const required: string[] = [];
-
-  const add = (name: string, entry: unknown) => {
-    const key = fieldName(name);
-    const bag = isBag(entry) ? entry : {};
-    const shown = bag["visible"] ?? bag["display"] ?? bag["show"] ?? true;
-    if (shown === false) return;
-    visible.push(key);
-    if (bag["required"] === true || bag["mandatory"] === true) required.push(key);
-  };
-
-  if (Array.isArray(raw)) {
-    for (const entry of raw) {
-      const bag = isBag(entry) ? entry : {};
-      const name = typeof bag["name"] === "string" ? bag["name"] : null;
-      if (name) add(name, bag);
-    }
-  } else if (isBag(raw)) {
-    for (const [name, entry] of Object.entries(raw)) add(name, entry);
-  }
-
-  // A `required: ["..."]` list alongside the field map is also valid JSON Schema.
-  const requiredList = isBag(root) ? root["required"] : null;
-  if (Array.isArray(requiredList)) {
-    for (const name of requiredList) if (typeof name === "string") required.push(fieldName(name));
-  }
-
-  if (!visible.length) return DEFAULT_REGISTER_CONSTRAINTS;
-
-  // Password stays part of the form even when the store allows creating an
-  // account without one, and consent is always shown.
-  for (const key of ["password", "confirmation", "consent_personal_data_policy"])
-    if (!visible.includes(key)) visible.push(key);
-
-  return { visible, required: [...new Set(required)] };
-}
 
 /**
  * Maps the registration form to the payload the store accepts. Only the fields
@@ -616,60 +554,11 @@ function registrationStatus(payload: unknown): "active" | "pending" | null {
 }
 
 /**
- * The constraints lookup is store configuration, not customer data, and some
- * installs do not serve it at all. Resolve it once per page load and remember
- * the outcome for a day so a missing endpoint cannot keep logging 404s.
+ * No Surface v2 endpoint reports the registration field list yet, so this is a
+ * local constant — no request, no cache, no 404s.
  */
-let registerConstraintsPromise: Promise<RegisterConstraints> | null = null;
-
-const CONSTRAINTS_CACHE_KEY = "vendre:register-constraints";
-const CONSTRAINTS_CACHE_TTL = 24 * 60 * 60 * 1000;
-
-function readCachedConstraints(): RegisterConstraints | null {
-  try {
-    const raw = globalThis.localStorage?.getItem(CONSTRAINTS_CACHE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as { value?: unknown; savedAt?: number };
-    if (typeof parsed?.savedAt !== "number") return null;
-    if (Date.now() - parsed.savedAt > CONSTRAINTS_CACHE_TTL) return null;
-    const value = parsed.value as Partial<RegisterConstraints> | undefined;
-    if (!Array.isArray(value?.visible) || !Array.isArray(value?.required)) return null;
-    return { visible: value.visible, required: value.required };
-  } catch {
-    return null;
-  }
-}
-
-function writeCachedConstraints(value: RegisterConstraints) {
-  try {
-    globalThis.localStorage?.setItem(
-      CONSTRAINTS_CACHE_KEY,
-      JSON.stringify({ value, savedAt: Date.now() }),
-    );
-  } catch {
-    // Private mode or SSR — the per-page-load cache still applies.
-  }
-}
-
-function loadRegisterConstraints() {
-  registerConstraintsPromise ??= (async () => {
-    const cached = readCachedConstraints();
-    if (cached) return cached;
-
-    for (const path of CONSTRAINT_PATHS) {
-      try {
-        const fresh = normalizeRegisterConstraints(await guarded(() => call<unknown>(path)));
-        writeCachedConstraints(fresh);
-        return fresh;
-      } catch {
-        // Older installs do not serve constraints yet — try the next path.
-      }
-    }
-    // Remember the miss too, so the 404s happen at most once a day.
-    writeCachedConstraints(DEFAULT_REGISTER_CONSTRAINTS);
-    return DEFAULT_REGISTER_CONSTRAINTS;
-  })();
-  return registerConstraintsPromise;
+function loadRegisterConstraints(): Promise<RegisterConstraints> {
+  return Promise.resolve(DEFAULT_REGISTER_CONSTRAINTS);
 }
 
 export type AccountApi = {
