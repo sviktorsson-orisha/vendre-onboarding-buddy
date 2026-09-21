@@ -269,18 +269,34 @@ export default function LoginPage() {
               </div>
               )}
 
+              {optionalField("personnummer", "account.personnummer")}
+              {optionalField("company", "account.company")}
+              {optionalField("vat_identification_number", "account.vat")}
+
+              {(shown("telephone") || shown("mobile")) && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {optionalField("telephone", "account.phone")}
+                  {optionalField("mobile", "account.mobile")}
+                </div>
+              )}
+              {optionalField("fax", "account.fax")}
+
               {shown("street_address") && (
               <div className="space-y-1.5">
                 <Label htmlFor="street">{t("account.street")}</Label>
                 <Input
                   id="street"
                   required={needed("street_address")}
+                  {...limit("street_address")}
                   value={form.street_address}
                   onChange={(event) => set("street_address", event.target.value)}
                 />
                 <FieldError message={registerFields["street_address"]} />
               </div>
               )}
+
+              {optionalField("street_address2", "account.street2")}
+
 
               {(shown("postcode") || shown("city")) && (
               <div className="grid gap-4 sm:grid-cols-2">
