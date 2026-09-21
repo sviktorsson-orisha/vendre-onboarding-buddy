@@ -287,8 +287,13 @@ documented required set if the call fails.
 | GET | `accounts/me/quotations/{quotationId}` | `default` | – | single quotation |
 
 **`PUT accounts/me` body keys** — the update body uses `firstname` / `lastname`
-(plus `email_address`, `street_address`, `postcode`, `city`, numeric `country`,
-and the optional registration fields), while `GET accounts/me` returns
+(plus `email_address`, `street_address`, `postcode`, `city`, numeric
+`country_id` — `country` is also accepted — `type` as `0`/`1`, and the optional
+fields `telephone`, `mobile`, `street_address2`, `personnummer`, `company`,
+`vat_identification_number`). Build the body exactly like the registration body:
+send only the fields `GET accounts/form` marks `display: true`, skip blank
+optionals, and send `company` / `vat_identification_number` only for business
+customers. `GET accounts/me` returns
 `first_name` / `last_name` and `email`. Read the aliases, but **always write the
 documented keys** — echoing the response spelling back makes the store silently
 ignore the name fields.
