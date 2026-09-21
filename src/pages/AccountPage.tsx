@@ -404,10 +404,10 @@ function ProfileView() {
             constrained: true,
             hide: !isBusiness,
           })}
-          {field("vat_identification_number", "account.vat", "vat_identification_number", {
-            constrained: true,
-            hide: !isBusiness,
-          })}
+          {/* The store never persists or returns vat_identification_number
+              (verified live on PUT accounts/me and PUT accounts/me/addresses:
+              both return 200 but the value is absent from every read), so the
+              edit form does not offer a field that silently discards input. */}
           {field("telephone", "account.phone", "telephone", { constrained: true })}
           {field("mobile", "account.mobile", "mobile", { constrained: true })}
           {field("street_address", "account.street", "street_address", { constrained: true })}
