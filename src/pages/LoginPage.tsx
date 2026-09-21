@@ -55,7 +55,6 @@ export default function LoginPage() {
     customer_type: 0,
     personnummer: "",
     company: "",
-    vat_identification_number: "",
     telephone: "",
     mobile: "",
     consent_personal_data_policy: false,
@@ -318,9 +317,6 @@ export default function LoginPage() {
                 isBusiness ? "account.orgnumber" : "account.personnummer",
               )}
               {optionalField("company", "account.company", { hide: !isBusiness })}
-              {optionalField("vat_identification_number", "account.vat", {
-                hide: !isBusiness,
-              })}
 
               {(shown("telephone") || shown("mobile")) && (
                 <div className="grid gap-4 sm:grid-cols-2">

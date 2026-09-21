@@ -21,7 +21,6 @@ export type Account = {
   city: string;
   country: string;
   personnummer: string;
-  vat_identification_number: string;
   type: string;
   newsletter: boolean;
   /** The untouched payload from the store, used to write back canonical keys. */
@@ -120,7 +119,6 @@ export type RegisterInput = {
   personnummer: string;
   /** Optional fields, only rendered and sent when the store switches them on. */
   company?: string;
-  vat_identification_number?: string;
   telephone?: string;
   mobile?: string;
   street_address2?: string;

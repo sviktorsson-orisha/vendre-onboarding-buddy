@@ -119,7 +119,6 @@ export function normalizeAccount(payload: unknown): Account {
     city: pick(bag, ["city", "town"]),
     country: pick(bag, ["country", "country_code"]),
     personnummer: pick(bag, ["personnummer", "social_security_number"]),
-    vat_identification_number: pick(bag, ["vat_identification_number", "vat_number", "vat"]),
     type: pick(bag, ["type", "customer_type"]) || "private",
     newsletter: Boolean(bag["newsletter"]),
     raw: bag,
@@ -455,7 +454,6 @@ export const REGISTER_FIELDS = [
   "confirmation",
   "personnummer",
   "company",
-  "vat_identification_number",
   "telephone",
   "mobile",
   "street_address",
@@ -472,7 +470,6 @@ const FIELD_ALIASES: Record<string, string> = { country_id: "country" };
 const OPTIONAL_FIELDS = [
   "personnummer",
   "company",
-  "vat_identification_number",
   "telephone",
   "mobile",
   "street_address2",
@@ -580,7 +577,7 @@ export function buildRegisterBody(
 
   for (const field of OPTIONAL_FIELDS) {
     // Company name and VAT number only apply to business customers.
-    if (!isBusiness && (field === "company" || field === "vat_identification_number")) continue;
+    if (!isBusiness && field === "company") continue;
     // Every other optional field follows the store's own accounts/form list.
     if (!constraints.visible.includes(field)) continue;
     const value = String((input as Record<string, unknown>)[field] ?? "").trim();
@@ -625,7 +622,7 @@ export function buildAccountBody(
   };
 
   for (const field of OPTIONAL_FIELDS) {
-    if (!isBusiness && (field === "company" || field === "vat_identification_number")) continue;
+    if (!isBusiness && field === "company") continue;
     if (!constraints.visible.includes(field)) continue;
     const value = String((account as unknown as Record<string, unknown>)[field] ?? "").trim();
     if (value) body[field] = value;
