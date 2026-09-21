@@ -113,7 +113,9 @@ export type RegisterInput = {
   city: string;
   /** Numeric country id expected by the store (SE = 203). */
   country: number;
-  /** Personal ID number — required by stores that enable it in admin. */
+  /** Customer type: 0 = private person, 1 = business. */
+  customer_type: 0 | 1;
+  /** Personal ID number (business: organisation number) — same store field. */
   personnummer: string;
   /** Optional fields, only rendered and sent when the store switches them on. */
   company?: string;

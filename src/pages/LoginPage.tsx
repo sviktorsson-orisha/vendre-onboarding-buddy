@@ -52,6 +52,7 @@ export default function LoginPage() {
     postcode: "",
     city: "",
     country: 203,
+    customer_type: 0,
     personnummer: "",
     company: "",
     vat_identification_number: "",
@@ -85,14 +86,21 @@ export default function LoginPage() {
   const set = <K extends keyof RegisterInput>(key: K, value: RegisterInput[K]) =>
     setForm((current) => ({ ...current, [key]: value }));
 
+  /** Business customers fill in an organisation number and a company name. */
+  const isBusiness = form.customer_type === 1;
+
   /** Renders a text field the store can switch on or off in admin. */
-  const optionalField = (field: keyof RegisterInput & string, labelKey: TranslationKey) =>
-    shown(field) ? (
+  const optionalField = (
+    field: keyof RegisterInput & string,
+    labelKey: TranslationKey,
+    options?: { force?: boolean; forceRequired?: boolean },
+  ) =>
+    shown(field) || options?.force ? (
       <div key={field} className="space-y-1.5">
         <Label htmlFor={field}>{t(labelKey)}</Label>
         <Input
           id={field}
-          required={needed(field)}
+          required={needed(field) || Boolean(options?.forceRequired)}
           {...limit(field)}
           value={String(form[field] ?? "")}
           onChange={(event) => set(field, event.target.value as RegisterInput[typeof field])}
@@ -123,6 +131,10 @@ export default function LoginPage() {
     }
     if (needed("consent_personal_data_policy") && !form.consent_personal_data_policy) {
       setRegisterFields({ consent_personal_data_policy: t("account.consent") });
+      return;
+    }
+    if (isBusiness && !String(form.company ?? "").trim()) {
+      setRegisterFields({ company: t("account.companyRequired") });
       return;
     }
 
@@ -222,6 +234,23 @@ export default function LoginPage() {
             >
               <p className="text-sm text-muted-foreground">{t("account.registerIntro")}</p>
 
+              <div className="space-y-1.5">
+                <Label>{t("account.customerType")}</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {([0, 1] as const).map((value) => (
+                    <Button
+                      key={value}
+                      type="button"
+                      variant={form.customer_type === value ? "default" : "outline"}
+                      onClick={() => set("customer_type", value)}
+                    >
+                      {t(value === 1 ? "account.business" : "account.private")}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+
               {(shown("firstname") || shown("lastname")) && (
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
@@ -288,8 +317,14 @@ export default function LoginPage() {
               </div>
               )}
 
-              {optionalField("personnummer", "account.personnummer")}
-              {optionalField("company", "account.company")}
+              {optionalField(
+                "personnummer",
+                isBusiness ? "account.orgnumber" : "account.personnummer",
+              )}
+              {optionalField("company", "account.company", {
+                force: isBusiness,
+                forceRequired: isBusiness,
+              })}
               {optionalField("vat_identification_number", "account.vat")}
 
               {(shown("telephone") || shown("mobile")) && (

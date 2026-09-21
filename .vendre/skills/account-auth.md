@@ -47,6 +47,12 @@ fields the store enables (`company`, `personnummer`,
 Map validation errors from each error's `source.parameter` to the matching
 field.
 
+Customer type goes in `type`: `0` = private person, `1` = business. The form
+switches between the two; a business customer always sends `company` (even when
+the store hides the field) and uses the same `personnummer` key for its
+organisation number, labelled "Organisationsnummer" in the UI.
+
+
 Which fields the form shows comes from `GET /surface/2/accounts/form`: an
 object map of `{ display, required, min_length, max_length }` per field. Hide
 everything with `display: false`, mark the required ones mandatory, apply the
