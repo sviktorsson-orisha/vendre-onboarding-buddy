@@ -297,7 +297,8 @@ ignore the name fields.
 **Registration body (`POST accounts`, and `POST customers`)**
 
 Required: `email_address`, `password`, `confirmation`, `firstname`, `lastname`,
-`street_address`, `postcode`, `city`, `country`.
+`street_address`, `postcode`, `city`, `country_id`, plus every field
+`accounts/form` reports as `display: true, required: true`.
 
 Optional: `type`, `gender`, `company`, `street_address2`, `suburb`,
 `personnummer`, `state`, `telephone`, `fax`, `mobile`, `alias`,
@@ -305,8 +306,11 @@ Optional: `type`, `gender`, `company`, `street_address2`, `suburb`,
 `consent_personal_data_policy`. `POST customers` additionally accepts
 `email_addresses`.
 
-`country` is the numeric country id (e.g. Sweden = `203`). A partial field set
-returns `SURFACE_ACCOUNT_MALFORMED_BODY` (422).
+`country_id` is the numeric country id (e.g. Sweden = `203`); sending `country`
+instead fails with `missing required property "country_id"`. Omit optional keys
+that are empty — blank strings are rejected. A partial field set returns
+`SURFACE_ACCOUNT_MALFORMED_BODY` (400/422).
+
 
 **`accounts/me/order-history/{orderId}` response** (verified against a live store):
 the payload is wrapped in `order` and contains `id`, `status`, `date`,
