@@ -48,9 +48,16 @@ export default function LoginPage() {
     firstname: "",
     lastname: "",
     street_address: "",
+    street_address2: "",
     postcode: "",
     city: "",
     country: 203,
+    personnummer: "",
+    company: "",
+    vat_identification_number: "",
+    telephone: "",
+    mobile: "",
+    fax: "",
     consent_personal_data_policy: false,
   });
 
@@ -62,6 +69,15 @@ export default function LoginPage() {
   const { data: constraints = DEFAULT_REGISTER_CONSTRAINTS } = useRegisterConstraints();
   const shown = (field: string) => constraints.visible.includes(field);
   const needed = (field: string) => constraints.required.includes(field);
+  /** Length limits straight from the store, so the browser flags them early. */
+  const limit = (field: string) => {
+    const rule = constraints.limits[field];
+    return {
+      ...(rule?.min !== undefined && { minLength: rule.min }),
+      ...(rule?.max !== undefined && { maxLength: rule.max }),
+    };
+  };
+
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) void navigate({ to: "/mitt-konto", replace: true });
