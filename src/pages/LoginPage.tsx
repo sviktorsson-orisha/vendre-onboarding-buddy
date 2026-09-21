@@ -85,14 +85,21 @@ export default function LoginPage() {
   const set = <K extends keyof RegisterInput>(key: K, value: RegisterInput[K]) =>
     setForm((current) => ({ ...current, [key]: value }));
 
+  /** Business customers fill in an organisation number and a company name. */
+  const isBusiness = form.customer_type === 1;
+
   /** Renders a text field the store can switch on or off in admin. */
-  const optionalField = (field: keyof RegisterInput & string, labelKey: TranslationKey) =>
-    shown(field) ? (
+  const optionalField = (
+    field: keyof RegisterInput & string,
+    labelKey: TranslationKey,
+    options?: { force?: boolean; forceRequired?: boolean },
+  ) =>
+    shown(field) || options?.force ? (
       <div key={field} className="space-y-1.5">
         <Label htmlFor={field}>{t(labelKey)}</Label>
         <Input
           id={field}
-          required={needed(field)}
+          required={needed(field) || Boolean(options?.forceRequired)}
           {...limit(field)}
           value={String(form[field] ?? "")}
           onChange={(event) => set(field, event.target.value as RegisterInput[typeof field])}
