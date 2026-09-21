@@ -19,12 +19,15 @@ import { useI18n, type TranslationKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import {
   COUNTRY_OPTIONS,
+  DEFAULT_REGISTER_CONSTRAINTS,
+  isBusinessAccount,
   useAccount,
   useAccountMutations,
   useAddresses,
   useAuth,
   useOrder,
   useOrders,
+  useRegisterConstraints,
   VendreAccountError,
 } from "@/lib/vendre/account";
 import type { Account, Address, FieldErrors } from "@/types/vendre-account";
@@ -304,6 +307,7 @@ function ProfileView() {
         value && value.trim() ? value : (fallbacks.find((v) => v && v.trim()) ?? "");
       return {
         ...base,
+        company: fill(base.company, main?.company),
         street_address: fill(base.street_address, main?.street_address),
         postcode: fill(base.postcode, main?.postcode),
         city: fill(base.city, main?.city),
@@ -312,24 +316,49 @@ function ProfileView() {
     });
   }, [account, main]);
 
+  // The store decides which fields the account form shows and requires.
+  const { data: constraints = DEFAULT_REGISTER_CONSTRAINTS } = useRegisterConstraints();
+  const shown = (field: string) => constraints.visible.includes(field);
+  const needed = (field: string) => constraints.required.includes(field);
+  const limit = (field: string) => {
+    const rule = constraints.limits[field];
+    return {
+      ...(rule?.min !== undefined && { minLength: rule.min }),
+      ...(rule?.max !== undefined && { maxLength: rule.max }),
+    };
+  };
+
 
 
   if (!form) return <Section title={t("account.profile")}>…</Section>;
 
-  const field = (key: keyof Account, label: TranslationKey, errorKey: string) => (
-    <div className="space-y-1.5">
-      <Label htmlFor={`profile-${String(key)}`}>{t(label)}</Label>
-      <Input
-        id={`profile-${String(key)}`}
-        value={String(form[key] ?? "")}
-        onChange={(event) => {
-          setSaved(false);
-          setForm((current) => (current ? { ...current, [key]: event.target.value } : current));
-        }}
-      />
-      {fields[errorKey] && <p className="text-xs text-destructive">{fields[errorKey]}</p>}
-    </div>
-  );
+  const isBusiness = isBusinessAccount(form);
+
+  const field = (
+    key: keyof Account,
+    label: TranslationKey,
+    errorKey: string,
+    options?: { constrained?: boolean; hide?: boolean; as?: string },
+  ) => {
+    const name = options?.as ?? String(key);
+    if (options?.hide) return null;
+    if (options?.constrained && !shown(name)) return null;
+    return (
+      <div className="space-y-1.5">
+        <Label htmlFor={`profile-${String(key)}`}>{t(label)}</Label>
+        <Input
+          id={`profile-${String(key)}`}
+          {...(options?.constrained && { required: needed(name), ...limit(name) })}
+          value={String(form[key] ?? "")}
+          onChange={(event) => {
+            setSaved(false);
+            setForm((current) => (current ? { ...current, [key]: event.target.value } : current));
+          }}
+        />
+        {fields[errorKey] && <p className="text-xs text-destructive">{fields[errorKey]}</p>}
+      </div>
+    );
+  };
 
   const countryValue = COUNTRY_OPTIONS.some((option) => String(option.id) === String(form.country))
     ? String(form.country)
@@ -356,13 +385,53 @@ function ProfileView() {
           }
         }}
       >
+        <div className="space-y-1.5">
+          <Label>{t("account.customerType")}</Label>
+          <div className="grid grid-cols-2 gap-2">
+            {([0, 1] as const).map((value) => (
+              <Button
+                key={value}
+                type="button"
+                variant={(value === 1) === isBusiness ? "default" : "outline"}
+                onClick={() => {
+                  setSaved(false);
+                  setForm((current) =>
+                    current ? { ...current, type: value === 1 ? "business" : "consumer" } : current,
+                  );
+                }}
+              >
+                {t(value === 1 ? "account.business" : "account.private")}
+              </Button>
+            ))}
+          </div>
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          {field("firstname", "account.firstname", "firstname")}
-          {field("lastname", "account.lastname", "lastname")}
-          {field("email", "account.email", "email_address")}
-          {field("street_address", "account.street", "street_address")}
-          {field("postcode", "account.postcode", "postcode")}
-          {field("city", "account.city", "city")}
+          {field("firstname", "account.firstname", "firstname", { constrained: true })}
+          {field("lastname", "account.lastname", "lastname", { constrained: true })}
+          {field("email", "account.email", "email_address", {
+            constrained: true,
+            as: "email_address",
+          })}
+          {field(
+            "personnummer",
+            isBusiness ? "account.orgnumber" : "account.personnummer",
+            "personnummer",
+            { constrained: true },
+          )}
+          {field("company", "account.company", "company", {
+            constrained: true,
+            hide: !isBusiness,
+          })}
+          {field("vat_identification_number", "account.vat", "vat_identification_number", {
+            constrained: true,
+            hide: !isBusiness,
+          })}
+          {field("telephone", "account.phone", "telephone", { constrained: true })}
+          {field("mobile", "account.mobile", "mobile", { constrained: true })}
+          {field("street_address", "account.street", "street_address", { constrained: true })}
+          {field("street_address2", "account.street2", "street_address2", { constrained: true })}
+          {field("postcode", "account.postcode", "postcode", { constrained: true })}
+          {field("city", "account.city", "city", { constrained: true })}
           <div className="space-y-1.5">
             <Label htmlFor="profile-country">{t("account.country")}</Label>
             <select

@@ -16,6 +16,7 @@ export type Account = {
   mobile: string;
   company: string;
   street_address: string;
+  street_address2: string;
   postcode: string;
   city: string;
   country: string;

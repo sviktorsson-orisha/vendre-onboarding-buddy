@@ -9,6 +9,7 @@ export const mockAccount: Account = {
   mobile: "070-123 45 67",
   company: "Andersson Design AB",
   street_address: "Storgatan 12",
+  street_address2: "",
   postcode: "114 51",
   city: "Stockholm",
   country: "SE",
