@@ -571,7 +571,8 @@ export function buildRegisterBody(
     street_address: input.street_address.trim(),
     postcode: input.postcode.trim(),
     city: input.city.trim(),
-    country: countryId(input.country),
+    // accounts/form names this field `country_id`; the store rejects `country`.
+    country_id: countryId(input.country),
     consent_personal_data_policy: Boolean(input.consent_personal_data_policy),
   };
 
