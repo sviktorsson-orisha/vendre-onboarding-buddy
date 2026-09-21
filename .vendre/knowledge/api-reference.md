@@ -279,7 +279,7 @@ documented required set if the call fails.
 | PUT | `accounts/me` | `default` | yes | update profile |
 | GET | `accounts/me/addresses` | `default` | – | the customer's **main address** only |
 | GET | `accounts/me/address-book` | `default` | – | the **alternative** addresses only (never the main one) |
-| PUT | `accounts/me/addresses` | `default` | yes | update address |
+| PUT | `accounts/me/addresses` | `default` | yes | update main address, body `{ addresses: [ { id, firstname, lastname, company, street_address, postcode, city, country_id, telephone } ] }` — a flat body answers `422 SURFACE_ACCOUNT_MALFORMED_BODY` (verified live) |
 | PUT | `accounts/me/address-book` | `default` | yes | upsert alternative addresses, body `{ addresses: [...] }` |
 | GET | `accounts/me/order-history` | `default` | – | order list |
 | GET | `accounts/me/order-history/{orderId}` | `default` | – | single order (see shape below) |
