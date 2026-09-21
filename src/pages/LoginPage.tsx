@@ -137,9 +137,12 @@ export default function LoginPage() {
       await navigate({ to: "/mitt-konto" });
     } catch (error) {
       const { message, fields } = errorsOf(error);
-      setRegisterError(message);
+      // The store answers one generic 422 for every rejected body — most often a
+      // duplicate email or ID number. Say that instead of the opaque title.
+      setRegisterError(Object.keys(fields).length ? message : t("account.malformed"));
       setRegisterFields(fields);
     }
+
   }
 
   return (

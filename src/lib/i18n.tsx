@@ -222,6 +222,8 @@ const dictionary = {
     "account.consent": "Jag godkänner integritetspolicyn",
     "account.required": "Fältet är obligatoriskt",
     "account.mismatch": "Lösenorden matchar inte",
+    "account.malformed":
+      "Kontot kunde inte skapas. E-postadressen eller personnumret används kanske redan – kontrollera uppgifterna eller logga in i stället.",
     "account.pendingTitle": "Kontot väntar på godkännande",
     "account.pendingBody":
       "Vi har tagit emot din ansökan. Butiken granskar den manuellt och du kan logga in när kontot har aktiverats.",
@@ -444,6 +446,8 @@ const dictionary = {
     "account.consent": "I accept the privacy policy",
     "account.required": "This field is required",
     "account.mismatch": "The passwords do not match",
+    "account.malformed":
+      "The account could not be created. The email address or ID number may already be in use — check the details or sign in instead.",
     "account.pendingTitle": "Your account is awaiting approval",
     "account.pendingBody":
       "We have received your application. The store reviews it manually and you can sign in once the account is activated.",
