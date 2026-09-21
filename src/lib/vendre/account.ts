@@ -568,7 +568,8 @@ export type AccountApi = {
   getSession: () => Promise<{ authenticated: boolean; name: string }>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  register: (input: RegisterInput) => Promise<void>;
+  register: (input: RegisterInput) => Promise<RegisterResult>;
+  getRegisterConstraints: () => Promise<RegisterConstraints>;
   forgotPassword: (email: string) => Promise<void>;
   getAccount: () => Promise<Account>;
   updateAccount: (account: Account) => Promise<void>;
@@ -590,29 +591,43 @@ const liveAccountApi: AccountApi = {
   },
   login: async (email, password) => {
     const data = await guarded(() =>
-      call<{ mutationProtectionToken?: string }>("login/email", {
+      call<LoginResponse>("login/email", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ email, password }),
       }),
     );
-    if (data?.mutationProtectionToken) setMutationProtectionToken(data.mutationProtectionToken);
+    const token = freshToken(data);
+    if (token) setMutationProtectionToken(token);
   },
   logout: async () => {
-    const data = await guarded(() =>
-      call<{ mutationProtectionToken?: string }>("logout", { method: "POST" }),
-    );
-    if (data?.mutationProtectionToken) setMutationProtectionToken(data.mutationProtectionToken);
+    const data = await guarded(() => call<LoginResponse>("logout", { method: "POST" }));
+    const token = freshToken(data);
+    if (token) setMutationProtectionToken(token);
     else resetSessionGate();
   },
+  getRegisterConstraints: async () => {
+    for (const path of CONSTRAINT_PATHS) {
+      try {
+        return normalizeRegisterConstraints(await guarded(() => call<unknown>(path)));
+      } catch {
+        // Older installs do not serve constraints yet — try the next path.
+      }
+    }
+    return DEFAULT_REGISTER_CONSTRAINTS;
+  },
   register: async (input) => {
-    await guarded(() =>
-      call("accounts", {
+    const constraints = await liveAccountApi.getRegisterConstraints();
+    const data = await guarded(() =>
+      call<{ status?: string }>("accounts", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(buildRegisterBody(input)),
+        body: JSON.stringify(buildRegisterBody(input, constraints)),
       }),
     );
+    // "pending" means the store keeps the account inactive until it is reviewed,
+    // so there is no session to sign in to yet.
+    return { status: data?.status === "pending" ? "pending" : "active" };
   },
   forgotPassword: async (email) => {
     await guarded(() =>
