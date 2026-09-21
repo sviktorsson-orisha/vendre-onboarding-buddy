@@ -617,20 +617,56 @@ function registrationStatus(payload: unknown): "active" | "pending" | null {
 
 /**
  * The constraints lookup is store configuration, not customer data, and some
- * installs do not serve it at all. Resolve it once per page load — including
- * the fallback — so a missing endpoint cannot produce a burst of 404s.
+ * installs do not serve it at all. Resolve it once per page load and remember
+ * the outcome for a day so a missing endpoint cannot keep logging 404s.
  */
 let registerConstraintsPromise: Promise<RegisterConstraints> | null = null;
 
+const CONSTRAINTS_CACHE_KEY = "vendre:register-constraints";
+const CONSTRAINTS_CACHE_TTL = 24 * 60 * 60 * 1000;
+
+function readCachedConstraints(): RegisterConstraints | null {
+  try {
+    const raw = globalThis.localStorage?.getItem(CONSTRAINTS_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { value?: unknown; savedAt?: number };
+    if (typeof parsed?.savedAt !== "number") return null;
+    if (Date.now() - parsed.savedAt > CONSTRAINTS_CACHE_TTL) return null;
+    const value = parsed.value as Partial<RegisterConstraints> | undefined;
+    if (!Array.isArray(value?.visible) || !Array.isArray(value?.required)) return null;
+    return { visible: value.visible, required: value.required };
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedConstraints(value: RegisterConstraints) {
+  try {
+    globalThis.localStorage?.setItem(
+      CONSTRAINTS_CACHE_KEY,
+      JSON.stringify({ value, savedAt: Date.now() }),
+    );
+  } catch {
+    // Private mode or SSR — the per-page-load cache still applies.
+  }
+}
+
 function loadRegisterConstraints() {
   registerConstraintsPromise ??= (async () => {
+    const cached = readCachedConstraints();
+    if (cached) return cached;
+
     for (const path of CONSTRAINT_PATHS) {
       try {
-        return normalizeRegisterConstraints(await guarded(() => call<unknown>(path)));
+        const fresh = normalizeRegisterConstraints(await guarded(() => call<unknown>(path)));
+        writeCachedConstraints(fresh);
+        return fresh;
       } catch {
         // Older installs do not serve constraints yet — try the next path.
       }
     }
+    // Remember the miss too, so the 404s happen at most once a day.
+    writeCachedConstraints(DEFAULT_REGISTER_CONSTRAINTS);
     return DEFAULT_REGISTER_CONSTRAINTS;
   })();
   return registerConstraintsPromise;
