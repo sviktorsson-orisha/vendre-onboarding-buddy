@@ -793,23 +793,9 @@ const liveAccountApi: AccountApi = {
 
 
   updateAddress: async (address) => {
-    await guarded(() =>
-      call("accounts/me/addresses", {
-        method: "PUT",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          id: address.id,
-          firstname: address.firstname,
-          lastname: address.lastname,
-          company: address.company,
-          street_address: address.street_address,
-          postcode: address.postcode,
-          city: address.city,
-          country: address.country,
-          telephone: address.telephone,
-        }),
-      }),
-    );
+    // The store only accepts the wrapped `{ addresses: [...] }` shape with
+    // `country_id`; a flat body answers 422 SURFACE_ACCOUNT_MALFORMED_BODY.
+    await guarded(() => putMainAddress(addressBody(address)));
   },
   getOrders: () =>
     guarded(() => call<unknown>("accounts/me/order-history")).then((data) =>
