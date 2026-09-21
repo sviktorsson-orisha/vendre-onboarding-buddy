@@ -173,12 +173,21 @@ export default function LoginPage() {
           </TabsContent>
 
           <TabsContent value="register">
+            {pending ? (
+              <div className="space-y-2 rounded-xl border border-border bg-card p-6">
+                <h2 className="brand-heading text-lg text-foreground">
+                  {t("account.pendingTitle")}
+                </h2>
+                <p className="text-sm text-muted-foreground">{t("account.pendingBody")}</p>
+              </div>
+            ) : (
             <form
               onSubmit={handleRegister}
               className="space-y-4 rounded-xl border border-border bg-card p-6"
             >
               <p className="text-sm text-muted-foreground">{t("account.registerIntro")}</p>
 
+              {(shown("firstname") || shown("lastname")) && (
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="firstname">{t("account.firstname")}</Label>
@@ -201,6 +210,7 @@ export default function LoginPage() {
                   <FieldError message={registerFields["lastname"]} />
                 </div>
               </div>
+              )}
 
               <div className="space-y-1.5">
                 <Label htmlFor="register-email">{t("account.email")}</Label>
@@ -214,6 +224,7 @@ export default function LoginPage() {
                 <FieldError message={registerFields["email_address"]} />
               </div>
 
+              {shown("password") && (
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="register-password">{t("account.password")}</Label>
@@ -240,7 +251,9 @@ export default function LoginPage() {
                   <FieldError message={registerFields["confirmation"]} />
                 </div>
               </div>
+              )}
 
+              {shown("street_address") && (
               <div className="space-y-1.5">
                 <Label htmlFor="street">{t("account.street")}</Label>
                 <Input
@@ -251,7 +264,9 @@ export default function LoginPage() {
                 />
                 <FieldError message={registerFields["street_address"]} />
               </div>
+              )}
 
+              {(shown("postcode") || shown("city")) && (
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="postcode">{t("account.postcode")}</Label>
@@ -274,7 +289,9 @@ export default function LoginPage() {
                   <FieldError message={registerFields["city"]} />
                 </div>
               </div>
+              )}
 
+              {shown("country") && (
               <div className="space-y-1.5">
                 <Label htmlFor="country">{t("account.country")}</Label>
                 <select
@@ -292,6 +309,7 @@ export default function LoginPage() {
                 </select>
                 <FieldError message={registerFields["country"]} />
               </div>
+              )}
 
               <label className="flex items-center gap-2 text-sm text-foreground">
                 <Checkbox
@@ -315,6 +333,7 @@ export default function LoginPage() {
                 {t("account.signUp")}
               </Button>
             </form>
+            )}
           </TabsContent>
         </Tabs>
       </div>
