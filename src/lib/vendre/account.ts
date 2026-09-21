@@ -902,12 +902,22 @@ export function useRegisterConstraints() {
   });
 }
 
+/**
+ * Customer data only exists for a signed-in visitor. Without this gate a
+ * signed-out (or pending, not yet approved) visitor fires accounts/me,
+ * addresses and order calls that can only answer 401.
+ */
+function useCustomerQueriesEnabled(enabled: boolean) {
+  const { isAuthenticated, isLoading, mode } = useAuth();
+  return enabled && !isLoading && (isAuthenticated || mode === "demo");
+}
+
 export function useAccount(enabled = true) {
   const api = useAccountApi();
   return useQuery({
     queryKey: ["vendre", api.mode, "account"],
     queryFn: () => api.getAccount(),
-    enabled,
+    enabled: useCustomerQueriesEnabled(enabled),
     ...NO_CACHE,
   });
 }
@@ -917,7 +927,7 @@ export function useAddresses(enabled = true) {
   return useQuery({
     queryKey: ["vendre", api.mode, "addresses"],
     queryFn: () => api.getAddresses(),
-    enabled,
+    enabled: useCustomerQueriesEnabled(enabled),
     ...NO_CACHE,
   });
 }
@@ -927,7 +937,7 @@ export function useOrders(enabled = true) {
   return useQuery({
     queryKey: ["vendre", api.mode, "orders"],
     queryFn: () => api.getOrders(),
-    enabled,
+    enabled: useCustomerQueriesEnabled(enabled),
     ...NO_CACHE,
   });
 }
@@ -937,7 +947,7 @@ export function useOrder(id: string | null) {
   return useQuery({
     queryKey: ["vendre", api.mode, "order", id],
     queryFn: () => (id ? api.getOrder(id) : Promise.resolve(null)),
-    enabled: Boolean(id),
+    enabled: useCustomerQueriesEnabled(Boolean(id)),
     ...NO_CACHE,
   });
 }
@@ -947,7 +957,8 @@ export function useSubUsers(enabled = true) {
   return useQuery({
     queryKey: ["vendre", api.mode, "sub-users"],
     queryFn: () => api.getSubUsers(),
-    enabled,
+    enabled: useCustomerQueriesEnabled(enabled),
     ...NO_CACHE,
   });
 }
+
