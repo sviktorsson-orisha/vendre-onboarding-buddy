@@ -52,6 +52,7 @@ export default function LoginPage() {
     postcode: "",
     city: "",
     country: 203,
+    customer_type: 0,
     personnummer: "",
     company: "",
     vat_identification_number: "",
