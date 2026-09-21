@@ -426,6 +426,8 @@ const dictionary = {
     "account.company": "Company",
     "account.personnummer": "Personal ID number",
     "account.street": "Street address",
+    "account.street2": "Address line 2",
+    "account.fax": "Fax",
     "account.postcode": "Postcode",
     "account.city": "City",
     "account.state": "State/Region",
