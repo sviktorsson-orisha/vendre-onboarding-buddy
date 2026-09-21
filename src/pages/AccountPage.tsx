@@ -385,16 +385,8 @@ function ProfileView() {
           }
         }}
       >
-        {/* The store ignores the customer type on PUT accounts/me (verified
-            live: type/customer_type/customers_group_id are all dropped), so the
-            edit form shows it read-only instead of pretending to save it. */}
-        <div className="space-y-1.5">
-          <Label>{t("account.customerType")}</Label>
-          <p className="text-sm text-foreground">
-            {t(isBusiness ? "account.business" : "account.private")}
-          </p>
-          <p className="text-xs text-muted-foreground">{t("account.typeLocked")}</p>
-        </div>
+        {/* The customer type is create-only in the store, so it is not shown
+            here; isBusiness still drives which fields are visible. */}
         <div className="grid gap-4 sm:grid-cols-2">
           {field("firstname", "account.firstname", "firstname", { constrained: true })}
           {field("lastname", "account.lastname", "lastname", { constrained: true })}
