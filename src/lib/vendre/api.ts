@@ -150,14 +150,28 @@ export async function guarded<T>(run: () => Promise<T>): Promise<T> {
   }
 }
 
-/** Serialises listing state for GET categories/{id}; arrays use bracket syntax. */
+/** Surface rejects a page size above this. */
+export const MAX_PAGE_SIZE = 500;
+
+function positiveInt(value: unknown): number | null {
+  const n = Number(value);
+  return Number.isFinite(n) && Number.isInteger(n) && n >= 1 ? n : null;
+}
+
+/**
+ * Serialises listing state for GET categories/{id}; arrays use bracket syntax.
+ * Listing parameters are validated strictly by Surface, so only well-formed
+ * values are sent — anything else is dropped and the store default applies.
+ */
 function categoryQuery(query?: CategoryQuery) {
   const params = new URLSearchParams();
-  if (query?.page) params.set("page", String(query.page));
-  // limit=0 means "all products" in Surface — it must be sent, not treated as unset.
-  if (query?.limit != null) params.set("limit", String(query.limit));
+  const page = positiveInt(query?.page);
+  if (page) params.set("page", String(page));
+  const limit = positiveInt(query?.limit);
+  if (limit) params.set("limit", String(Math.min(limit, MAX_PAGE_SIZE)));
   if (query?.sort_by) params.set("sort_by", query.sort_by);
-  if (query?.sort_order) params.set("sort_order", query.sort_order);
+  const order = String(query?.sort_order ?? "").toLowerCase();
+  if (order === "asc" || order === "desc") params.set("sort_order", order);
   if (query?.pfrom != null) params.set("pfrom", String(query.pfrom));
   if (query?.pto != null) params.set("pto", String(query.pto));
   for (const tag of query?.tags ?? []) params.append("tags[]", String(tag));
