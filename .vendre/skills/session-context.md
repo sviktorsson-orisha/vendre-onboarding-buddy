@@ -65,6 +65,15 @@ Bootstrap response (200):
 Never hardcode a brand name, logo asset, currency or VAT assumption. If the
 storefront shows it, it should come from session context.
 
+**Verified 2026-09-21:** `configuration` currently contains only `STORE_NAME`
+and `SHOP_LOGO`. No admin toggle is exposed there — in particular the
+"allow customers to enter company / organisation number" settings are not
+readable, and no other endpoint reports them (`accounts/constraints`,
+`accounts/create/constraints`, `configuration`, `settings`,
+`store/configuration`, `session/configuration` all return 404). Do not guess
+those settings and do not add a manual switch; wait until the store exposes
+them.
+
 ## Cookie rules
 
 The store sets its session cookie as `Secure; SameSite=None`. When the
