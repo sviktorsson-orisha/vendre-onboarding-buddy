@@ -39,20 +39,20 @@ Writing back: `PUT /surface/2/accounts/me` and
 
 ## Registration
 
-`POST /surface/2/accounts` with the full documented field set —
-`firstname`, `lastname`, `email_address`, `password`, `confirmation`, `type`,
-`gender`, `company`, `street_address`, `postcode`, `city`, `country`,
-`telephone`, `mobile`, `personnummer`, `vat_identification_number`,
-`newsletter`, `consent_personal_data_policy`. Map validation errors from each
-error's `source.parameter` to the matching field.
+`POST /surface/2/accounts` with the field set the store asks for —
+`firstname`, `lastname`, `email_address`, `password`, `confirmation`,
+`street_address`, `postcode`, `city`, `country_id` (numeric), plus the optional
+fields the store enables (`company`, `personnummer`,
+`vat_identification_number`, `telephone`, `mobile`, `fax`, `street_address2`).
+Map validation errors from each error's `source.parameter` to the matching
+field.
 
-Which fields the form shows is a local constant for now. Admin settings such as
-"allow customers to enter company" and "organisation / personal number" are not
-exposed by the API: as of 2026-09-21 `session/context.configuration` returns
-only `STORE_NAME` and `SHOP_LOGO`, and no confirmed endpoint lists the
-registration fields. Do not guess a path (`accounts/constraints` and
-`accounts/create/constraints` were tried and 404). `company` and `personnummer`
-stay hidden until backend confirms how to read the setting.
+Which fields the form shows comes from `GET /surface/2/accounts/form`: an
+object map of `{ display, required, min_length, max_length }` per field. Hide
+everything with `display: false`, mark the required ones mandatory, apply the
+length limits, and never send an empty optional key. Cache the response per page
+load and fall back to the documented required set if the call fails.
+
 
 ## Orders and password reset
 

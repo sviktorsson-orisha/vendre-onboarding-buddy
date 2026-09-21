@@ -435,13 +435,51 @@ function countryId(value: string | number | null | undefined): number {
 /* ------------------------------------------ registration constraints --- */
 
 /**
- * Which fields the create-account form shows and which of them are required.
- * Surface v2 has no known endpoint for this yet, so the documented required set
- * below is the single source of truth. When the store exposes a field-list
- * endpoint, fill this object from it and the form follows automatically.
+ * Which fields the create-account form shows, which are required and their
+ * length limits. Filled from GET /surface/2/accounts/form, which mirrors the
+ * store's admin settings (company, personnummer, VAT number and so on).
  */
-export type RegisterConstraints = { visible: string[]; required: string[] };
+export type RegisterConstraints = {
+  visible: string[];
+  required: string[];
+  limits: Record<string, { min?: number; max?: number }>;
+};
 
+/** Fields the register form knows how to render, keyed by our own field name. */
+export const REGISTER_FIELDS = [
+  "firstname",
+  "lastname",
+  "email_address",
+  "password",
+  "confirmation",
+  "personnummer",
+  "company",
+  "vat_identification_number",
+  "telephone",
+  "mobile",
+  "fax",
+  "street_address",
+  "street_address2",
+  "postcode",
+  "city",
+  "country",
+] as const;
+
+/** The store calls the country field `country_id`; our payload key is `country`. */
+const FIELD_ALIASES: Record<string, string> = { country_id: "country" };
+
+/** Optional fields that are only sent when the visitor filled them in. */
+const OPTIONAL_FIELDS = [
+  "personnummer",
+  "company",
+  "vat_identification_number",
+  "telephone",
+  "mobile",
+  "fax",
+  "street_address2",
+];
+
+/** Used until (or unless) the store answers on accounts/form. */
 export const DEFAULT_REGISTER_CONSTRAINTS: RegisterConstraints = {
   visible: [
     "firstname",
@@ -469,18 +507,60 @@ export const DEFAULT_REGISTER_CONSTRAINTS: RegisterConstraints = {
     "country",
     "consent_personal_data_policy",
   ],
+  limits: {},
 };
 
+type FormFieldRule = {
+  display?: boolean;
+  required?: boolean;
+  min_length?: number;
+  max_length?: number;
+};
+
+/**
+ * Normalises the accounts/form payload into `RegisterConstraints`. Fields the
+ * form cannot render are ignored; the policy consent is a frontend concern and
+ * always stays on.
+ */
+export function normalizeRegisterConstraints(payload: unknown): RegisterConstraints {
+  if (!isBag(payload)) return DEFAULT_REGISTER_CONSTRAINTS;
+
+  const visible: string[] = [];
+  const required: string[] = [];
+  const limits: RegisterConstraints["limits"] = {};
+
+  for (const [rawKey, rawRule] of Object.entries(payload)) {
+    const key = FIELD_ALIASES[rawKey] ?? rawKey;
+    if (!(REGISTER_FIELDS as readonly string[]).includes(key)) continue;
+    if (!isBag(rawRule)) continue;
+    const rule = rawRule as FormFieldRule;
+    if (rule.display === false) continue;
+
+    visible.push(key);
+    if (rule.required) required.push(key);
+    const min = typeof rule.min_length === "number" && rule.min_length > 0 ? rule.min_length : undefined;
+    const max = typeof rule.max_length === "number" && rule.max_length > 0 ? rule.max_length : undefined;
+    if (min !== undefined || max !== undefined) limits[key] = { ...(min !== undefined && { min }), ...(max !== undefined && { max }) };
+  }
+
+  if (visible.length === 0) return DEFAULT_REGISTER_CONSTRAINTS;
+
+  // Not a store field: the policy consent is always shown and always required.
+  visible.push("consent_personal_data_policy");
+  required.push("consent_personal_data_policy");
+
+  return { visible, required, limits };
+}
 
 /**
  * Maps the registration form to the payload the store accepts. The store
  * validates the whole body and answers SURFACE_ACCOUNT_MALFORMED_BODY (422)
- * when a field it requires is missing — this store requires `personnummer`.
- * Empty optional keys are left out; sending them blank is rejected too.
+ * when a field it requires is missing. Optional fields are only sent when
+ * filled; sending them blank is rejected too.
  */
 export function buildRegisterBody(
   input: RegisterInput,
-  _constraints: RegisterConstraints = DEFAULT_REGISTER_CONSTRAINTS,
+  constraints: RegisterConstraints = DEFAULT_REGISTER_CONSTRAINTS,
 ): Record<string, unknown> {
   const body: Record<string, unknown> = {
     email_address: input.email_address.trim(),
@@ -491,15 +571,20 @@ export function buildRegisterBody(
     street_address: input.street_address.trim(),
     postcode: input.postcode.trim(),
     city: input.city.trim(),
-    country: countryId(input.country),
+    // accounts/form names this field `country_id`; the store rejects `country`.
+    country_id: countryId(input.country),
     consent_personal_data_policy: Boolean(input.consent_personal_data_policy),
   };
 
-  const personnummer = (input.personnummer ?? "").trim();
-  if (personnummer) body["personnummer"] = personnummer;
+  for (const field of OPTIONAL_FIELDS) {
+    if (!constraints.visible.includes(field)) continue;
+    const value = String((input as Record<string, unknown>)[field] ?? "").trim();
+    if (value) body[field] = value;
+  }
 
   return body;
 }
+
 
 
 
@@ -560,12 +645,22 @@ function registrationStatus(payload: unknown): "active" | "pending" | null {
 }
 
 /**
- * No Surface v2 endpoint reports the registration field list yet, so this is a
- * local constant — no request, no cache, no 404s.
+ * Reads the registration field list from the store (GET accounts/form) so the
+ * form mirrors the admin settings. Cached per page load; a failure falls back
+ * to the documented default set so sign-up keeps working.
  */
+let constraintsCache: Promise<RegisterConstraints> | null = null;
+
 function loadRegisterConstraints(): Promise<RegisterConstraints> {
-  return Promise.resolve(DEFAULT_REGISTER_CONSTRAINTS);
+  constraintsCache ??= guarded(() => call<unknown>("accounts/form"))
+    .then(normalizeRegisterConstraints)
+    .catch(() => {
+      constraintsCache = null;
+      return DEFAULT_REGISTER_CONSTRAINTS;
+    });
+  return constraintsCache;
 }
+
 
 export type AccountApi = {
   mode: "demo" | "live";

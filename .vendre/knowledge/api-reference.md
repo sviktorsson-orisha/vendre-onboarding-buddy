@@ -252,6 +252,7 @@ All `accounts*` endpoints resolve to the **`default`** CORS policy, not `custome
 | Method | Path | CORS policy | Token | Purpose |
 | --- | --- | --- | --- | --- |
 | POST | `accounts` | `default` | yes | registration — documented field set, `password` optional |
+| GET | `accounts/form` | `default` | – | registration field list driven by admin settings |
 
 **Account creation status.** A store may create the account with status
 `pending`: it is inactive until a human approves it, so there is no session to
@@ -259,13 +260,21 @@ sign in to. Read `status` from the response and tell the customer instead of
 redirecting to the account area. `password` may be optional; the store then
 sets it later.
 
-**Store-driven optional fields (verified 2026-09-21).** Admin can allow
-customers to enter a company name and an organisation / personal number, but
-that setting is not readable from the API: `session/context.configuration`
-returns only `STORE_NAME` and `SHOP_LOGO`, and there is **no known endpoint**
-that reports the registration field list — the backend team has not confirmed
-one. Do not invent a path. Until then the storefront sends the documented
-required field set and company / organisation number stay hidden.
+**`GET accounts/form` (verified 2026-09-21).** Returns an object map of the
+fields the store's admin settings enable:
+
+```json
+{
+  "personnummer": { "display": true, "required": true, "min_length": 10, "max_length": 15 },
+  "company": { "display": false, "required": false, "min_length": 0, "max_length": 255 }
+}
+```
+
+Skip every field with `display: false`, mark `required: true` fields mandatory
+and feed `min_length` / `max_length` into the inputs. The field is named
+`country_id` here; the registration body uses `country_id` too. Fall back to the
+documented required set if the call fails.
+
 | GET | `accounts/me` | `default` | – | profile (flat / nested / alias shapes) |
 | PUT | `accounts/me` | `default` | yes | update profile |
 | GET | `accounts/me/addresses` | `default` | – | the customer's **main address** only |
@@ -288,7 +297,8 @@ ignore the name fields.
 **Registration body (`POST accounts`, and `POST customers`)**
 
 Required: `email_address`, `password`, `confirmation`, `firstname`, `lastname`,
-`street_address`, `postcode`, `city`, `country`.
+`street_address`, `postcode`, `city`, `country_id`, plus every field
+`accounts/form` reports as `display: true, required: true`.
 
 Optional: `type`, `gender`, `company`, `street_address2`, `suburb`,
 `personnummer`, `state`, `telephone`, `fax`, `mobile`, `alias`,
@@ -296,8 +306,11 @@ Optional: `type`, `gender`, `company`, `street_address2`, `suburb`,
 `consent_personal_data_policy`. `POST customers` additionally accepts
 `email_addresses`.
 
-`country` is the numeric country id (e.g. Sweden = `203`). A partial field set
-returns `SURFACE_ACCOUNT_MALFORMED_BODY` (422).
+`country_id` is the numeric country id (e.g. Sweden = `203`); sending `country`
+instead fails with `missing required property "country_id"`. Omit optional keys
+that are empty — blank strings are rejected. A partial field set returns
+`SURFACE_ACCOUNT_MALFORMED_BODY` (400/422).
+
 
 **`accounts/me/order-history/{orderId}` response** (verified against a live store):
 the payload is wrapped in `order` and contains `id`, `status`, `date`,
