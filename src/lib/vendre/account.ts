@@ -579,6 +579,63 @@ function freshToken(data: LoginResponse | null | undefined) {
 /** "pending" = the store created the account inactive, awaiting review. */
 export type RegisterResult = { status: "active" | "pending" };
 
+const PENDING_WORDS = ["pending", "inactive", "awaiting", "review", "not_active", "disabled"];
+const ACTIVE_WORDS = ["active", "approved", "ok", "created", "complete"];
+
+/**
+ * Reads the account status out of a create-account response. Stores differ:
+ * the status may sit at the top level or inside `account`/`customer`/`data`,
+ * and some report a boolean `active` flag instead of a status string.
+ */
+function registrationStatus(payload: unknown): "active" | "pending" | null {
+  if (!payload || typeof payload !== "object") return null;
+  const record = payload as Record<string, unknown>;
+
+  for (const key of ["status", "account_status", "state"]) {
+    const value = record[key];
+    if (typeof value === "string") {
+      const text = value.toLowerCase();
+      if (PENDING_WORDS.some((word) => text.includes(word))) return "pending";
+      if (ACTIVE_WORDS.some((word) => text === word)) return "active";
+    }
+  }
+
+  for (const key of ["active", "is_active", "enabled", "approved"]) {
+    const value = record[key];
+    if (typeof value === "boolean") return value ? "active" : "pending";
+    if (value === 0 || value === "0") return "pending";
+    if (value === 1 || value === "1") return "active";
+  }
+
+  for (const key of ["account", "customer", "data"]) {
+    const nested = registrationStatus(record[key]);
+    if (nested) return nested;
+  }
+
+  return null;
+}
+
+/**
+ * The constraints lookup is store configuration, not customer data, and some
+ * installs do not serve it at all. Resolve it once per page load — including
+ * the fallback — so a missing endpoint cannot produce a burst of 404s.
+ */
+let registerConstraintsPromise: Promise<RegisterConstraints> | null = null;
+
+function loadRegisterConstraints() {
+  registerConstraintsPromise ??= (async () => {
+    for (const path of CONSTRAINT_PATHS) {
+      try {
+        return normalizeRegisterConstraints(await guarded(() => call<unknown>(path)));
+      } catch {
+        // Older installs do not serve constraints yet — try the next path.
+      }
+    }
+    return DEFAULT_REGISTER_CONSTRAINTS;
+  })();
+  return registerConstraintsPromise;
+}
+
 export type AccountApi = {
   mode: "demo" | "live";
   getSession: () => Promise<{ authenticated: boolean; name: string }>;
@@ -622,29 +679,31 @@ const liveAccountApi: AccountApi = {
     if (token) setMutationProtectionToken(token);
     else resetSessionGate();
   },
-  getRegisterConstraints: async () => {
-    for (const path of CONSTRAINT_PATHS) {
-      try {
-        return normalizeRegisterConstraints(await guarded(() => call<unknown>(path)));
-      } catch {
-        // Older installs do not serve constraints yet — try the next path.
-      }
-    }
-    return DEFAULT_REGISTER_CONSTRAINTS;
-  },
+  getRegisterConstraints: () => loadRegisterConstraints(),
   register: async (input) => {
-    const constraints = await liveAccountApi.getRegisterConstraints();
+    const constraints = await loadRegisterConstraints();
     const data = await guarded(() =>
-      call<{ status?: string }>("accounts", {
+      call<unknown>("accounts", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(buildRegisterBody(input, constraints)),
       }),
     );
-    // "pending" means the store keeps the account inactive until it is reviewed,
-    // so there is no session to sign in to yet.
-    return { status: data?.status === "pending" ? "pending" : "active" };
+
+    const explicit = registrationStatus(data);
+    if (explicit) return { status: explicit };
+
+    // The answer did not say either way: an approved account is signed in
+    // straight away, a pending one is not. Ask the store which it is.
+    resetSessionGate();
+    try {
+      const context = await guarded(() => call<SessionContext>("session/context"));
+      return { status: context.authenticated ? "active" : "pending" };
+    } catch {
+      return { status: "pending" };
+    }
   },
+
   forgotPassword: async (email) => {
     await guarded(() =>
       call(`accounts/me/forgot-password?email=${encodeURIComponent(email)}`),
@@ -902,12 +961,22 @@ export function useRegisterConstraints() {
   });
 }
 
+/**
+ * Customer data only exists for a signed-in visitor. Without this gate a
+ * signed-out (or pending, not yet approved) visitor fires accounts/me,
+ * addresses and order calls that can only answer 401.
+ */
+function useCustomerQueriesEnabled(enabled: boolean) {
+  const { isAuthenticated, isLoading, mode } = useAuth();
+  return enabled && !isLoading && (isAuthenticated || mode === "demo");
+}
+
 export function useAccount(enabled = true) {
   const api = useAccountApi();
   return useQuery({
     queryKey: ["vendre", api.mode, "account"],
     queryFn: () => api.getAccount(),
-    enabled,
+    enabled: useCustomerQueriesEnabled(enabled),
     ...NO_CACHE,
   });
 }
@@ -917,7 +986,7 @@ export function useAddresses(enabled = true) {
   return useQuery({
     queryKey: ["vendre", api.mode, "addresses"],
     queryFn: () => api.getAddresses(),
-    enabled,
+    enabled: useCustomerQueriesEnabled(enabled),
     ...NO_CACHE,
   });
 }
@@ -927,7 +996,7 @@ export function useOrders(enabled = true) {
   return useQuery({
     queryKey: ["vendre", api.mode, "orders"],
     queryFn: () => api.getOrders(),
-    enabled,
+    enabled: useCustomerQueriesEnabled(enabled),
     ...NO_CACHE,
   });
 }
@@ -937,7 +1006,7 @@ export function useOrder(id: string | null) {
   return useQuery({
     queryKey: ["vendre", api.mode, "order", id],
     queryFn: () => (id ? api.getOrder(id) : Promise.resolve(null)),
-    enabled: Boolean(id),
+    enabled: useCustomerQueriesEnabled(Boolean(id)),
     ...NO_CACHE,
   });
 }
@@ -947,7 +1016,8 @@ export function useSubUsers(enabled = true) {
   return useQuery({
     queryKey: ["vendre", api.mode, "sub-users"],
     queryFn: () => api.getSubUsers(),
-    enabled,
+    enabled: useCustomerQueriesEnabled(enabled),
     ...NO_CACHE,
   });
 }
+
