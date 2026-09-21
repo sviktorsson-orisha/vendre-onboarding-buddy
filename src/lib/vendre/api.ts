@@ -170,8 +170,9 @@ function categoryQuery(query?: CategoryQuery) {
   const limit = positiveInt(query?.limit);
   if (limit) params.set("limit", String(Math.min(limit, MAX_PAGE_SIZE)));
   if (query?.sort_by) params.set("sort_by", query.sort_by);
-  const order = String(query?.sort_order ?? "").toLowerCase();
-  if (order === "asc" || order === "desc") params.set("sort_order", order);
+  // The store's own sort options use ASC/DESC; anything else is dropped.
+  const order = String(query?.sort_order ?? "").toUpperCase();
+  if (order === "ASC" || order === "DESC") params.set("sort_order", order);
   if (query?.pfrom != null) params.set("pfrom", String(query.pfrom));
   if (query?.pto != null) params.set("pto", String(query.pto));
   for (const tag of query?.tags ?? []) params.append("tags[]", String(tag));
