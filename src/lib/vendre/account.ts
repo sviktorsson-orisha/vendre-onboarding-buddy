@@ -457,7 +457,6 @@ export const REGISTER_FIELDS = [
   "vat_identification_number",
   "telephone",
   "mobile",
-  "fax",
   "street_address",
   "street_address2",
   "postcode",
@@ -475,7 +474,6 @@ const OPTIONAL_FIELDS = [
   "vat_identification_number",
   "telephone",
   "mobile",
-  "fax",
   "street_address2",
 ];
 
