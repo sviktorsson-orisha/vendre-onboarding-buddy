@@ -563,6 +563,22 @@ export function buildRegisterBody(
 
 /* ------------------------------------------------------------- adapter --- */
 
+/**
+ * Login/logout response. Surface v2 standardised these on snake_case; the
+ * camelCase spellings are kept as a fallback for installs on the older build.
+ */
+type LoginResponse = {
+  mutation_protection_token?: string;
+  mutationProtectionToken?: string;
+};
+
+function freshToken(data: LoginResponse | null | undefined) {
+  return data?.mutation_protection_token ?? data?.mutationProtectionToken ?? null;
+}
+
+/** "pending" = the store created the account inactive, awaiting review. */
+export type RegisterResult = { status: "active" | "pending" };
+
 export type AccountApi = {
   mode: "demo" | "live";
   getSession: () => Promise<{ authenticated: boolean; name: string }>;
