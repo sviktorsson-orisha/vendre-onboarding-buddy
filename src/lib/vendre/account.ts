@@ -644,12 +644,22 @@ function registrationStatus(payload: unknown): "active" | "pending" | null {
 }
 
 /**
- * No Surface v2 endpoint reports the registration field list yet, so this is a
- * local constant — no request, no cache, no 404s.
+ * Reads the registration field list from the store (GET accounts/form) so the
+ * form mirrors the admin settings. Cached per page load; a failure falls back
+ * to the documented default set so sign-up keeps working.
  */
+let constraintsCache: Promise<RegisterConstraints> | null = null;
+
 function loadRegisterConstraints(): Promise<RegisterConstraints> {
-  return Promise.resolve(DEFAULT_REGISTER_CONSTRAINTS);
+  constraintsCache ??= guarded(() => call<unknown>("accounts/form"))
+    .then(normalizeRegisterConstraints)
+    .catch(() => {
+      constraintsCache = null;
+      return DEFAULT_REGISTER_CONSTRAINTS;
+    });
+  return constraintsCache;
 }
+
 
 export type AccountApi = {
   mode: "demo" | "live";
