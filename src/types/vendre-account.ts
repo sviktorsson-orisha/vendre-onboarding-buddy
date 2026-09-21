@@ -115,6 +115,13 @@ export type RegisterInput = {
   country: number;
   /** Personal ID number — required by stores that enable it in admin. */
   personnummer: string;
+  /** Optional fields, only rendered and sent when the store switches them on. */
+  company?: string;
+  vat_identification_number?: string;
+  telephone?: string;
+  mobile?: string;
+  fax?: string;
+  street_address2?: string;
   consent_personal_data_policy: boolean;
 };
 
