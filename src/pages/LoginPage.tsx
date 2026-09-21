@@ -133,6 +133,10 @@ export default function LoginPage() {
       setRegisterFields({ consent_personal_data_policy: t("account.consent") });
       return;
     }
+    if (isBusiness && !String(form.company ?? "").trim()) {
+      setRegisterFields({ company: t("account.companyRequired") });
+      return;
+    }
 
     try {
       const result = await register.mutateAsync(form);
