@@ -85,3 +85,12 @@ load and fall back to the documented required set if the call fails.
 - All `accounts*` endpoints resolve to the **`default`** CORS policy, not
   `customer`. Allowlist the frontend origin there or the calls fall back to the
   proxy.
+
+## Customer type is create-only
+
+**Customer type cannot be changed after registration.** `POST accounts` accepts
+`type` (`0` = private, `1` = business), but `PUT accounts/me` silently ignores
+every variant — `type: 0`, `type: "private"`, `customer_type`,
+`customers_group_id`, or any combination — and keeps answering `200` with the
+original type (verified live). Show the customer type read-only in edit-account
+forms; only the store admin can change it.

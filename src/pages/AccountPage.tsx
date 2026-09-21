@@ -385,25 +385,15 @@ function ProfileView() {
           }
         }}
       >
+        {/* The store ignores the customer type on PUT accounts/me (verified
+            live: type/customer_type/customers_group_id are all dropped), so the
+            edit form shows it read-only instead of pretending to save it. */}
         <div className="space-y-1.5">
           <Label>{t("account.customerType")}</Label>
-          <div className="grid grid-cols-2 gap-2">
-            {([0, 1] as const).map((value) => (
-              <Button
-                key={value}
-                type="button"
-                variant={(value === 1) === isBusiness ? "default" : "outline"}
-                onClick={() => {
-                  setSaved(false);
-                  setForm((current) =>
-                    current ? { ...current, type: value === 1 ? "business" : "consumer" } : current,
-                  );
-                }}
-              >
-                {t(value === 1 ? "account.business" : "account.private")}
-              </Button>
-            ))}
-          </div>
+          <p className="text-sm text-foreground">
+            {t(isBusiness ? "account.business" : "account.private")}
+          </p>
+          <p className="text-xs text-muted-foreground">{t("account.typeLocked")}</p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           {field("firstname", "account.firstname", "firstname", { constrained: true })}
