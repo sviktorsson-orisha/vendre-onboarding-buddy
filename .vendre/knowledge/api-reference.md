@@ -309,6 +309,14 @@ verified against a live store). A business customer sends its company name in
 `company` and its organisation number in the same `personnummer` field a
 private customer uses for the personal ID number.
 
+**The store strips every create-account key `accounts/form` reports as
+`display: false`** (verified live: `fax` and `telephone`, both `display: true`,
+persist; `company`, `display: false`, comes back `null`). So when "allow
+customers to enter a company" is switched off in admin, `company` is silently
+dropped from `POST accounts`. Registration is signed in immediately, so write
+the company name onto the new main address with
+`PUT accounts/me/addresses` right after sign-up to keep it.
+
 `consent_personal_data_policy`. `POST customers` additionally accepts
 `email_addresses`.
 
