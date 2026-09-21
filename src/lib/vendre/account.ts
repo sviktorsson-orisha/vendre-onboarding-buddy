@@ -449,6 +449,7 @@ export const DEFAULT_REGISTER_CONSTRAINTS: RegisterConstraints = {
     "email_address",
     "password",
     "confirmation",
+    "personnummer",
     "street_address",
     "postcode",
     "city",
@@ -461,6 +462,7 @@ export const DEFAULT_REGISTER_CONSTRAINTS: RegisterConstraints = {
     "email_address",
     "password",
     "confirmation",
+    "personnummer",
     "street_address",
     "postcode",
     "city",
@@ -469,15 +471,18 @@ export const DEFAULT_REGISTER_CONSTRAINTS: RegisterConstraints = {
   ],
 };
 
+
 /**
- * Maps the registration form to the payload the store accepts. Only the fields
- * the store asks for are sent, so a store that hides a field never receives it.
+ * Maps the registration form to the payload the store accepts. The store
+ * validates the whole body and answers SURFACE_ACCOUNT_MALFORMED_BODY (422)
+ * when a field it requires is missing — this store requires `personnummer`.
+ * Empty optional keys are left out; sending them blank is rejected too.
  */
 export function buildRegisterBody(
   input: RegisterInput,
-  constraints: RegisterConstraints = DEFAULT_REGISTER_CONSTRAINTS,
+  _constraints: RegisterConstraints = DEFAULT_REGISTER_CONSTRAINTS,
 ): Record<string, unknown> {
-  const all: Record<string, unknown> = {
+  const body: Record<string, unknown> = {
     email_address: input.email_address.trim(),
     password: input.password,
     confirmation: input.confirmation,
@@ -490,12 +495,13 @@ export function buildRegisterBody(
     consent_personal_data_policy: Boolean(input.consent_personal_data_policy),
   };
 
-  const body: Record<string, unknown> = {};
-  for (const key of constraints.visible) if (key in all) body[key] = all[key];
-  // email_address is the account identity and is always part of the payload.
-  body["email_address"] = all["email_address"];
+  const personnummer = (input.personnummer ?? "").trim();
+  if (personnummer) body["personnummer"] = personnummer;
+
   return body;
 }
+
+
 
 
 

@@ -113,6 +113,8 @@ export type RegisterInput = {
   city: string;
   /** Numeric country id expected by the store (SE = 203). */
   country: number;
+  /** Personal ID number — required by stores that enable it in admin. */
+  personnummer: string;
   consent_personal_data_policy: boolean;
 };
 
