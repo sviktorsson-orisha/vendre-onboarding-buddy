@@ -88,8 +88,12 @@ matter in practice:
 - `GET /surface/2/accounts/me/forgot-password` **does** require it, despite being
   a `GET` — clients that only attach the header on non-GET calls must special-case it.
 
-Always replace the stored token with the fresh `mutationProtectionToken` returned
-by login, logout and any re-bootstrap.
+Always replace the stored token with the fresh token returned by login, logout
+and any re-bootstrap. Login and logout return it as
+`mutation_protection_token` (snake_case); older installs still answer
+`mutationProtectionToken`, so read both. Login also returns `first_name` /
+`last_name` in snake_case. The token is validated strictly — a missing or stale
+token is rejected outright.
 
 ### 1.7 Error Format
 
@@ -139,6 +143,11 @@ off for ~60s and keep using the existing token.
 - **Listing parameters:** `page`, `limit`, `sort_by`, `sort_order`,
   `filter` / `f`, `pfrom`, `pto`. Filter, sort and paginate on the server and
   render counts from the response — never on an already-paginated client list.
+- **Listing parameters are validated strictly.** `page` and `limit` must be
+  positive integers, `sort_order` is `ASC` or `DESC`, and `sort_by` must be a
+  field the resource sorts on. An invalid value is an error, not a fallback.
+- **`limit` is capped at 500** and `limit=0` no longer means "everything":
+  fetch large sets page by page with `limit=500` until a short page returns.
 
 ### 1.10 The Only Allowed v1 Call: Logged Prices (not implemented)
 
@@ -242,8 +251,14 @@ All `accounts*` endpoints resolve to the **`default`** CORS policy, not `custome
 
 | Method | Path | CORS policy | Token | Purpose |
 | --- | --- | --- | --- | --- |
-| POST | `accounts` | `default` | yes | registration (full field set required) |
-| POST | `customers` | `default` | yes | legacy v1-backed registration alias (same body, plus `email_addresses`) |
+| POST | `accounts` | `default` | yes | registration — fields per the constraints endpoint, `password` optional |
+| GET | `accounts/constraints` | `default` | – | which registration fields the store shows and requires |
+
+**Account creation status.** A store may create the account with status
+`pending`: it is inactive until a human approves it, so there is no session to
+sign in to. Read `status` from the response and tell the customer instead of
+redirecting to the account area. `password` is optional when the constraints
+say so; the store then sets it later.
 | GET | `accounts/me` | `default` | – | profile (flat / nested / alias shapes) |
 | PUT | `accounts/me` | `default` | yes | update profile |
 | GET | `accounts/me/addresses` | `default` | – | the customer's **main address** only |
@@ -254,7 +269,6 @@ All `accounts*` endpoints resolve to the **`default`** CORS policy, not `custome
 | GET | `accounts/me/order-history/{orderId}` | `default` | – | single order (see shape below) |
 | GET | `accounts/me/quotations` | `default` | – | quotation list (B2B) |
 | GET | `accounts/me/quotations/{quotationId}` | `default` | – | single quotation |
-| POST | `accounts/me/shopping-cart/products` | `default` | yes | add cart products as the authenticated customer |
 
 **`PUT accounts/me` body keys** — the update body uses `firstname` / `lastname`
 (plus `email_address`, `street_address`, `postcode`, `city`, numeric `country`,
@@ -303,7 +317,6 @@ shows whole-unit line prices. Never recompute the totals themselves.
 | --- | --- | --- | --- | --- |
 | GET | `accounts/me/forgot-password` | `default` | yes | password reset mail (token required despite being a GET) |
 | GET | `accounts/me/users` | `default` | – | sub-users (B2B) — _unverified_ |
-| GET | `customers/current` | `default` | – | current customer record |
 | POST | `login/email` | `login` | yes | login with `{ email, password }` |
 | GET | `login/google-sso` | `login` | – | Google SSO redirect — _unverified_ |
 | GET | `login/microsoft-sso` | `login` | – | Microsoft SSO redirect — _unverified_ |
@@ -330,7 +343,6 @@ alone. Skills: `account-auth.md`, `customer-account/SKILL.md`,
 | DELETE | `shopping-cart` | `shopping_cart` | yes | **clears the whole cart** — remove a single line with a products mutation and `quantity: 0` |
 | GET | `shopping-cart/products` | `shopping_cart` | – | cart lines only |
 | PUT | `shopping-cart/products` | `shopping_cart` | yes | add / set quantity, body `{ products: [...], empty }` |
-| POST | `shopping-cart/products` | `shopping_cart` | yes | legacy alias of the `PUT` above, identical body |
 | GET | `shopping-cart/coupons` | `shopping_cart` | – | active coupons |
 | POST | `shopping-cart/coupons/activate` | `shopping_cart` | yes | apply coupon |
 | POST | `shopping-cart/coupons/deactivate` | `shopping_cart` | yes | remove coupon |
@@ -374,8 +386,6 @@ Skills: `category-plp.md`, `pdp-products.md`, `vql-queries.md`.
 | GET | `galleries/{id}/pages` | `galleries` | – | pages in a gallery |
 | GET | `galleries/{id}/content-blocks` | `galleries` | – | content blocks |
 | GET | `galleries/boxes` | `galleries` | – | boxes / widgets |
-| POST | `twig/render` | `default` | – | render a Twig block |
-| POST | `galleries/twig/render` | `galleries` | – | render a Twig block in a gallery context |
 | GET | `language-strings` | `default` | – | translated UI strings, query `locale` |
 | GET | `translations` | `default` | – | alias of `language-strings`, query `locale` |
 | GET | `sitemap` | `sitemap` | – | sitemap data, query `type`, `language`, `page` |
@@ -416,7 +426,6 @@ the app uses:
 Known traps:
 
 - `accounts*` → **`default`** (not `customer`).
-- `twig/render` → **`default`**.
 - `contact` → **`email/contact`**.
 - `login-link` has **no CORS support** and must go through the server proxy.
 - A gateway-level `401` (bad bearer or failed session gate) carries **no CORS
