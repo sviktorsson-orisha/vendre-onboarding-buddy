@@ -596,6 +596,44 @@ export function buildRegisterBody(
 
 
 
+/** True when the account is a business customer (the store answers "business"). */
+export function isBusinessAccount(account: Pick<Account, "type">): boolean {
+  const value = String(account.type ?? "").toLowerCase();
+  return value === "business" || value === "company" || value === "1";
+}
+
+/**
+ * Maps the edit-account form to the PUT accounts/me body. Same rules as
+ * registration minus password/confirmation: only fields the store shows are
+ * sent, blank optionals are left out, and company/VAT are business-only.
+ * The store accepts `country_id` here just like on create (verified live).
+ */
+export function buildAccountBody(
+  account: Account,
+  constraints: RegisterConstraints = DEFAULT_REGISTER_CONSTRAINTS,
+): Record<string, unknown> {
+  const isBusiness = isBusinessAccount(account);
+  const body: Record<string, unknown> = {
+    firstname: account.firstname.trim(),
+    lastname: account.lastname.trim(),
+    email_address: account.email.trim(),
+    street_address: account.street_address.trim(),
+    postcode: account.postcode.trim(),
+    city: account.city.trim(),
+    country_id: countryId(account.country),
+    type: isBusiness ? 1 : 0,
+  };
+
+  for (const field of OPTIONAL_FIELDS) {
+    if (!isBusiness && (field === "company" || field === "vat_identification_number")) continue;
+    if (!constraints.visible.includes(field)) continue;
+    const value = String((account as unknown as Record<string, unknown>)[field] ?? "").trim();
+    if (value) body[field] = value;
+  }
+
+  return body;
+}
+
 /* ------------------------------------------------------------- adapter --- */
 
 /**
@@ -789,19 +827,8 @@ const liveAccountApi: AccountApi = {
   },
   getAccount: () => guarded(() => call<unknown>("accounts/me")).then(normalizeAccount),
   updateAccount: async (account) => {
-    // Only the field set the edit form exposes — the same fields registration
-    // requires, minus password/confirmation. The documented update body uses
-    // `firstname`/`lastname` even though the profile response returns
-    // `first_name`/`last_name`, so never echo back the response spelling.
-    const body: Record<string, unknown> = {
-      firstname: account.firstname,
-      lastname: account.lastname,
-      email_address: account.email,
-      street_address: account.street_address,
-      postcode: account.postcode,
-      city: account.city,
-      country: countryId(account.country),
-    };
+    const constraints = await loadRegisterConstraints();
+    const body = buildAccountBody(account, constraints);
 
     await guarded(() =>
       call("accounts/me", {
