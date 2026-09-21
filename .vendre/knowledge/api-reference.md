@@ -259,6 +259,16 @@ All `accounts*` endpoints resolve to the **`default`** CORS policy, not `custome
 sign in to. Read `status` from the response and tell the customer instead of
 redirecting to the account area. `password` is optional when the constraints
 say so; the store then sets it later.
+
+**Store-driven optional fields (verified 2026-09-21).** Admin can allow
+customers to enter a company name and an organisation / personal number, but
+that setting is not readable from the API: `session/context.configuration`
+returns only `STORE_NAME` and `SHOP_LOGO`, and `accounts/constraints` (plus
+`accounts/create/constraints`, `configuration`, `settings`,
+`store/configuration`, `session/configuration`) answer 404 on the current
+store. Those fields therefore stay hidden in registration and My account until
+the store reports them; the registration form already builds itself from the
+constraints response, so it picks them up as soon as that endpoint answers.
 | GET | `accounts/me` | `default` | – | profile (flat / nested / alias shapes) |
 | PUT | `accounts/me` | `default` | yes | update profile |
 | GET | `accounts/me/addresses` | `default` | – | the customer's **main address** only |
