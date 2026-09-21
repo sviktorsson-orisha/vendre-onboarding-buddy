@@ -784,7 +784,9 @@ const demoAccountApi: AccountApi = {
     };
     demoAuthenticated = true;
     emitDemo();
+    return { status: "active" };
   },
+  getRegisterConstraints: async () => DEFAULT_REGISTER_CONSTRAINTS,
 
   forgotPassword: async () => {},
   getAccount: async () => demoAccount,
