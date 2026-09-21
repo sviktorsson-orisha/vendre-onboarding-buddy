@@ -1,41 +1,41 @@
-# Registration fields: wait for a real store endpoint
+# Use GET accounts/form to drive the sign-up fields
 
-## Situation
+## Status check
 
-Your store requires a personal ID number at sign-up, but nothing in the API
-tells the app that. The session response only returns the store name and logo,
-and every path I probed for a field/validation list returns 404. So the app
-cannot currently read which registration fields are switched on in admin.
+I called the new path against your store just now: the session starts fine
+(200), but `accounts/form` answers **404**. So on this store it is either not
+deployed yet or sits behind a different name. The plan below builds against it
+anyway and degrades safely until it answers.
 
-Decision: wait for the real endpoint instead of guessing or auto-detecting.
+## What I will build
 
-## What happens now
+1. Fetch the field list from `accounts/form` when the create-account page opens,
+   cached for the session.
+2. Map the response onto the form's existing field-rules object, so every field
+   the store has switched on is shown and marked required automatically:
+   company name, organisation/personal ID number, phone, and the rest.
+3. If the call fails (404 today, or the store is offline), fall back to the
+   current fixed list so sign-up keeps working exactly as it does now — and log
+   nothing noisy in the browser.
+4. Add the personal ID number input to the form so today's required field is
+   covered even while the endpoint is missing.
+5. Update the documentation with the new path, its response shape, and the
+   fallback behaviour.
 
-1. Keep the create-account form on the current fixed field list so sign-up keeps
-   working: name, e-mail, password, address, postcode, city, country and
-   personal ID number (required, since your store demands it).
-2. Add the personal ID number input to the form and verify a real sign-up
-   completes.
-3. Document clearly that the field list is hard-coded only because no endpoint
-   exposes it yet, and what the app expects that endpoint to return.
-
-## When the endpoint exists
-
-Send me the path and an example response. The form already builds itself from a
-field-rules object, so connecting it is a small change: fetch the rules, map
-them onto that object, and every switched-on field (company name,
-organisation number, personal ID number, etc.) appears or disappears
-automatically with no further work.
+Once the endpoint goes live nothing more is needed from me — the form follows
+the admin settings on its own.
 
 ## Technical notes
 
+- `src/lib/vendre/account.ts`: `getRegisterConstraints()` becomes an async fetch
+  of `accounts/form` through the proxy, normalising both a field array and a
+  keyed object into `RegisterConstraints` (`shown` / `required` per field);
+  unknown keys are ignored, missing response falls back to
+  `DEFAULT_REGISTER_CONSTRAINTS`. `useRegisterConstraints` keeps its 10-minute
+  cache and its current return shape, so `LoginPage.tsx` needs no rework.
 - `src/pages/LoginPage.tsx`: add the `personnummer` input after the password
-  fields, `required={needed("personnummer")}`, plus the key in the initial
-  `RegisterInput` state.
-- `DEFAULT_REGISTER_CONSTRAINTS` in `src/lib/vendre/account.ts` stays the single
-  source of the field list until a real endpoint replaces it;
-  `getRegisterConstraints` is the one function to swap over later.
+  fields with `required={needed("personnummer")}` and the key in the initial
+  `RegisterInput` state; existing `shown()` / `needed()` gating covers the rest.
 - `buildRegisterBody` already omits blank optional keys, which the store rejects.
-- Docs to update: `.vendre/knowledge/api-reference.md` and
-  `.vendre/skills/account-auth.md` — required body for this store plus the
-  expected shape of the future field-rules endpoint.
+- Docs: `.vendre/knowledge/api-reference.md` and
+  `.vendre/skills/account-auth.md`.
