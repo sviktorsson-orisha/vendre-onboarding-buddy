@@ -86,6 +86,23 @@ export default function LoginPage() {
   const set = <K extends keyof RegisterInput>(key: K, value: RegisterInput[K]) =>
     setForm((current) => ({ ...current, [key]: value }));
 
+  /** Renders a text field the store can switch on or off in admin. */
+  const optionalField = (field: keyof RegisterInput & string, labelKey: string) =>
+    shown(field) ? (
+      <div key={field} className="space-y-1.5">
+        <Label htmlFor={field}>{t(labelKey)}</Label>
+        <Input
+          id={field}
+          required={needed(field)}
+          {...limit(field)}
+          value={String(form[field] ?? "")}
+          onChange={(event) => set(field, event.target.value as RegisterInput[typeof field])}
+        />
+        <FieldError message={registerFields[field]} />
+      </div>
+    ) : null;
+
+
   async function handleLogin(event: FormEvent) {
     event.preventDefault();
     setLoginError("");

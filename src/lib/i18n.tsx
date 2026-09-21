@@ -203,6 +203,8 @@ const dictionary = {
     "account.company": "Företag",
     "account.personnummer": "Personnummer",
     "account.street": "Gatuadress",
+    "account.street2": "Adressrad 2",
+    "account.fax": "Fax",
     "account.postcode": "Postnummer",
     "account.city": "Ort",
     "account.state": "Län",
