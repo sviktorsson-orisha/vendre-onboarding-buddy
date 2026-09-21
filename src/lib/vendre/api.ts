@@ -255,8 +255,8 @@ const liveApi: VendreApi = {
       if (direct) return direct;
     }
     const fromCategory = async (catId: number) => {
-      const data = await liveApi.getCategory(catId, { limit: 0 });
-      return data.product_list?.find((p) => String(p.id) === String(id)) ?? null;
+      const all = await allCategoryProducts(catId);
+      return all.find((p) => String(p.id) === String(id)) ?? null;
     };
     if (categoryId) {
       const hit = await fromCategory(categoryId);
