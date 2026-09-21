@@ -632,7 +632,9 @@ function readCachedConstraints(): RegisterConstraints | null {
     const parsed = JSON.parse(raw) as { value?: unknown; savedAt?: number };
     if (typeof parsed?.savedAt !== "number") return null;
     if (Date.now() - parsed.savedAt > CONSTRAINTS_CACHE_TTL) return null;
-    return normalizeRegisterConstraints(parsed.value);
+    const value = parsed.value as Partial<RegisterConstraints> | undefined;
+    if (!Array.isArray(value?.visible) || !Array.isArray(value?.required)) return null;
+    return { visible: value.visible, required: value.required };
   } catch {
     return null;
   }
