@@ -579,6 +579,63 @@ function freshToken(data: LoginResponse | null | undefined) {
 /** "pending" = the store created the account inactive, awaiting review. */
 export type RegisterResult = { status: "active" | "pending" };
 
+const PENDING_WORDS = ["pending", "inactive", "awaiting", "review", "not_active", "disabled"];
+const ACTIVE_WORDS = ["active", "approved", "ok", "created", "complete"];
+
+/**
+ * Reads the account status out of a create-account response. Stores differ:
+ * the status may sit at the top level or inside `account`/`customer`/`data`,
+ * and some report a boolean `active` flag instead of a status string.
+ */
+function registrationStatus(payload: unknown): "active" | "pending" | null {
+  if (!payload || typeof payload !== "object") return null;
+  const record = payload as Record<string, unknown>;
+
+  for (const key of ["status", "account_status", "state"]) {
+    const value = record[key];
+    if (typeof value === "string") {
+      const text = value.toLowerCase();
+      if (PENDING_WORDS.some((word) => text.includes(word))) return "pending";
+      if (ACTIVE_WORDS.some((word) => text === word)) return "active";
+    }
+  }
+
+  for (const key of ["active", "is_active", "enabled", "approved"]) {
+    const value = record[key];
+    if (typeof value === "boolean") return value ? "active" : "pending";
+    if (value === 0 || value === "0") return "pending";
+    if (value === 1 || value === "1") return "active";
+  }
+
+  for (const key of ["account", "customer", "data"]) {
+    const nested = registrationStatus(record[key]);
+    if (nested) return nested;
+  }
+
+  return null;
+}
+
+/**
+ * The constraints lookup is store configuration, not customer data, and some
+ * installs do not serve it at all. Resolve it once per page load — including
+ * the fallback — so a missing endpoint cannot produce a burst of 404s.
+ */
+let registerConstraintsPromise: Promise<RegisterConstraints> | null = null;
+
+function loadRegisterConstraints() {
+  registerConstraintsPromise ??= (async () => {
+    for (const path of CONSTRAINT_PATHS) {
+      try {
+        return normalizeRegisterConstraints(await guarded(() => call<unknown>(path)));
+      } catch {
+        // Older installs do not serve constraints yet — try the next path.
+      }
+    }
+    return DEFAULT_REGISTER_CONSTRAINTS;
+  })();
+  return registerConstraintsPromise;
+}
+
 export type AccountApi = {
   mode: "demo" | "live";
   getSession: () => Promise<{ authenticated: boolean; name: string }>;
