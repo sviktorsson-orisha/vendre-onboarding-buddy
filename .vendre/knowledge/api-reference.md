@@ -251,8 +251,7 @@ All `accounts*` endpoints resolve to the **`default`** CORS policy, not `custome
 
 | Method | Path | CORS policy | Token | Purpose |
 | --- | --- | --- | --- | --- |
-| POST | `accounts` | `default` | yes | registration — fields per the constraints endpoint, `password` optional |
-| GET | `accounts/constraints` | `default` | – | which registration fields the store shows and requires |
+| POST | `accounts` | `default` | yes | registration — documented field set, `password` optional |
 
 **Account creation status.** A store may create the account with status
 `pending`: it is inactive until a human approves it, so there is no session to
