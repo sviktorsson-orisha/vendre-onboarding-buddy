@@ -35,7 +35,7 @@ Exceptions in both directions:
 
 Always swap the stored token for the fresh one returned by:
 
-- login (`mutationProtectionToken` in the response)
+- login (`mutation_protection_token`; older installs: `mutationProtectionToken`)
 - logout
 - any re-bootstrap after a session 401
 
