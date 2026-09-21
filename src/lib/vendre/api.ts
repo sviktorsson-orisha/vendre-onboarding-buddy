@@ -115,6 +115,7 @@ export function getStoreBaseUrl() {
 function transient(error: unknown) {
   // A 502/503/504 from the proxy means the store (or its OAuth endpoint)
   // hiccupped, not that the session is invalid — one retry usually recovers.
+  if (!(error instanceof VendreError)) return true;
   const status = error.status ?? 0;
   return status === 0 || status === 429 || status >= 502;
 }
