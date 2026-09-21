@@ -1,37 +1,41 @@
-# Finish the sign-up fix: personal ID number field
+# Registration fields: wait for a real store endpoint
 
-## How the cause was found
+## Situation
 
-I sent test registrations straight to your store and compared the answers:
+Your store requires a personal ID number at sign-up, but nothing in the API
+tells the app that. The session response only returns the store name and logo,
+and every path I probed for a field/validation list returns 404. So the app
+cannot currently read which registration fields are switched on in admin.
 
-- Only the fields the form collects: rejected (422).
-- Same fields plus the full documented list with blank extras: rejected.
-- Same fields plus a personal ID number: **account created (200)**.
-- Same fields plus only a company name, or only gender: rejected again.
+Decision: wait for the real endpoint instead of guessing or auto-detecting.
 
-So the single field that decides it is the personal ID number
-(`personnummer`), which your store has set as mandatory in admin. The form
-never asked for it, which is why sign-up started failing.
+## What happens now
 
-## Already done
+1. Keep the create-account form on the current fixed field list so sign-up keeps
+   working: name, e-mail, password, address, postcode, city, country and
+   personal ID number (required, since your store demands it).
+2. Add the personal ID number input to the form and verify a real sign-up
+   completes.
+3. Document clearly that the field list is hard-coded only because no endpoint
+   exposes it yet, and what the app expects that endpoint to return.
 
-- The registration request no longer strips fields; blank optional values are
-  left out because the store rejects them.
-- Personal ID number added to the registration data model, field list and
-  Swedish/English labels.
+## When the endpoint exists
 
-## Remaining
-
-1. Add the "Personnummer / Personal ID number" input to the create-account form,
-   placed after the password fields and marked as required.
-2. Run a real test sign-up through the form and confirm the account is created.
-3. Note in the API documentation that this store requires the personal ID
-   number at sign-up, and that blank optional fields are rejected.
+Send me the path and an example response. The form already builds itself from a
+field-rules object, so connecting it is a small change: fetch the rules, map
+them onto that object, and every switched-on field (company name,
+organisation number, personal ID number, etc.) appears or disappears
+automatically with no further work.
 
 ## Technical notes
 
-- `src/pages/LoginPage.tsx`: new `shown("personnummer")` block with
-  `required={needed("personnummer")}`, bound to `form.personnummer`, plus the
-  empty string in the initial `RegisterInput` state.
-- `buildRegisterBody` already sends `personnummer` only when filled.
-- Docs: `.vendre/knowledge/api-reference.md` registration-body section.
+- `src/pages/LoginPage.tsx`: add the `personnummer` input after the password
+  fields, `required={needed("personnummer")}`, plus the key in the initial
+  `RegisterInput` state.
+- `DEFAULT_REGISTER_CONSTRAINTS` in `src/lib/vendre/account.ts` stays the single
+  source of the field list until a real endpoint replaces it;
+  `getRegisterConstraints` is the one function to swap over later.
+- `buildRegisterBody` already omits blank optional keys, which the store rejects.
+- Docs to update: `.vendre/knowledge/api-reference.md` and
+  `.vendre/skills/account-auth.md` — required body for this store plus the
+  expected shape of the future field-rules endpoint.
