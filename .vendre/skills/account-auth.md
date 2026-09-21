@@ -48,15 +48,17 @@ Map validation errors from each error's `source.parameter` to the matching
 field.
 
 Customer type goes in `type`: `0` = private person, `1` = business. The form
-switches between the two; a business customer always sends `company` (even when
-the store hides the field) and uses the same `personnummer` key for its
-organisation number, labelled "Organisationsnummer" in the UI.
+switches between the two; a business customer uses the same `personnummer` key
+for its organisation number, labelled "Organisationsnummer" in the UI.
+`company` follows `accounts/form` like every other optional field — it is only
+shown, required and sent when the store reports `display: true`.
 `vat_identification_number` is a business-only field — hide it and leave it out
 of the body for private customers.
 
 **`company` is dropped by the store when `accounts/form` reports it as
-`display: false`** — the account is created with `company: null`. The new
-account is signed in right after `POST accounts`, so write the company name onto
+`display: false`** — the account is created with `company: null`, which is why
+the form never sends it in that case. When the field is enabled and filled in,
+the new account is signed in right after `POST accounts`, so write it onto
 the main address with `PUT /surface/2/accounts/me/addresses` (body
 `{ addresses: [ { …address, company } ] }`, `country_id` not `country`; a flat
 body answers 422) and let that write fail silently — the account itself is
