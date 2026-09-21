@@ -668,6 +668,41 @@ function loadRegisterConstraints(): Promise<RegisterConstraints> {
 }
 
 
+/** Main-address payload in the shape the store accepts. */
+function addressBody(address: Address): Record<string, unknown> {
+  return {
+    id: address.id,
+    firstname: address.firstname,
+    lastname: address.lastname,
+    company: address.company,
+    street_address: address.street_address,
+    postcode: address.postcode,
+    city: address.city,
+    country_id: countryId(address.country),
+    telephone: address.telephone,
+  };
+}
+
+function putMainAddress(body: Record<string, unknown>) {
+  return call("accounts/me/addresses", {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ addresses: [body] }),
+  });
+}
+
+/**
+ * The store drops `company` from the create-account body whenever the field is
+ * switched off in admin, so a business customer's company name would be lost.
+ * Writing it onto the freshly created main address keeps it.
+ */
+async function saveCompanyOnAddress(company: string) {
+  const data = await call<unknown>("accounts/me/addresses");
+  const current = extractAddressList(data).map(normalizeAddress)[0];
+  if (!current) return;
+  await putMainAddress({ ...addressBody(current), company });
+}
+
 export type AccountApi = {
   mode: "demo" | "live";
   getSession: () => Promise<{ authenticated: boolean; name: string }>;
