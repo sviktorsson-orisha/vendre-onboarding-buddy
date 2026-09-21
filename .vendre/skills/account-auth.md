@@ -51,6 +51,16 @@ Customer type goes in `type`: `0` = private person, `1` = business. The form
 switches between the two; a business customer always sends `company` (even when
 the store hides the field) and uses the same `personnummer` key for its
 organisation number, labelled "Organisationsnummer" in the UI.
+`vat_identification_number` is a business-only field — hide it and leave it out
+of the body for private customers.
+
+**`company` is dropped by the store when `accounts/form` reports it as
+`display: false`** — the account is created with `company: null`. The new
+account is signed in right after `POST accounts`, so write the company name onto
+the main address with `PUT /surface/2/accounts/me/addresses` (body
+`{ addresses: [ { …address, company } ] }`, `country_id` not `country`; a flat
+body answers 422) and let that write fail silently — the account itself is
+already created.
 
 
 Which fields the form shows comes from `GET /surface/2/accounts/form`: an

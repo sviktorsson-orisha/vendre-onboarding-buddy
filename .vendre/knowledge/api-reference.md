@@ -279,7 +279,7 @@ documented required set if the call fails.
 | PUT | `accounts/me` | `default` | yes | update profile |
 | GET | `accounts/me/addresses` | `default` | – | the customer's **main address** only |
 | GET | `accounts/me/address-book` | `default` | – | the **alternative** addresses only (never the main one) |
-| PUT | `accounts/me/addresses` | `default` | yes | update address |
+| PUT | `accounts/me/addresses` | `default` | yes | update main address, body `{ addresses: [ { id, firstname, lastname, company, street_address, postcode, city, country_id, telephone } ] }` — a flat body answers `422 SURFACE_ACCOUNT_MALFORMED_BODY` (verified live) |
 | PUT | `accounts/me/address-book` | `default` | yes | upsert alternative addresses, body `{ addresses: [...] }` |
 | GET | `accounts/me/order-history` | `default` | – | order list |
 | GET | `accounts/me/order-history/{orderId}` | `default` | – | single order (see shape below) |
@@ -308,6 +308,14 @@ Optional: `type`, `gender`, `company`, `street_address2`, `suburb`,
 verified against a live store). A business customer sends its company name in
 `company` and its organisation number in the same `personnummer` field a
 private customer uses for the personal ID number.
+
+**The store strips every create-account key `accounts/form` reports as
+`display: false`** (verified live: `fax` and `telephone`, both `display: true`,
+persist; `company`, `display: false`, comes back `null`). So when "allow
+customers to enter a company" is switched off in admin, `company` is silently
+dropped from `POST accounts`. Registration is signed in immediately, so write
+the company name onto the new main address with
+`PUT accounts/me/addresses` right after sign-up to keep it.
 
 `consent_personal_data_policy`. `POST customers` additionally accepts
 `email_addresses`.
