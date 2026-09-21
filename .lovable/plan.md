@@ -1,41 +1,42 @@
-# Use GET accounts/form to drive the sign-up fields
+# Sign-up fields driven by the store's own settings
 
-## Status check
+## Confirmed
 
-I called the new path against your store just now: the session starts fine
-(200), but `accounts/form` answers **404**. So on this store it is either not
-deployed yet or sits behind a different name. The plan below builds against it
-anyway and degrades safely until it answers.
+`GET /surface/2/accounts/form` now answers on your store. It returns every
+registration field with whether it should be shown, whether it is required and
+its length limits — including `personnummer` (shown, required, 10–15 chars),
+`company`, `vat_identification_number`, `telephone`, `mobile`, `fax` and
+`street_address2` (hidden today).
 
 ## What I will build
 
-1. Fetch the field list from `accounts/form` when the create-account page opens,
-   cached for the session.
-2. Map the response onto the form's existing field-rules object, so every field
-   the store has switched on is shown and marked required automatically:
-   company name, organisation/personal ID number, phone, and the rest.
-3. If the call fails (404 today, or the store is offline), fall back to the
-   current fixed list so sign-up keeps working exactly as it does now — and log
-   nothing noisy in the browser.
-4. Add the personal ID number input to the form so today's required field is
-   covered even while the endpoint is missing.
-5. Update the documentation with the new path, its response shape, and the
-   fallback behaviour.
-
-Once the endpoint goes live nothing more is needed from me — the form follows
-the admin settings on its own.
+1. The create-account page fetches this list when it opens and builds the form
+   from it: only fields marked for display appear, and only those marked
+   required are mandatory. Turning a setting on or off in admin is then
+   reflected in the form with no code change.
+2. Add the inputs the list can now switch on: personal ID number, company,
+   VAT/organisation number, phone, mobile, fax, second address line — each with
+   Swedish and English labels.
+3. Apply the length limits from the response as field limits, so the customer
+   gets a clear message instead of a rejected submission.
+4. If the call ever fails, keep the current fixed field list as a fallback so
+   sign-up still works.
+5. Update the documentation with the new path and its response shape.
 
 ## Technical notes
 
-- `src/lib/vendre/account.ts`: `getRegisterConstraints()` becomes an async fetch
-  of `accounts/form` through the proxy, normalising both a field array and a
-  keyed object into `RegisterConstraints` (`shown` / `required` per field);
-  unknown keys are ignored, missing response falls back to
-  `DEFAULT_REGISTER_CONSTRAINTS`. `useRegisterConstraints` keeps its 10-minute
-  cache and its current return shape, so `LoginPage.tsx` needs no rework.
-- `src/pages/LoginPage.tsx`: add the `personnummer` input after the password
-  fields with `required={needed("personnummer")}` and the key in the initial
-  `RegisterInput` state; existing `shown()` / `needed()` gating covers the rest.
-- `buildRegisterBody` already omits blank optional keys, which the store rejects.
+- `src/lib/vendre/account.ts`: `getRegisterConstraints()` becomes an async proxy
+  fetch of `accounts/form`, normalising `{ field: { display, required,
+  min_length, max_length } }` into `RegisterConstraints`
+  (`shown`/`required`/`minLength`/`maxLength` per key), falling back to
+  `DEFAULT_REGISTER_CONSTRAINTS` on error. `useRegisterConstraints` keeps its
+  10-minute cache and current return shape.
+- `buildRegisterBody` keeps sending only displayed fields plus `email_address`,
+  and keeps omitting blank optional keys (the store rejects empty strings).
+  `confirmation` stays tied to whether a password was entered.
+- `src/pages/LoginPage.tsx`: extend the existing `shown()` / `needed()` blocks
+  with the new field keys and pass `minLength` / `maxLength`; add the keys to
+  the initial `RegisterInput` state and to `src/types/vendre-account.ts`.
+- i18n keys for the new labels in `src/lib/i18n.tsx` (sv + en).
 - Docs: `.vendre/knowledge/api-reference.md` and
   `.vendre/skills/account-auth.md`.
