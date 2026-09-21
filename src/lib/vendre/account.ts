@@ -578,11 +578,10 @@ export function buildRegisterBody(
   };
 
   for (const field of OPTIONAL_FIELDS) {
-    // A business customer always sends its company name, even when the store
-    // keeps the field switched off for private customers.
     // VAT numbers only apply to business customers.
     if (!isBusiness && field === "vat_identification_number") continue;
-    if (!constraints.visible.includes(field) && !(isBusiness && field === "company")) continue;
+    // Every other optional field follows the store's own accounts/form list.
+    if (!constraints.visible.includes(field)) continue;
     const value = String((input as Record<string, unknown>)[field] ?? "").trim();
     if (value) body[field] = value;
   }
