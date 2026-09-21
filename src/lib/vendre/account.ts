@@ -474,17 +474,15 @@ export const DEFAULT_REGISTER_CONSTRAINTS: RegisterConstraints = {
 
 /**
  * Maps the registration form to the payload the store accepts. The store
- * validates against its full documented field set and answers
- * SURFACE_ACCOUNT_MALFORMED_BODY (422) on a partial body, so every documented
- * key is always sent — the optional ones with neutral defaults when the form
- * does not collect them. `constraints` only decides which inputs are rendered.
+ * validates the whole body and answers SURFACE_ACCOUNT_MALFORMED_BODY (422)
+ * when a field it requires is missing — this store requires `personnummer`.
+ * Empty optional keys are left out; sending them blank is rejected too.
  */
 export function buildRegisterBody(
   input: RegisterInput,
   _constraints: RegisterConstraints = DEFAULT_REGISTER_CONSTRAINTS,
 ): Record<string, unknown> {
-  return {
-    // Required set.
+  const body: Record<string, unknown> = {
     email_address: input.email_address.trim(),
     password: input.password,
     confirmation: input.confirmation,
@@ -494,18 +492,15 @@ export function buildRegisterBody(
     postcode: input.postcode.trim(),
     city: input.city.trim(),
     country: countryId(input.country),
-    // Optional set — neutral defaults keep the body complete.
-    type: "consumer",
-    gender: "",
-    company: "",
-    telephone: "",
-    mobile: "",
-    personnummer: "",
-    vat_identification_number: "",
-    newsletter: false,
     consent_personal_data_policy: Boolean(input.consent_personal_data_policy),
   };
+
+  const personnummer = (input.personnummer ?? "").trim();
+  if (personnummer) body["personnummer"] = personnummer;
+
+  return body;
 }
+
 
 
 
