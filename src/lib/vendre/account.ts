@@ -436,9 +436,9 @@ function countryId(value: string | number | null | undefined): number {
 
 /**
  * Which fields the create-account form shows and which of them are required.
- * The store owns this: Surface v2 exposes the dynamically configured
- * constraints, and we only fall back to the documented required set when the
- * install does not serve them yet.
+ * Surface v2 has no known endpoint for this yet, so the documented required set
+ * below is the single source of truth. When the store exposes a field-list
+ * endpoint, fill this object from it and the form follows automatically.
  */
 export type RegisterConstraints = { visible: string[]; required: string[] };
 
