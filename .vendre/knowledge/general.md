@@ -17,7 +17,6 @@
 - **CORS Policies Allowlisting (when a direct browser call is used):** the origin (scheme + host, no trailing slash) must be allowlisted under `Admin → Headless → CORS` (`/Admin/configuration?gID=232`, fields `SURFACE_CORS_ORIGINS` / `SURFACE_CORS_POLICIES`).
 - **CORS Gotchas:**
   - All `/surface/2/accounts*` endpoints resolve to the `default` CORS policy (NOT `customer`).
-  - `POST /surface/2/twig/render` resolves to the `default` policy.
   - `POST /surface/2/contact` requires policy `email/contact` (note the slash).
   - Gateway-level 401s (invalid Bearer or Session gate) do not carry CORS headers and appear as generic browser CORS errors.
 

@@ -77,7 +77,7 @@ matching field.
 - `GET /surface/2/accounts/me/order-history` and `/order-history/{id}`.
 - `GET /surface/2/accounts/me/forgot-password` — requires the mutation token
   even though it is a GET.
-- `GET /surface/2/customers/current` is a lightweight logged-in check.
+- `GET /surface/2/accounts/me` is the logged-in check (`customers/current` was removed).
 
 ## Non-negotiables
 

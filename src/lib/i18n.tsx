@@ -220,6 +220,9 @@ const dictionary = {
     "account.consent": "Jag godkänner integritetspolicyn",
     "account.required": "Fältet är obligatoriskt",
     "account.mismatch": "Lösenorden matchar inte",
+    "account.pendingTitle": "Kontot väntar på godkännande",
+    "account.pendingBody":
+      "Vi har tagit emot din ansökan. Butiken granskar den manuellt och du kan logga in när kontot har aktiverats.",
     "account.demoNote": "Demodata visas tills Vendre-kontot är kopplat.",
     "account.signedOutBody": "Logga in för att se ditt konto.",
     "account.back": "Tillbaka",
@@ -437,6 +440,9 @@ const dictionary = {
     "account.consent": "I accept the privacy policy",
     "account.required": "This field is required",
     "account.mismatch": "The passwords do not match",
+    "account.pendingTitle": "Your account is awaiting approval",
+    "account.pendingBody":
+      "We have received your application. The store reviews it manually and you can sign in once the account is activated.",
     "account.demoNote": "Demo data is shown until the Vendre account is connected.",
     "account.signedOutBody": "Sign in to see your account.",
     "account.back": "Back",

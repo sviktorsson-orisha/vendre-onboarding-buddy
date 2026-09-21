@@ -432,12 +432,114 @@ function countryId(value: string | number | null | undefined): number {
   return COUNTRY_IDS[raw.toUpperCase()] ?? COUNTRY_IDS["SE"]!;
 }
 
+/* ------------------------------------------ registration constraints --- */
+
 /**
- * Maps the registration form to the exact payload the store accepts: the
- * required field set from the API reference, plus the consent flag.
+ * Which fields the create-account form shows and which of them are required.
+ * The store owns this: Surface v2 exposes the dynamically configured
+ * constraints, and we only fall back to the documented required set when the
+ * install does not serve them yet.
  */
-export function buildRegisterBody(input: RegisterInput): Record<string, unknown> {
-  return {
+export type RegisterConstraints = { visible: string[]; required: string[] };
+
+export const DEFAULT_REGISTER_CONSTRAINTS: RegisterConstraints = {
+  visible: [
+    "firstname",
+    "lastname",
+    "email_address",
+    "password",
+    "confirmation",
+    "street_address",
+    "postcode",
+    "city",
+    "country",
+    "consent_personal_data_policy",
+  ],
+  required: [
+    "firstname",
+    "lastname",
+    "email_address",
+    "password",
+    "confirmation",
+    "street_address",
+    "postcode",
+    "city",
+    "country",
+    "consent_personal_data_policy",
+  ],
+};
+
+/** Paths tried in order; installs differ until every store runs the new build. */
+const CONSTRAINT_PATHS = ["accounts/constraints", "accounts/create/constraints"];
+
+/** Response alias names mapped onto our form field names. */
+const FIELD_ALIASES: Record<string, string> = {
+  first_name: "firstname",
+  last_name: "lastname",
+  email: "email_address",
+  password_confirmation: "confirmation",
+  street: "street_address",
+  zip: "postcode",
+};
+
+function fieldName(name: string) {
+  return FIELD_ALIASES[name] ?? name;
+}
+
+/**
+ * Accepts both shapes seen in the wild: a map keyed by field name and a list of
+ * `{ name, required, visible }` entries.
+ */
+export function normalizeRegisterConstraints(payload: unknown): RegisterConstraints {
+  const root = isBag(payload) ? payload : {};
+  const raw = (root["fields"] ?? root["properties"] ?? root["constraints"] ?? root) as unknown;
+  const visible: string[] = [];
+  const required: string[] = [];
+
+  const add = (name: string, entry: unknown) => {
+    const key = fieldName(name);
+    const bag = isBag(entry) ? entry : {};
+    const shown = bag["visible"] ?? bag["display"] ?? bag["show"] ?? true;
+    if (shown === false) return;
+    visible.push(key);
+    if (bag["required"] === true || bag["mandatory"] === true) required.push(key);
+  };
+
+  if (Array.isArray(raw)) {
+    for (const entry of raw) {
+      const bag = isBag(entry) ? entry : {};
+      const name = typeof bag["name"] === "string" ? bag["name"] : null;
+      if (name) add(name, bag);
+    }
+  } else if (isBag(raw)) {
+    for (const [name, entry] of Object.entries(raw)) add(name, entry);
+  }
+
+  // A `required: ["..."]` list alongside the field map is also valid JSON Schema.
+  const requiredList = isBag(root) ? root["required"] : null;
+  if (Array.isArray(requiredList)) {
+    for (const name of requiredList) if (typeof name === "string") required.push(fieldName(name));
+  }
+
+  if (!visible.length) return DEFAULT_REGISTER_CONSTRAINTS;
+
+  // Password stays part of the form even when the store allows creating an
+  // account without one, and consent is always shown.
+  for (const key of ["password", "confirmation", "consent_personal_data_policy"])
+    if (!visible.includes(key)) visible.push(key);
+
+  return { visible, required: [...new Set(required)] };
+}
+
+/**
+ * Maps the registration form to the payload the store accepts. Only the fields
+ * the store asks for are sent, so a store that hides a field never receives it.
+ */
+export function buildRegisterBody(
+  input: RegisterInput,
+  constraints: RegisterConstraints = DEFAULT_REGISTER_CONSTRAINTS,
+): Record<string, unknown> {
+  const all: Record<string, unknown> = {
     email_address: input.email_address.trim(),
     password: input.password,
     confirmation: input.confirmation,
@@ -449,17 +551,41 @@ export function buildRegisterBody(input: RegisterInput): Record<string, unknown>
     country: countryId(input.country),
     consent_personal_data_policy: Boolean(input.consent_personal_data_policy),
   };
+
+  const body: Record<string, unknown> = {};
+  for (const key of constraints.visible) if (key in all) body[key] = all[key];
+  // email_address is the account identity and is always part of the payload.
+  body["email_address"] = all["email_address"];
+  return body;
 }
 
 
+
 /* ------------------------------------------------------------- adapter --- */
+
+/**
+ * Login/logout response. Surface v2 standardised these on snake_case; the
+ * camelCase spellings are kept as a fallback for installs on the older build.
+ */
+type LoginResponse = {
+  mutation_protection_token?: string;
+  mutationProtectionToken?: string;
+};
+
+function freshToken(data: LoginResponse | null | undefined) {
+  return data?.mutation_protection_token ?? data?.mutationProtectionToken ?? null;
+}
+
+/** "pending" = the store created the account inactive, awaiting review. */
+export type RegisterResult = { status: "active" | "pending" };
 
 export type AccountApi = {
   mode: "demo" | "live";
   getSession: () => Promise<{ authenticated: boolean; name: string }>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  register: (input: RegisterInput) => Promise<void>;
+  register: (input: RegisterInput) => Promise<RegisterResult>;
+  getRegisterConstraints: () => Promise<RegisterConstraints>;
   forgotPassword: (email: string) => Promise<void>;
   getAccount: () => Promise<Account>;
   updateAccount: (account: Account) => Promise<void>;
@@ -481,29 +607,43 @@ const liveAccountApi: AccountApi = {
   },
   login: async (email, password) => {
     const data = await guarded(() =>
-      call<{ mutationProtectionToken?: string }>("login/email", {
+      call<LoginResponse>("login/email", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ email, password }),
       }),
     );
-    if (data?.mutationProtectionToken) setMutationProtectionToken(data.mutationProtectionToken);
+    const token = freshToken(data);
+    if (token) setMutationProtectionToken(token);
   },
   logout: async () => {
-    const data = await guarded(() =>
-      call<{ mutationProtectionToken?: string }>("logout", { method: "POST" }),
-    );
-    if (data?.mutationProtectionToken) setMutationProtectionToken(data.mutationProtectionToken);
+    const data = await guarded(() => call<LoginResponse>("logout", { method: "POST" }));
+    const token = freshToken(data);
+    if (token) setMutationProtectionToken(token);
     else resetSessionGate();
   },
+  getRegisterConstraints: async () => {
+    for (const path of CONSTRAINT_PATHS) {
+      try {
+        return normalizeRegisterConstraints(await guarded(() => call<unknown>(path)));
+      } catch {
+        // Older installs do not serve constraints yet — try the next path.
+      }
+    }
+    return DEFAULT_REGISTER_CONSTRAINTS;
+  },
   register: async (input) => {
-    await guarded(() =>
-      call("accounts", {
+    const constraints = await liveAccountApi.getRegisterConstraints();
+    const data = await guarded(() =>
+      call<{ status?: string }>("accounts", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(buildRegisterBody(input)),
+        body: JSON.stringify(buildRegisterBody(input, constraints)),
       }),
     );
+    // "pending" means the store keeps the account inactive until it is reviewed,
+    // so there is no session to sign in to yet.
+    return { status: data?.status === "pending" ? "pending" : "active" };
   },
   forgotPassword: async (email) => {
     await guarded(() =>
@@ -644,7 +784,9 @@ const demoAccountApi: AccountApi = {
     };
     demoAuthenticated = true;
     emitDemo();
+    return { status: "active" };
   },
+  getRegisterConstraints: async () => DEFAULT_REGISTER_CONSTRAINTS,
 
   forgotPassword: async () => {},
   getAccount: async () => demoAccount,
@@ -745,6 +887,19 @@ export function useAccountMutations() {
   });
 
   return { login, logout, register, forgotPassword, updateAccount, updateAddress };
+}
+
+/**
+ * The store decides which registration fields are shown and required. Cached
+ * for the session — it is configuration, not customer data.
+ */
+export function useRegisterConstraints() {
+  const api = useAccountApi();
+  return useQuery({
+    queryKey: ["vendre", api.mode, "register-constraints"],
+    queryFn: () => api.getRegisterConstraints(),
+    staleTime: 10 * 60 * 1000,
+  });
 }
 
 export function useAccount(enabled = true) {

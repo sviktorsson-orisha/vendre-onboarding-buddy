@@ -21,11 +21,11 @@ CORS).
 - `GET /surface/2/galleries/{id}/content-blocks` — structured page content
   (**opt-in only**)
 - `GET /surface/2/galleries/boxes` — reusable content boxes and banners
-- `POST /surface/2/galleries/twig/render` — Twig block rendering
 
-CORS: gallery reads use the `galleries` policy; Twig rendering resolves to the
-`default` policy. If a store install exposes Twig at `/surface/2/twig/render`
-instead, keep the path configurable — both spellings exist in the wild.
+Twig rendering (`twig/render`, `galleries/twig/render`) was removed from
+Surface v2 — render content blocks in the frontend instead.
+
+CORS: gallery reads use the `galleries` policy.
 
 ## Routing
 

@@ -10,8 +10,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useI18n } from "@/lib/i18n";
 import {
   COUNTRY_OPTIONS,
+  DEFAULT_REGISTER_CONSTRAINTS,
   useAccountMutations,
   useAuth,
+  useRegisterConstraints,
   VendreAccountError,
 } from "@/lib/vendre/account";
 import type { FieldErrors, RegisterInput } from "@/types/vendre-account";
@@ -54,6 +56,12 @@ export default function LoginPage() {
 
   const [registerError, setRegisterError] = useState("");
   const [registerFields, setRegisterFields] = useState<FieldErrors>({});
+  const [pending, setPending] = useState(false);
+
+  // The store decides which fields the create-account form shows and requires.
+  const { data: constraints = DEFAULT_REGISTER_CONSTRAINTS } = useRegisterConstraints();
+  const shown = (field: string) => constraints.visible.includes(field);
+  const needed = (field: string) => constraints.required.includes(field);
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) void navigate({ to: "/mitt-konto", replace: true });
@@ -77,17 +85,22 @@ export default function LoginPage() {
     event.preventDefault();
     setRegisterError("");
     setRegisterFields({});
-    if (form.password !== form.confirmation) {
+    if (form.password && form.password !== form.confirmation) {
       setRegisterFields({ confirmation: t("account.mismatch") });
       return;
     }
-    if (!form.consent_personal_data_policy) {
+    if (needed("consent_personal_data_policy") && !form.consent_personal_data_policy) {
       setRegisterFields({ consent_personal_data_policy: t("account.consent") });
       return;
     }
 
     try {
-      await register.mutateAsync(form);
+      const result = await register.mutateAsync(form);
+      // A pending account has no session yet — the store activates it manually.
+      if (result.status === "pending") {
+        setPending(true);
+        return;
+      }
       await navigate({ to: "/mitt-konto" });
     } catch (error) {
       const { message, fields } = errorsOf(error);
@@ -160,18 +173,27 @@ export default function LoginPage() {
           </TabsContent>
 
           <TabsContent value="register">
+            {pending ? (
+              <div className="space-y-2 rounded-xl border border-border bg-card p-6">
+                <h2 className="brand-heading text-lg text-foreground">
+                  {t("account.pendingTitle")}
+                </h2>
+                <p className="text-sm text-muted-foreground">{t("account.pendingBody")}</p>
+              </div>
+            ) : (
             <form
               onSubmit={handleRegister}
               className="space-y-4 rounded-xl border border-border bg-card p-6"
             >
               <p className="text-sm text-muted-foreground">{t("account.registerIntro")}</p>
 
+              {(shown("firstname") || shown("lastname")) && (
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="firstname">{t("account.firstname")}</Label>
                   <Input
                     id="firstname"
-                    required
+                    required={needed("firstname")}
                     value={form.firstname}
                     onChange={(event) => set("firstname", event.target.value)}
                   />
@@ -181,13 +203,14 @@ export default function LoginPage() {
                   <Label htmlFor="lastname">{t("account.lastname")}</Label>
                   <Input
                     id="lastname"
-                    required
+                    required={needed("lastname")}
                     value={form.lastname}
                     onChange={(event) => set("lastname", event.target.value)}
                   />
                   <FieldError message={registerFields["lastname"]} />
                 </div>
               </div>
+              )}
 
               <div className="space-y-1.5">
                 <Label htmlFor="register-email">{t("account.email")}</Label>
@@ -201,6 +224,7 @@ export default function LoginPage() {
                 <FieldError message={registerFields["email_address"]} />
               </div>
 
+              {shown("password") && (
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="register-password">{t("account.password")}</Label>
@@ -208,7 +232,7 @@ export default function LoginPage() {
                     id="register-password"
                     type="password"
                     autoComplete="new-password"
-                    required
+                    required={needed("password")}
                     value={form.password}
                     onChange={(event) => set("password", event.target.value)}
                   />
@@ -220,31 +244,35 @@ export default function LoginPage() {
                     id="confirmation"
                     type="password"
                     autoComplete="new-password"
-                    required
+                    required={Boolean(form.password)}
                     value={form.confirmation}
                     onChange={(event) => set("confirmation", event.target.value)}
                   />
                   <FieldError message={registerFields["confirmation"]} />
                 </div>
               </div>
+              )}
 
+              {shown("street_address") && (
               <div className="space-y-1.5">
                 <Label htmlFor="street">{t("account.street")}</Label>
                 <Input
                   id="street"
-                  required
+                  required={needed("street_address")}
                   value={form.street_address}
                   onChange={(event) => set("street_address", event.target.value)}
                 />
                 <FieldError message={registerFields["street_address"]} />
               </div>
+              )}
 
+              {(shown("postcode") || shown("city")) && (
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="postcode">{t("account.postcode")}</Label>
                   <Input
                     id="postcode"
-                    required
+                    required={needed("postcode")}
                     value={form.postcode}
                     onChange={(event) => set("postcode", event.target.value)}
                   />
@@ -254,19 +282,21 @@ export default function LoginPage() {
                   <Label htmlFor="city">{t("account.city")}</Label>
                   <Input
                     id="city"
-                    required
+                    required={needed("city")}
                     value={form.city}
                     onChange={(event) => set("city", event.target.value)}
                   />
                   <FieldError message={registerFields["city"]} />
                 </div>
               </div>
+              )}
 
+              {shown("country") && (
               <div className="space-y-1.5">
                 <Label htmlFor="country">{t("account.country")}</Label>
                 <select
                   id="country"
-                  required
+                  required={needed("country")}
                   className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm"
                   value={form.country}
                   onChange={(event) => set("country", Number(event.target.value))}
@@ -279,6 +309,7 @@ export default function LoginPage() {
                 </select>
                 <FieldError message={registerFields["country"]} />
               </div>
+              )}
 
               <label className="flex items-center gap-2 text-sm text-foreground">
                 <Checkbox
@@ -294,11 +325,15 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={register.isPending || !form.consent_personal_data_policy}
+                disabled={
+                  register.isPending ||
+                  (needed("consent_personal_data_policy") && !form.consent_personal_data_policy)
+                }
               >
                 {t("account.signUp")}
               </Button>
             </form>
+            )}
           </TabsContent>
         </Tabs>
       </div>

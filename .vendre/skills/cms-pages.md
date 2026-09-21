@@ -17,8 +17,6 @@ categories or products is a recurring, hard-to-spot bug.
 - `GET /surface/2/galleries/{id}/content-blocks` — structured page content
   (**opt-in only**, see below)
 - `GET /surface/2/galleries/boxes` — reusable content boxes
-- `POST /surface/2/twig/render` — Twig block rendering (resolves to the
-  `default` CORS policy)
 
 ## Routing
 
