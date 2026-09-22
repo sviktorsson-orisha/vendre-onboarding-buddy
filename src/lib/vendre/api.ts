@@ -373,7 +373,7 @@ const liveApi: VendreApi = {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          products: [{ id, quantity: existing + quantity, ...(attributes ? { attributes } : {}) }],
+          products: [{ id, quantity: existing + quantity }],
         }),
       }),
     );
