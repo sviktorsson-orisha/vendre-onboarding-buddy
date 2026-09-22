@@ -1,30 +1,32 @@
 ---
 name: vendre-price-log
-description: Reference for logged prices (price history) via the single allowed Surface v1 endpoint GET /surface/1/products/price_log_prices - request shape, session requirement and response format. Not implemented in this template; use when a customer asks for lowest/previous price display.
+description: Reference for logged prices (price history) via GET /surface/2/products/price-log-prices - request shape, session requirement and response format. Not implemented in this template; use when a customer asks for lowest/previous price display.
 ---
 
-# Logged prices (Surface v1) — reference only
+# Logged prices (Surface v2) — reference only
 
 **Nothing in this template implements this.** There is no proxy route, no
 helper, no hook and no UI for logged prices. This file documents how to call the
 endpoint so it can be built when a customer asks for it.
 
-This is the **only** Surface v1 endpoint that may ever be used. Everything else —
-products, categories, cart, account, VQL, CMS — stays on Surface v2.
+The call now lives on Surface v2 and is documented in the OpenAPI document.
+There is no longer any reason to touch Surface v1: the old
+`GET /surface/1/products/price_log_prices` is legacy and only relevant for
+stores that have not yet received the v2 release (they answer 404 on the v2
+path — verified on `sara-phoenix.testavendre.se`, 2026-09-22).
 
 ## Endpoint
 
-`GET /surface/1/products/price_log_prices`
+`GET /surface/2/products/price-log-prices`
 
-- **No OAuth bearer.** v1 never uses the `Authorization` header.
+- **OAuth bearer required**, like every other v2 call.
 - **Session cookie required.** Without the store session cookie it returns
-  `401 SURFACE_SESSION_UNAUTHORIZED`. That cookie is the one
-  `POST /surface/2/session/bootstrap` established, so bootstrap must have run.
+  `401 SURFACE_SESSION_UNAUTHORIZED`, so `POST /surface/2/session/bootstrap`
+  must have run first.
 - **No mutation protection token** (it is a GET).
 - **Parameters:** repeated `id[]=<products_id>`, one per product, several per
   call. Other parameter names return an empty result instead of an error.
-- **Response:** an object keyed by product id (verified live against product
-  222 / model `36-7246`):
+- **Response:** an object keyed by product id, same format as the old v1 call:
 
   ```json
   {
@@ -46,10 +48,8 @@ products, categories, cart, account, VQL, CMS — stays on Surface v2.
 
 ## If it is implemented again
 
-- The browser must never call the store directly. Add a same-origin proxy route
-  (for example `/api/vendre/surface1/products/price-log-prices`) that mirrors the
-  v2 proxy: same-origin guard, per-IP rate limit, cookie forwarding, `Set-Cookie`
-  rewritten to our origin, `cache-control: no-store`, and **no** bearer header.
+- The browser must never call the store directly — it goes through the existing
+  v2 proxy `/api/vendre/surface/products/price-log-prices`, no new route needed.
 - Batch ids into one call per page instead of one call per price row, and cache
   a few minutes client-side; logged prices change rarely.
 - Only show the value for discounted products, and never in demo mode.

@@ -21,8 +21,8 @@ _(Applies to all endpoints unless specified otherwise)_
 - **v2:** Base path `/surface/2/`
 
 Both versions exist in the platform. Storefronts built from this template call
-**v2 only** — every path below is `/surface/2/<endpoint>` — with exactly one
-documented exception: logged prices, see §1.10.
+**v2 only** — every path below is `/surface/2/<endpoint>`. Logged prices, once
+a v1-only call, now live on v2 as well; see §1.10.
 
 **How this app reaches those paths:** the browser never calls the store. It
 calls the same-origin proxy `/api/vendre/surface/<endpoint>`, which maps 1:1 to
@@ -149,17 +149,16 @@ off for ~60s and keep using the existing token.
 - **`limit` is capped at 500** and `limit=0` no longer means "everything":
   fetch large sets page by page with `limit=500` until a short page returns.
 
-### 1.10 The Only Allowed v1 Call: Logged Prices (not implemented)
+### 1.10 Logged Prices (not implemented)
 
-`GET /surface/1/products/price_log_prices` — logged prices (price history).
-This is the single Surface v1 endpoint that may ever be used; nothing else may
-be added to v1. **The template does not implement it** — there is no proxy
-route, helper or UI. The details below exist so it can be built on request.
+`GET /surface/2/products/price-log-prices` — logged prices (price history),
+documented in the OpenAPI document. **The template does not implement it** —
+there is no helper or UI. The details below exist so it can be built on request.
 
-- **No OAuth bearer** — v1 never sends `Authorization`.
+- **OAuth bearer required**, like every other v2 call (the proxy adds it).
 - **Session cookie required** — without the store session cookie it returns
   `401 SURFACE_SESSION_UNAUTHORIZED`, so `POST /surface/2/session/bootstrap`
-  must have run first. The cookie is shared between v1 and v2.
+  must have run first.
 - **No mutation protection token** (GET, and not a documented GET exception).
 - **Parameters:** repeated `id[]=<products_id>`, one per product. Any other name
   (`products_id`, `product_id`, `ids`) silently returns an empty result.
@@ -182,9 +181,11 @@ route, helper or UI. The details below exist so it can be built on request.
 
   `price_log_price` is already formatted in the session currency — never format
   or recalculate it in the frontend.
-- **If implemented:** route it through a same-origin proxy like all other store
-  traffic, with the same guards as the v2 proxy minus the bearer header, and
-  `no-store` responses.
+- **If implemented:** it goes through the existing v2 proxy
+  `/api/vendre/surface/products/price-log-prices` like all other store traffic.
+- **Legacy:** `GET /surface/1/products/price_log_prices` returns the same body
+  and stays available for stores that have not yet received the v2 release
+  (they answer 404 on the v2 path). No other v1 endpoint may be used.
 
 Details live in `.vendre/skills/price-log.md`.
 
