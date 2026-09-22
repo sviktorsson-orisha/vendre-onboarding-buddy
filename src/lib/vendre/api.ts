@@ -339,12 +339,32 @@ const liveApi: VendreApi = {
     })),
   getCart: () => guarded(() => surfaceJson<Cart>("shopping-cart")),
   addToCart: async (productId, quantity = 1) => {
+    // The store sets an absolute quantity, so adding a product that is already
+    // in the cart must carry existing + new, otherwise nothing changes.
+    const id = Number(productId);
+    let existing = 0;
+    let attributes: unknown[] | undefined;
+    try {
+      const cart = await liveApi.getCart();
+      const line = (cart?.products ?? []).find(
+        (item) => Number(item.productId) === id && (item.attributes?.length ?? 0) === 0,
+      );
+      if (line) {
+        existing = line.quantity ?? 0;
+        attributes = line.attributes;
+      }
+    } catch {
+      existing = 0;
+    }
+
     await guarded(() =>
       surfaceJson("shopping-cart/products", {
         // PUT is the current contract; POST remains only as a legacy alias.
         method: "PUT",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ products: [{ id: Number(productId), quantity }] }),
+        body: JSON.stringify({
+          products: [{ id, quantity: existing + quantity, ...(attributes ? { attributes } : {}) }],
+        }),
       }),
     );
   },
