@@ -33,10 +33,17 @@ export function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
   const lines = cart?.products ?? [];
 
   // The total always comes from the store — never summed in the frontend.
+  // When we have to format it ourselves, match the decimals the store already
+  // uses on the line prices so the sum never looks off next to them.
+  const lineDecimals: 0 | 2 = lines.some((line: any) =>
+    /[.,]\d/.test(String(line?.price_formatted ?? line?.price_total_formatted ?? "")),
+  )
+    ? 2
+    : 0;
   const cartTotal =
     cart?.cart_total_formatted ??
     (cart?.cart_total != null
-      ? formatAmount(cart.cart_total, session?.currency?.code)
+      ? formatAmount(cart.cart_total, session?.currency?.code, lineDecimals)
       : "—");
 
 
