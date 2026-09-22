@@ -430,7 +430,7 @@ function ProfileView() {
                 </option>
               ))}
             </select>
-            {fields["country"] && <p className="text-xs text-destructive">{fields["country"]}</p>}
+            {fields["country_id"] && <p className="text-xs text-destructive">{fields["country_id"]}</p>}
           </div>
         </div>
         {error && <p className="text-sm text-destructive">{error}</p>}
