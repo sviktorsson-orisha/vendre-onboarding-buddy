@@ -347,24 +347,25 @@ const liveApi: VendreApi = {
       pages: data?.pages ?? [],
     })),
   getCart: () => guarded(() => surfaceJson<Cart>("shopping-cart")),
-  addToCart: async (productId, quantity = 1) => {
+  addToCart: async (productId, quantity = 1, knownQuantity) => {
     // The store sets an absolute quantity, so adding a product that is already
-    // in the cart must carry existing + new, otherwise nothing changes.
+    // in the cart must carry existing + new, otherwise nothing changes. The
+    // caller normally knows the current quantity from the live cart query, so
+    // no extra read is needed; only fall back to reading when it does not.
     const id = Number(productId);
-    let existing = 0;
-    let attributes: unknown[] | undefined;
-    try {
-      const cart = await liveApi.getCart();
-      const line = (cart?.products ?? []).find(
-        (item) => Number(item.productId) === id && (item.attributes?.length ?? 0) === 0,
-      );
-      if (line) {
-        existing = line.quantity ?? 0;
-        attributes = line.attributes;
+    let existing = knownQuantity ?? 0;
+    if (knownQuantity == null) {
+      try {
+        const cart = await liveApi.getCart();
+        const line = (cart?.products ?? []).find(
+          (item) => Number(item.productId) === id && (item.attributes?.length ?? 0) === 0,
+        );
+        existing = line?.quantity ?? 0;
+      } catch {
+        existing = 0;
       }
-    } catch {
-      existing = 0;
     }
+
 
     await guarded(() =>
       surfaceJson("shopping-cart/products", {
