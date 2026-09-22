@@ -169,7 +169,7 @@ export async function guarded<T>(run: () => Promise<T>): Promise<T> {
  */
 export const ALLOWED_PAGE_SIZES = [12, 15, 20] as const;
 /** Largest page size the store accepts for a paged read. */
-export const MAX_PAGE_SIZE = ALLOWED_PAGE_SIZES[ALLOWED_PAGE_SIZES.length - 1];
+export const MAX_PAGE_SIZE: number = 20;
 
 /** Rounds any requested page size up to the nearest value Surface accepts. */
 function allowedPageSize(limit: number): number {
