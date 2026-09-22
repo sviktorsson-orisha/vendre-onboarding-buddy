@@ -1024,7 +1024,21 @@ export function useCartMutations() {
 
   const add = useMutation({
     mutationFn: ({ productId, quantity }: { productId: string | number; quantity?: number }) =>
-      run(() => api.addToCart(productId, quantity ?? 1)),
+      run(() => {
+        // The cart query is always live in the app, so the current quantity is
+        // read from its cache instead of costing an extra store round-trip.
+        const cached = queryClient.getQueryData<Cart>(cartKey);
+        const known = cached
+          ? (cached.products ?? [])
+              .filter(
+                (line) =>
+                  Number(line.productId) === Number(productId) &&
+                  (line.attributes?.length ?? 0) === 0,
+              )
+              .reduce((sum, line) => sum + (line.quantity ?? 0), 0)
+          : undefined;
+        return api.addToCart(productId, quantity ?? 1, known);
+      }),
   });
   const update = useMutation({
     mutationFn: ({ line, quantity }: { line: CartLine; quantity: number }) =>
