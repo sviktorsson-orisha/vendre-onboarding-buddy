@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { formatAmount } from "@/lib/vendre/format";
 import type { Product } from "@/types/vendre";
 
 /**
