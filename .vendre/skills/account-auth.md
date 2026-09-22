@@ -41,7 +41,9 @@ Writing back: `PUT /surface/2/accounts/me` and
 
 `POST /surface/2/accounts` with the field set the store asks for —
 `firstname`, `lastname`, `email_address`, `password`, `confirmation`,
-`street_address`, `postcode`, `city`, `country_id` (numeric), plus the optional
+`street_address`, `postcode`, `city`, `country_id` (numeric — the only country
+key, used as the form field name too; no country-list endpoint exists yet, so
+the form ships a fixed list), plus the optional
 fields the store enables (`company`, `personnummer`, `telephone`, `mobile`,
 `street_address2`).
 Map validation errors from each error's `source.parameter` to the matching

@@ -288,7 +288,7 @@ documented required set if the call fails.
 
 **`PUT accounts/me` body keys** — the update body uses `firstname` / `lastname`
 (plus `email_address`, `street_address`, `postcode`, `city`, numeric
-`country_id` — `country` is also accepted — `type` as `0`/`1`, and the optional
+`country_id` (never `country`) — `type` as `0`/`1`, and the optional
 fields `telephone`, `mobile`, `street_address2`, `personnummer`, `company`,
 `vat_identification_number`). Build the body exactly like the registration body:
 send only the fields `GET accounts/form` marks `display: true`, skip blank
@@ -334,7 +334,9 @@ name is also written onto the new main address with
 `email_addresses`.
 
 `country_id` is the numeric country id (e.g. Sweden = `203`); sending `country`
-instead fails with `missing required property "country_id"`. Omit optional keys
+instead fails with `missing required property "country_id"`. `country_id` is the
+only country key used anywhere in the frontend; the store has no endpoint yet
+that lists available countries, so the form uses a fixed list until one exists. Omit optional keys
 that are empty — blank strings are rejected. A partial field set returns
 `SURFACE_ACCOUNT_MALFORMED_BODY` (400/422).
 
