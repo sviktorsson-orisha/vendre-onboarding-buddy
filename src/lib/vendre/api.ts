@@ -1017,6 +1017,8 @@ export function useFeaturedProducts(count = 4) {
       const menus = await api.getMenus();
       const first = menus.find((item) => item.menu_type === "category" && !item.has_children);
       if (!first) return [];
+      // The request is rounded up to a page size the store accepts; the view
+      // still shows exactly `count` products.
       const category = await api.getCategory(first.id, { limit: count });
       return category.product_list.slice(0, count);
     },
