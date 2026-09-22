@@ -74,7 +74,16 @@ export type VendreApi = {
   /** CMS page tree; the only source of `is_menu` for footer groups. */
   getPageTree: () => Promise<PageTreeResponse>;
   getCart: () => Promise<Cart>;
-  addToCart: (productId: string | number, quantity?: number) => Promise<void>;
+  /**
+   * `knownQuantity` is the quantity the caller already knows the cart holds for
+   * this product (from the live cart query cache); passing it avoids an extra
+   * cart read before the add.
+   */
+  addToCart: (
+    productId: string | number,
+    quantity?: number,
+    knownQuantity?: number,
+  ) => Promise<void>;
   updateQty: (line: CartLine, quantity: number) => Promise<void>;
   removeLine: (line: CartLine) => Promise<void>;
   getSessionContext: () => Promise<SessionContext>;
