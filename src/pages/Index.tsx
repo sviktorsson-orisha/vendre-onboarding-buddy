@@ -9,7 +9,7 @@ import { useFeaturedProducts, useMenuTree } from "@/lib/vendre/api";
 export default function Index() {
   const { t } = useI18n();
   const tree = useMenuTree();
-  const { data: featured = [] } = useFeaturedProducts(8);
+  const { data: featured = [] } = useFeaturedProducts(4);
 
   return (
     <StoreShell>
