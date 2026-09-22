@@ -13,7 +13,13 @@ import {
 } from "@/components/ui/sheet";
 import { useOnboarding } from "@/context/onboarding-context";
 import { useI18n } from "@/lib/i18n";
-import { useCart, useCartMutations, useVendreApi } from "@/lib/vendre/api";
+import {
+  formatAmount,
+  useCart,
+  useCartMutations,
+  useSessionContext,
+  useVendreApi,
+} from "@/lib/vendre/api";
 
 
 export function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
@@ -21,6 +27,7 @@ export function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
   const api = useVendreApi();
   const { isConfigured } = useOnboarding();
   const { data: cart, isLoading, refetch } = useCart();
+  const { data: session } = useSessionContext();
   const { update, remove } = useCartMutations();
   const [checkoutPending, setCheckoutPending] = useState(false);
   const lines = cart?.products ?? [];
@@ -28,7 +35,9 @@ export function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
   // The total always comes from the store — never summed in the frontend.
   const cartTotal =
     cart?.cart_total_formatted ??
-    (cart?.cart_total != null ? `${cart.cart_total} kr` : "—");
+    (cart?.cart_total != null
+      ? formatAmount(cart.cart_total, session?.currency?.code)
+      : "—");
 
 
   const goToCheckout = async () => {
