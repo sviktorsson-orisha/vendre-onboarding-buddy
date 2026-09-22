@@ -112,14 +112,27 @@ export function getStoreBaseUrl() {
   return storeBaseUrl;
 }
 
+function transient(error: unknown) {
+  // A 502/503/504 from the proxy means the store (or its OAuth endpoint)
+  // hiccupped, not that the session is invalid — one retry usually recovers.
+  if (!(error instanceof VendreError)) return true;
+  const status = error.status ?? 0;
+  return status === 0 || status === 429 || status >= 502;
+}
+
 async function bootstrapSession() {
   storeBaseUrl = await fetchStoreBaseUrl();
-  const data = await surfaceJson<{ surface_mutation_protection_token?: string }>(
-    "session/bootstrap",
-    { method: "POST" },
-  );
+  let data: { surface_mutation_protection_token?: string };
+  try {
+    data = await surfaceJson("session/bootstrap", { method: "POST" });
+  } catch (error) {
+    if (!transient(error)) throw error;
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    data = await surfaceJson("session/bootstrap", { method: "POST" });
+  }
   setMutationProtectionToken(data.surface_mutation_protection_token ?? null);
 }
+
 
 
 function ensureSession() {
@@ -150,14 +163,29 @@ export async function guarded<T>(run: () => Promise<T>): Promise<T> {
   }
 }
 
-/** Serialises listing state for GET categories/{id}; arrays use bracket syntax. */
+/** Surface rejects a page size above this. */
+export const MAX_PAGE_SIZE = 500;
+
+function positiveInt(value: unknown): number | null {
+  const n = Number(value);
+  return Number.isFinite(n) && Number.isInteger(n) && n >= 1 ? n : null;
+}
+
+/**
+ * Serialises listing state for GET categories/{id}; arrays use bracket syntax.
+ * Listing parameters are validated strictly by Surface, so only well-formed
+ * values are sent — anything else is dropped and the store default applies.
+ */
 function categoryQuery(query?: CategoryQuery) {
   const params = new URLSearchParams();
-  if (query?.page) params.set("page", String(query.page));
-  // limit=0 means "all products" in Surface — it must be sent, not treated as unset.
-  if (query?.limit != null) params.set("limit", String(query.limit));
+  const page = positiveInt(query?.page);
+  if (page) params.set("page", String(page));
+  const limit = positiveInt(query?.limit);
+  if (limit) params.set("limit", String(Math.min(limit, MAX_PAGE_SIZE)));
   if (query?.sort_by) params.set("sort_by", query.sort_by);
-  if (query?.sort_order) params.set("sort_order", query.sort_order);
+  // The store's own sort options use ASC/DESC; anything else is dropped.
+  const order = String(query?.sort_order ?? "").toUpperCase();
+  if (order === "ASC" || order === "DESC") params.set("sort_order", order);
   if (query?.pfrom != null) params.set("pfrom", String(query.pfrom));
   if (query?.pto != null) params.set("pto", String(query.pto));
   for (const tag of query?.tags ?? []) params.append("tags[]", String(tag));
@@ -165,6 +193,21 @@ function categoryQuery(query?: CategoryQuery) {
     for (const value of values) params.append(`f[${specId}][]`, value);
   const qs = params.toString();
   return qs ? `?${qs}` : "";
+}
+
+/**
+ * Every product in a category. Surface caps a page at MAX_PAGE_SIZE, so the
+ * pages are walked until a short one arrives (with a hard stop as a guard).
+ */
+async function allCategoryProducts(catId: number): Promise<Product[]> {
+  const out: Product[] = [];
+  for (let page = 1; page <= 20; page += 1) {
+    const data = await liveApi.getCategory(catId, { limit: MAX_PAGE_SIZE, page });
+    const list = data.product_list ?? [];
+    out.push(...list);
+    if (list.length < MAX_PAGE_SIZE) break;
+  }
+  return out;
 }
 
 const liveApi: VendreApi = {
@@ -240,8 +283,8 @@ const liveApi: VendreApi = {
       if (direct) return direct;
     }
     const fromCategory = async (catId: number) => {
-      const data = await liveApi.getCategory(catId, { limit: 0 });
-      return data.product_list?.find((p) => String(p.id) === String(id)) ?? null;
+      const all = await allCategoryProducts(catId);
+      return all.find((p) => String(p.id) === String(id)) ?? null;
     };
     if (categoryId) {
       const hit = await fromCategory(categoryId);
@@ -287,7 +330,8 @@ const liveApi: VendreApi = {
   addToCart: async (productId, quantity = 1) => {
     await guarded(() =>
       surfaceJson("shopping-cart/products", {
-        method: "POST",
+        // PUT is the current contract; POST remains only as a legacy alias.
+        method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ products: [{ id: Number(productId), quantity }] }),
       }),
@@ -296,7 +340,8 @@ const liveApi: VendreApi = {
   updateQty: async (line, quantity) => {
     await guarded(() =>
       surfaceJson("shopping-cart/products", {
-        method: "POST",
+        // PUT is the current contract; POST remains only as a legacy alias.
+        method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           products: [{ id: line.productId, quantity, attributes: line.attributes }],
@@ -309,7 +354,8 @@ const liveApi: VendreApi = {
   removeLine: async (line) => {
     await guarded(() =>
       surfaceJson("shopping-cart/products", {
-        method: "POST",
+        // PUT is the current contract; POST remains only as a legacy alias.
+        method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           products: [{ id: line.productId, quantity: 0, attributes: line.attributes }],
@@ -600,10 +646,7 @@ function liveCatalogue(): Promise<Product[]> {
     const categories = menus.filter((item) => item.menu_type === "category");
     const lists = await Promise.all(
       categories.map((item) =>
-        liveApi
-          .getCategory(item.id, { limit: 0 })
-          .then((data) => data.product_list ?? [])
-          .catch(() => [] as Product[]),
+        allCategoryProducts(item.id).catch(() => [] as Product[]),
       ),
     );
     const byId = new Map<string, Product>();

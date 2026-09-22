@@ -88,7 +88,7 @@ function isBag(value: unknown): value is Bag {
 function flatten(payload: unknown): Bag {
   if (!isBag(payload)) return {};
   const out: Bag = { ...payload };
-  for (const key of ["account", "customer", "address", "data", "attributes", "order"]) {
+  for (const key of ["account", "customer", "address", "default_address", "data", "attributes", "order"]) {
     const nested = payload[key];
     if (isBag(nested)) Object.assign(out, flatten(nested));
   }
@@ -114,11 +114,11 @@ export function normalizeAccount(payload: unknown): Account {
     mobile: pick(bag, ["mobile", "cellphone", "phone_mobile"]),
     company: pick(bag, ["company", "company_name"]),
     street_address: pick(bag, ["street_address", "street", "address", "address_1"]),
+    street_address2: pick(bag, ["street_address2", "address_2", "street2"]),
     postcode: pick(bag, ["postcode", "zip", "postal_code", "zipcode"]),
     city: pick(bag, ["city", "town"]),
     country: pick(bag, ["country", "country_code"]),
     personnummer: pick(bag, ["personnummer", "social_security_number"]),
-    vat_identification_number: pick(bag, ["vat_identification_number", "vat_number", "vat"]),
     type: pick(bag, ["type", "customer_type"]) || "private",
     newsletter: Boolean(bag["newsletter"]),
     raw: bag,
@@ -432,12 +432,134 @@ function countryId(value: string | number | null | undefined): number {
   return COUNTRY_IDS[raw.toUpperCase()] ?? COUNTRY_IDS["SE"]!;
 }
 
+/* ------------------------------------------ registration constraints --- */
+
 /**
- * Maps the registration form to the exact payload the store accepts: the
- * required field set from the API reference, plus the consent flag.
+ * Which fields the create-account form shows, which are required and their
+ * length limits. Filled from GET /surface/2/accounts/form, which mirrors the
+ * store's admin settings (company, personnummer, VAT number and so on).
  */
-export function buildRegisterBody(input: RegisterInput): Record<string, unknown> {
-  return {
+export type RegisterConstraints = {
+  visible: string[];
+  required: string[];
+  limits: Record<string, { min?: number; max?: number }>;
+};
+
+/** Fields the register form knows how to render, keyed by our own field name. */
+export const REGISTER_FIELDS = [
+  "firstname",
+  "lastname",
+  "email_address",
+  "password",
+  "confirmation",
+  "personnummer",
+  "company",
+  "telephone",
+  "mobile",
+  "street_address",
+  "street_address2",
+  "postcode",
+  "city",
+  "country",
+] as const;
+
+/** The store calls the country field `country_id`; our payload key is `country`. */
+const FIELD_ALIASES: Record<string, string> = { country_id: "country" };
+
+/** Optional fields that are only sent when the visitor filled them in. */
+const OPTIONAL_FIELDS = [
+  "personnummer",
+  "company",
+  "telephone",
+  "mobile",
+  "street_address2",
+];
+
+/** Used until (or unless) the store answers on accounts/form. */
+export const DEFAULT_REGISTER_CONSTRAINTS: RegisterConstraints = {
+  visible: [
+    "firstname",
+    "lastname",
+    "email_address",
+    "password",
+    "confirmation",
+    "personnummer",
+    "street_address",
+    "postcode",
+    "city",
+    "country",
+    "consent_personal_data_policy",
+  ],
+  required: [
+    "firstname",
+    "lastname",
+    "email_address",
+    "password",
+    "confirmation",
+    "personnummer",
+    "street_address",
+    "postcode",
+    "city",
+    "country",
+    "consent_personal_data_policy",
+  ],
+  limits: {},
+};
+
+type FormFieldRule = {
+  display?: boolean;
+  required?: boolean;
+  min_length?: number;
+  max_length?: number;
+};
+
+/**
+ * Normalises the accounts/form payload into `RegisterConstraints`. Fields the
+ * form cannot render are ignored; the policy consent is a frontend concern and
+ * always stays on.
+ */
+export function normalizeRegisterConstraints(payload: unknown): RegisterConstraints {
+  if (!isBag(payload)) return DEFAULT_REGISTER_CONSTRAINTS;
+
+  const visible: string[] = [];
+  const required: string[] = [];
+  const limits: RegisterConstraints["limits"] = {};
+
+  for (const [rawKey, rawRule] of Object.entries(payload)) {
+    const key = FIELD_ALIASES[rawKey] ?? rawKey;
+    if (!(REGISTER_FIELDS as readonly string[]).includes(key)) continue;
+    if (!isBag(rawRule)) continue;
+    const rule = rawRule as FormFieldRule;
+    if (rule.display === false) continue;
+
+    visible.push(key);
+    if (rule.required) required.push(key);
+    const min = typeof rule.min_length === "number" && rule.min_length > 0 ? rule.min_length : undefined;
+    const max = typeof rule.max_length === "number" && rule.max_length > 0 ? rule.max_length : undefined;
+    if (min !== undefined || max !== undefined) limits[key] = { ...(min !== undefined && { min }), ...(max !== undefined && { max }) };
+  }
+
+  if (visible.length === 0) return DEFAULT_REGISTER_CONSTRAINTS;
+
+  // Not a store field: the policy consent is always shown and always required.
+  visible.push("consent_personal_data_policy");
+  required.push("consent_personal_data_policy");
+
+  return { visible, required, limits };
+}
+
+/**
+ * Maps the registration form to the payload the store accepts. The store
+ * validates the whole body and answers SURFACE_ACCOUNT_MALFORMED_BODY (422)
+ * when a field it requires is missing. Optional fields are only sent when
+ * filled; sending them blank is rejected too.
+ */
+export function buildRegisterBody(
+  input: RegisterInput,
+  constraints: RegisterConstraints = DEFAULT_REGISTER_CONSTRAINTS,
+): Record<string, unknown> {
+  const isBusiness = Number(input.customer_type ?? 0) === 1;
+  const body: Record<string, unknown> = {
     email_address: input.email_address.trim(),
     password: input.password,
     confirmation: input.confirmation,
@@ -446,20 +568,183 @@ export function buildRegisterBody(input: RegisterInput): Record<string, unknown>
     street_address: input.street_address.trim(),
     postcode: input.postcode.trim(),
     city: input.city.trim(),
-    country: countryId(input.country),
+    // accounts/form names this field `country_id`; the store rejects `country`.
+    country_id: countryId(input.country),
+    // Customer type: 0 = private person, 1 = business.
+    type: isBusiness ? 1 : 0,
     consent_personal_data_policy: Boolean(input.consent_personal_data_policy),
   };
+
+  for (const field of OPTIONAL_FIELDS) {
+    // Company name and VAT number only apply to business customers.
+    if (!isBusiness && field === "company") continue;
+    // Every other optional field follows the store's own accounts/form list.
+    if (!constraints.visible.includes(field)) continue;
+    const value = String((input as Record<string, unknown>)[field] ?? "").trim();
+    if (value) body[field] = value;
+  }
+
+  return body;
 }
 
 
+
+
+
+
+
+/** True when the account is a business customer (the store answers "business"). */
+export function isBusinessAccount(account: Pick<Account, "type">): boolean {
+  const value = String(account.type ?? "").toLowerCase();
+  return value === "business" || value === "company" || value === "1";
+}
+
+/**
+ * Maps the edit-account form to the PUT accounts/me body. Same rules as
+ * registration minus password/confirmation: only fields the store shows are
+ * sent, blank optionals are left out, and company/VAT are business-only.
+ * The store accepts `country_id` here just like on create (verified live).
+ */
+export function buildAccountBody(
+  account: Account,
+  constraints: RegisterConstraints = DEFAULT_REGISTER_CONSTRAINTS,
+): Record<string, unknown> {
+  const isBusiness = isBusinessAccount(account);
+  const body: Record<string, unknown> = {
+    firstname: account.firstname.trim(),
+    lastname: account.lastname.trim(),
+    email_address: account.email.trim(),
+    street_address: account.street_address.trim(),
+    postcode: account.postcode.trim(),
+    city: account.city.trim(),
+    country_id: countryId(account.country),
+    type: isBusiness ? 1 : 0,
+  };
+
+  for (const field of OPTIONAL_FIELDS) {
+    if (!isBusiness && field === "company") continue;
+    if (!constraints.visible.includes(field)) continue;
+    const value = String((account as unknown as Record<string, unknown>)[field] ?? "").trim();
+    if (value) body[field] = value;
+  }
+
+  return body;
+}
+
 /* ------------------------------------------------------------- adapter --- */
+
+/**
+ * Login/logout response. Surface v2 standardised these on snake_case; the
+ * camelCase spellings are kept as a fallback for installs on the older build.
+ */
+type LoginResponse = {
+  mutation_protection_token?: string;
+  mutationProtectionToken?: string;
+};
+
+function freshToken(data: LoginResponse | null | undefined) {
+  return data?.mutation_protection_token ?? data?.mutationProtectionToken ?? null;
+}
+
+/** "pending" = the store created the account inactive, awaiting review. */
+export type RegisterResult = { status: "active" | "pending" };
+
+const PENDING_WORDS = ["pending", "inactive", "awaiting", "review", "not_active", "disabled"];
+const ACTIVE_WORDS = ["active", "approved", "ok", "created", "complete"];
+
+/**
+ * Reads the account status out of a create-account response. Stores differ:
+ * the status may sit at the top level or inside `account`/`customer`/`data`,
+ * and some report a boolean `active` flag instead of a status string.
+ */
+function registrationStatus(payload: unknown): "active" | "pending" | null {
+  if (!payload || typeof payload !== "object") return null;
+  const record = payload as Record<string, unknown>;
+
+  for (const key of ["status", "account_status", "state"]) {
+    const value = record[key];
+    if (typeof value === "string") {
+      const text = value.toLowerCase();
+      if (PENDING_WORDS.some((word) => text.includes(word))) return "pending";
+      if (ACTIVE_WORDS.some((word) => text === word)) return "active";
+    }
+  }
+
+  for (const key of ["active", "is_active", "enabled", "approved"]) {
+    const value = record[key];
+    if (typeof value === "boolean") return value ? "active" : "pending";
+    if (value === 0 || value === "0") return "pending";
+    if (value === 1 || value === "1") return "active";
+  }
+
+  for (const key of ["account", "customer", "data"]) {
+    const nested = registrationStatus(record[key]);
+    if (nested) return nested;
+  }
+
+  return null;
+}
+
+/**
+ * Reads the registration field list from the store (GET accounts/form) so the
+ * form mirrors the admin settings. Cached per page load; a failure falls back
+ * to the documented default set so sign-up keeps working.
+ */
+let constraintsCache: Promise<RegisterConstraints> | null = null;
+
+function loadRegisterConstraints(): Promise<RegisterConstraints> {
+  constraintsCache ??= guarded(() => call<unknown>("accounts/form"))
+    .then(normalizeRegisterConstraints)
+    .catch(() => {
+      constraintsCache = null;
+      return DEFAULT_REGISTER_CONSTRAINTS;
+    });
+  return constraintsCache;
+}
+
+
+/** Main-address payload in the shape the store accepts. */
+function addressBody(address: Address): Record<string, unknown> {
+  return {
+    id: address.id,
+    firstname: address.firstname,
+    lastname: address.lastname,
+    company: address.company,
+    street_address: address.street_address,
+    postcode: address.postcode,
+    city: address.city,
+    country_id: countryId(address.country),
+    telephone: address.telephone,
+  };
+}
+
+function putMainAddress(body: Record<string, unknown>) {
+  return call("accounts/me/addresses", {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ addresses: [body] }),
+  });
+}
+
+/**
+ * The store drops `company` from the create-account body whenever the field is
+ * switched off in admin, so a business customer's company name would be lost.
+ * Writing it onto the freshly created main address keeps it.
+ */
+async function saveCompanyOnAddress(company: string) {
+  const data = await call<unknown>("accounts/me/addresses");
+  const current = extractAddressList(data).map(normalizeAddress)[0];
+  if (!current) return;
+  await putMainAddress({ ...addressBody(current), company });
+}
 
 export type AccountApi = {
   mode: "demo" | "live";
   getSession: () => Promise<{ authenticated: boolean; name: string }>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  register: (input: RegisterInput) => Promise<void>;
+  register: (input: RegisterInput) => Promise<RegisterResult>;
+  getRegisterConstraints: () => Promise<RegisterConstraints>;
   forgotPassword: (email: string) => Promise<void>;
   getAccount: () => Promise<Account>;
   updateAccount: (account: Account) => Promise<void>;
@@ -481,30 +766,57 @@ const liveAccountApi: AccountApi = {
   },
   login: async (email, password) => {
     const data = await guarded(() =>
-      call<{ mutationProtectionToken?: string }>("login/email", {
+      call<LoginResponse>("login/email", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ email, password }),
       }),
     );
-    if (data?.mutationProtectionToken) setMutationProtectionToken(data.mutationProtectionToken);
+    const token = freshToken(data);
+    if (token) setMutationProtectionToken(token);
   },
   logout: async () => {
-    const data = await guarded(() =>
-      call<{ mutationProtectionToken?: string }>("logout", { method: "POST" }),
-    );
-    if (data?.mutationProtectionToken) setMutationProtectionToken(data.mutationProtectionToken);
+    const data = await guarded(() => call<LoginResponse>("logout", { method: "POST" }));
+    const token = freshToken(data);
+    if (token) setMutationProtectionToken(token);
     else resetSessionGate();
   },
+  getRegisterConstraints: () => loadRegisterConstraints(),
   register: async (input) => {
-    await guarded(() =>
-      call("accounts", {
+    const constraints = await loadRegisterConstraints();
+    const data = await guarded(() =>
+      call<unknown>("accounts", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(buildRegisterBody(input)),
+        body: JSON.stringify(buildRegisterBody(input, constraints)),
       }),
     );
+
+    const company = String(input.company ?? "").trim();
+    if (Number(input.customer_type ?? 0) === 1 && company) {
+      // Registration is signed in straight away, so the address write works
+      // here; a failure must never break an otherwise successful sign-up.
+      try {
+        await saveCompanyOnAddress(company);
+      } catch {
+        /* keep the account, the company name can be set from My account */
+      }
+    }
+
+    const explicit = registrationStatus(data);
+    if (explicit) return { status: explicit };
+
+    // The answer did not say either way: an approved account is signed in
+    // straight away, a pending one is not. Ask the store which it is.
+    resetSessionGate();
+    try {
+      const context = await guarded(() => call<SessionContext>("session/context"));
+      return { status: context.authenticated ? "active" : "pending" };
+    } catch {
+      return { status: "pending" };
+    }
   },
+
   forgotPassword: async (email) => {
     await guarded(() =>
       call(`accounts/me/forgot-password?email=${encodeURIComponent(email)}`),
@@ -512,19 +824,8 @@ const liveAccountApi: AccountApi = {
   },
   getAccount: () => guarded(() => call<unknown>("accounts/me")).then(normalizeAccount),
   updateAccount: async (account) => {
-    // Only the field set the edit form exposes — the same fields registration
-    // requires, minus password/confirmation. The documented update body uses
-    // `firstname`/`lastname` even though the profile response returns
-    // `first_name`/`last_name`, so never echo back the response spelling.
-    const body: Record<string, unknown> = {
-      firstname: account.firstname,
-      lastname: account.lastname,
-      email_address: account.email,
-      street_address: account.street_address,
-      postcode: account.postcode,
-      city: account.city,
-      country: countryId(account.country),
-    };
+    const constraints = await loadRegisterConstraints();
+    const body = buildAccountBody(account, constraints);
 
     await guarded(() =>
       call("accounts/me", {
@@ -562,23 +863,9 @@ const liveAccountApi: AccountApi = {
 
 
   updateAddress: async (address) => {
-    await guarded(() =>
-      call("accounts/me/addresses", {
-        method: "PUT",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          id: address.id,
-          firstname: address.firstname,
-          lastname: address.lastname,
-          company: address.company,
-          street_address: address.street_address,
-          postcode: address.postcode,
-          city: address.city,
-          country: address.country,
-          telephone: address.telephone,
-        }),
-      }),
-    );
+    // The store only accepts the wrapped `{ addresses: [...] }` shape with
+    // `country_id`; a flat body answers 422 SURFACE_ACCOUNT_MALFORMED_BODY.
+    await guarded(() => putMainAddress(addressBody(address)));
   },
   getOrders: () =>
     guarded(() => call<unknown>("accounts/me/order-history")).then((data) =>
@@ -644,7 +931,9 @@ const demoAccountApi: AccountApi = {
     };
     demoAuthenticated = true;
     emitDemo();
+    return { status: "active" };
   },
+  getRegisterConstraints: async () => DEFAULT_REGISTER_CONSTRAINTS,
 
   forgotPassword: async () => {},
   getAccount: async () => demoAccount,
@@ -747,12 +1036,35 @@ export function useAccountMutations() {
   return { login, logout, register, forgotPassword, updateAccount, updateAddress };
 }
 
+/**
+ * The store decides which registration fields are shown and required. Cached
+ * for the session — it is configuration, not customer data.
+ */
+export function useRegisterConstraints() {
+  const api = useAccountApi();
+  return useQuery({
+    queryKey: ["vendre", api.mode, "register-constraints"],
+    queryFn: () => api.getRegisterConstraints(),
+    staleTime: 10 * 60 * 1000,
+  });
+}
+
+/**
+ * Customer data only exists for a signed-in visitor. Without this gate a
+ * signed-out (or pending, not yet approved) visitor fires accounts/me,
+ * addresses and order calls that can only answer 401.
+ */
+function useCustomerQueriesEnabled(enabled: boolean) {
+  const { isAuthenticated, isLoading, mode } = useAuth();
+  return enabled && !isLoading && (isAuthenticated || mode === "demo");
+}
+
 export function useAccount(enabled = true) {
   const api = useAccountApi();
   return useQuery({
     queryKey: ["vendre", api.mode, "account"],
     queryFn: () => api.getAccount(),
-    enabled,
+    enabled: useCustomerQueriesEnabled(enabled),
     ...NO_CACHE,
   });
 }
@@ -762,7 +1074,7 @@ export function useAddresses(enabled = true) {
   return useQuery({
     queryKey: ["vendre", api.mode, "addresses"],
     queryFn: () => api.getAddresses(),
-    enabled,
+    enabled: useCustomerQueriesEnabled(enabled),
     ...NO_CACHE,
   });
 }
@@ -772,7 +1084,7 @@ export function useOrders(enabled = true) {
   return useQuery({
     queryKey: ["vendre", api.mode, "orders"],
     queryFn: () => api.getOrders(),
-    enabled,
+    enabled: useCustomerQueriesEnabled(enabled),
     ...NO_CACHE,
   });
 }
@@ -782,7 +1094,7 @@ export function useOrder(id: string | null) {
   return useQuery({
     queryKey: ["vendre", api.mode, "order", id],
     queryFn: () => (id ? api.getOrder(id) : Promise.resolve(null)),
-    enabled: Boolean(id),
+    enabled: useCustomerQueriesEnabled(Boolean(id)),
     ...NO_CACHE,
   });
 }
@@ -792,7 +1104,8 @@ export function useSubUsers(enabled = true) {
   return useQuery({
     queryKey: ["vendre", api.mode, "sub-users"],
     queryFn: () => api.getSubUsers(),
-    enabled,
+    enabled: useCustomerQueriesEnabled(enabled),
     ...NO_CACHE,
   });
 }
+

@@ -16,11 +16,11 @@ export type Account = {
   mobile: string;
   company: string;
   street_address: string;
+  street_address2: string;
   postcode: string;
   city: string;
   country: string;
   personnummer: string;
-  vat_identification_number: string;
   type: string;
   newsletter: boolean;
   /** The untouched payload from the store, used to write back canonical keys. */
@@ -113,6 +113,15 @@ export type RegisterInput = {
   city: string;
   /** Numeric country id expected by the store (SE = 203). */
   country: number;
+  /** Customer type: 0 = private person, 1 = business. */
+  customer_type: 0 | 1;
+  /** Personal ID number (business: organisation number) — same store field. */
+  personnummer: string;
+  /** Optional fields, only rendered and sent when the store switches them on. */
+  company?: string;
+  telephone?: string;
+  mobile?: string;
+  street_address2?: string;
   consent_personal_data_policy: boolean;
 };
 

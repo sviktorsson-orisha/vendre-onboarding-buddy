@@ -39,20 +39,47 @@ Writing back: `PUT /surface/2/accounts/me` and
 
 ## Registration
 
-`POST /surface/2/accounts` with the full documented field set —
-`firstname`, `lastname`, `email_address`, `password`, `confirmation`, `type`,
-`gender`, `company`, `street_address`, `postcode`, `city`, `country`,
-`telephone`, `mobile`, `personnummer`, `vat_identification_number`,
-`newsletter`, `consent_personal_data_policy`. Map validation errors from each
-error's `source.parameter` to the matching field.
+`POST /surface/2/accounts` with the field set the store asks for —
+`firstname`, `lastname`, `email_address`, `password`, `confirmation`,
+`street_address`, `postcode`, `city`, `country_id` (numeric), plus the optional
+fields the store enables (`company`, `personnummer`, `telephone`, `mobile`,
+`street_address2`).
+Map validation errors from each error's `source.parameter` to the matching
+field.
+
+Customer type goes in `type`: `0` = private person, `1` = business. The form
+switches between the two; a business customer uses the same `personnummer` key
+for its organisation number, labelled "Organisationsnummer" in the UI.
+`company` follows `accounts/form` like every other optional field — it is only
+shown, required and sent when the store reports `display: true`.
+`vat_identification_number` is intentionally not part of this frontend: the
+store never returns it from `accounts/me` or the address book and PUT updates
+do not persist it, so the field was removed from both registration and the
+profile form.
+
+**`company` is dropped by the store when `accounts/form` reports it as
+`display: false`** — the account is created with `company: null`, which is why
+the form never sends it in that case. When the field is enabled and filled in,
+the new account is signed in right after `POST accounts`, so write it onto
+the main address with `PUT /surface/2/accounts/me/addresses` (body
+`{ addresses: [ { …address, company } ] }`, `country_id` not `country`; a flat
+body answers 422) and let that write fail silently — the account itself is
+already created.
+
+
+Which fields the form shows comes from `GET /surface/2/accounts/form`: an
+object map of `{ display, required, min_length, max_length }` per field. Hide
+everything with `display: false`, mark the required ones mandatory, apply the
+length limits, and never send an empty optional key. Cache the response per page
+load and fall back to the documented required set if the call fails.
+
 
 ## Orders and password reset
 
 - `GET /surface/2/accounts/me/order-history` and `/order-history/{id}`.
 - `GET /surface/2/accounts/me/forgot-password` — requires the mutation token
   even though it is a GET.
-- `GET /surface/2/customers/current` is a lightweight logged-in check when the
-  full profile is not needed.
+- `GET /surface/2/accounts/me` is the logged-in check (`customers/current` was removed).
 
 ## Non-negotiables
 
@@ -60,3 +87,12 @@ error's `source.parameter` to the matching field.
 - All `accounts*` endpoints resolve to the **`default`** CORS policy, not
   `customer`. Allowlist the frontend origin there or the calls fall back to the
   proxy.
+
+## Customer type is create-only
+
+**Customer type cannot be changed after registration.** `POST accounts` accepts
+`type` (`0` = private, `1` = business), but `PUT accounts/me` silently ignores
+every variant — `type: 0`, `type: "private"`, `customer_type`,
+`customers_group_id`, or any combination — and keeps answering `200` with the
+original type (verified live). Show the customer type read-only in edit-account
+forms; only the store admin can change it.

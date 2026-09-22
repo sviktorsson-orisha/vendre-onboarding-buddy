@@ -94,7 +94,8 @@ The most common source of silent failures in Vendre frontends.
   `GET accounts/me/forgot-password` **does**, despite being a GET — a client
   that only attaches it on non-GET calls must special-case this.
 - **Replace the stored token** with the fresh one returned by login
-  (`mutationProtectionToken`), logout, and any re-bootstrap after a session 401.
+  (`mutation_protection_token`, older installs: `mutationProtectionToken`),
+  logout, and any re-bootstrap after a session 401.
 - Attach it in the shared client, never per call site.
 
 ## Errors and resilience

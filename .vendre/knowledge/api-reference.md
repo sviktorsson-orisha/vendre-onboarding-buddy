@@ -88,8 +88,12 @@ matter in practice:
 - `GET /surface/2/accounts/me/forgot-password` **does** require it, despite being
   a `GET` — clients that only attach the header on non-GET calls must special-case it.
 
-Always replace the stored token with the fresh `mutationProtectionToken` returned
-by login, logout and any re-bootstrap.
+Always replace the stored token with the fresh token returned by login, logout
+and any re-bootstrap. Login and logout return it as
+`mutation_protection_token` (snake_case); older installs still answer
+`mutationProtectionToken`, so read both. Login also returns `first_name` /
+`last_name` in snake_case. The token is validated strictly — a missing or stale
+token is rejected outright.
 
 ### 1.7 Error Format
 
@@ -139,6 +143,11 @@ off for ~60s and keep using the existing token.
 - **Listing parameters:** `page`, `limit`, `sort_by`, `sort_order`,
   `filter` / `f`, `pfrom`, `pto`. Filter, sort and paginate on the server and
   render counts from the response — never on an already-paginated client list.
+- **Listing parameters are validated strictly.** `page` and `limit` must be
+  positive integers, `sort_order` is `ASC` or `DESC`, and `sort_by` must be a
+  field the resource sorts on. An invalid value is an error, not a fallback.
+- **`limit` is capped at 500** and `limit=0` no longer means "everything":
+  fetch large sets page by page with `limit=500` until a short page returns.
 
 ### 1.10 The Only Allowed v1 Call: Logged Prices (not implemented)
 
@@ -242,41 +251,93 @@ All `accounts*` endpoints resolve to the **`default`** CORS policy, not `custome
 
 | Method | Path | CORS policy | Token | Purpose |
 | --- | --- | --- | --- | --- |
-| POST | `accounts` | `default` | yes | registration (full field set required) |
-| POST | `customers` | `default` | yes | legacy v1-backed registration alias (same body, plus `email_addresses`) |
+| POST | `accounts` | `default` | yes | registration — documented field set, `password` optional |
+| GET | `accounts/form` | `default` | – | registration field list driven by admin settings |
+
+**Account creation status.** A store may create the account with status
+`pending`: it is inactive until a human approves it, so there is no session to
+sign in to. Read `status` from the response and tell the customer instead of
+redirecting to the account area. `password` may be optional; the store then
+sets it later.
+
+**`GET accounts/form` (verified 2026-09-21).** Returns an object map of the
+fields the store's admin settings enable:
+
+```json
+{
+  "personnummer": { "display": true, "required": true, "min_length": 10, "max_length": 15 },
+  "company": { "display": false, "required": false, "min_length": 0, "max_length": 255 }
+}
+```
+
+Skip every field with `display: false`, mark `required: true` fields mandatory
+and feed `min_length` / `max_length` into the inputs. The field is named
+`country_id` here; the registration body uses `country_id` too. Fall back to the
+documented required set if the call fails.
+
 | GET | `accounts/me` | `default` | – | profile (flat / nested / alias shapes) |
 | PUT | `accounts/me` | `default` | yes | update profile |
 | GET | `accounts/me/addresses` | `default` | – | the customer's **main address** only |
 | GET | `accounts/me/address-book` | `default` | – | the **alternative** addresses only (never the main one) |
-| PUT | `accounts/me/addresses` | `default` | yes | update address |
+| PUT | `accounts/me/addresses` | `default` | yes | update main address, body `{ addresses: [ { id, firstname, lastname, company, street_address, postcode, city, country_id, telephone } ] }` — a flat body answers `422 SURFACE_ACCOUNT_MALFORMED_BODY` (verified live) |
 | PUT | `accounts/me/address-book` | `default` | yes | upsert alternative addresses, body `{ addresses: [...] }` |
 | GET | `accounts/me/order-history` | `default` | – | order list |
 | GET | `accounts/me/order-history/{orderId}` | `default` | – | single order (see shape below) |
 | GET | `accounts/me/quotations` | `default` | – | quotation list (B2B) |
 | GET | `accounts/me/quotations/{quotationId}` | `default` | – | single quotation |
-| POST | `accounts/me/shopping-cart/products` | `default` | yes | add cart products as the authenticated customer |
 
 **`PUT accounts/me` body keys** — the update body uses `firstname` / `lastname`
-(plus `email_address`, `street_address`, `postcode`, `city`, numeric `country`,
-and the optional registration fields), while `GET accounts/me` returns
+(plus `email_address`, `street_address`, `postcode`, `city`, numeric
+`country_id` — `country` is also accepted — `type` as `0`/`1`, and the optional
+fields `telephone`, `mobile`, `street_address2`, `personnummer`, `company`,
+`vat_identification_number`). Build the body exactly like the registration body:
+send only the fields `GET accounts/form` marks `display: true`, skip blank
+optionals, and send `company` / `vat_identification_number` only for business
+customers. `GET accounts/me` returns
 `first_name` / `last_name` and `email`. Read the aliases, but **always write the
 documented keys** — echoing the response spelling back makes the store silently
 ignore the name fields.
+
+**Customer type cannot be changed after registration.** `POST accounts` accepts
+`type` (`0` = private, `1` = business), but `PUT accounts/me` silently ignores
+every variant — `type: 0`, `type: "private"`, `customer_type`,
+`customers_group_id`, or any combination — and keeps answering `200` with the
+original type (verified live). Show the customer type read-only in edit-account
+forms; only the store admin can change it.
 
 
 **Registration body (`POST accounts`, and `POST customers`)**
 
 Required: `email_address`, `password`, `confirmation`, `firstname`, `lastname`,
-`street_address`, `postcode`, `city`, `country`.
+`street_address`, `postcode`, `city`, `country_id`, plus every field
+`accounts/form` reports as `display: true, required: true`.
 
 Optional: `type`, `gender`, `company`, `street_address2`, `suburb`,
 `personnummer`, `state`, `telephone`, `fax`, `mobile`, `alias`,
 `customers_group_id`, `vat_identification_number`, `newsletter`,
+
+`type` is the customer type: `0` = private person, `1` = business (both
+verified against a live store). A business customer sends its company name in
+`company` and its organisation number in the same `personnummer` field a
+private customer uses for the personal ID number.
+
+**The store strips every create-account key `accounts/form` reports as
+`display: false`** (verified live: `fax` and `telephone`, both `display: true`,
+persist; `company`, `display: false`, comes back `null`). So when "allow
+customers to enter a company" is switched off in admin, the form hides
+`company` and leaves it out of `POST accounts` entirely. When the field is
+enabled and filled in, registration is signed in immediately, so the company
+name is also written onto the new main address with
+`PUT accounts/me/addresses` right after sign-up to keep it.
+
 `consent_personal_data_policy`. `POST customers` additionally accepts
 `email_addresses`.
 
-`country` is the numeric country id (e.g. Sweden = `203`). A partial field set
-returns `SURFACE_ACCOUNT_MALFORMED_BODY` (422).
+`country_id` is the numeric country id (e.g. Sweden = `203`); sending `country`
+instead fails with `missing required property "country_id"`. Omit optional keys
+that are empty — blank strings are rejected. A partial field set returns
+`SURFACE_ACCOUNT_MALFORMED_BODY` (400/422).
+
 
 **`accounts/me/order-history/{orderId}` response** (verified against a live store):
 the payload is wrapped in `order` and contains `id`, `status`, `date`,
@@ -303,7 +364,6 @@ shows whole-unit line prices. Never recompute the totals themselves.
 | --- | --- | --- | --- | --- |
 | GET | `accounts/me/forgot-password` | `default` | yes | password reset mail (token required despite being a GET) |
 | GET | `accounts/me/users` | `default` | – | sub-users (B2B) — _unverified_ |
-| GET | `customers/current` | `default` | – | current customer record |
 | POST | `login/email` | `login` | yes | login with `{ email, password }` |
 | GET | `login/google-sso` | `login` | – | Google SSO redirect — _unverified_ |
 | GET | `login/microsoft-sso` | `login` | – | Microsoft SSO redirect — _unverified_ |
@@ -330,7 +390,6 @@ alone. Skills: `account-auth.md`, `customer-account/SKILL.md`,
 | DELETE | `shopping-cart` | `shopping_cart` | yes | **clears the whole cart** — remove a single line with a products mutation and `quantity: 0` |
 | GET | `shopping-cart/products` | `shopping_cart` | – | cart lines only |
 | PUT | `shopping-cart/products` | `shopping_cart` | yes | add / set quantity, body `{ products: [...], empty }` |
-| POST | `shopping-cart/products` | `shopping_cart` | yes | legacy alias of the `PUT` above, identical body |
 | GET | `shopping-cart/coupons` | `shopping_cart` | – | active coupons |
 | POST | `shopping-cart/coupons/activate` | `shopping_cart` | yes | apply coupon |
 | POST | `shopping-cart/coupons/deactivate` | `shopping_cart` | yes | remove coupon |
@@ -374,8 +433,6 @@ Skills: `category-plp.md`, `pdp-products.md`, `vql-queries.md`.
 | GET | `galleries/{id}/pages` | `galleries` | – | pages in a gallery |
 | GET | `galleries/{id}/content-blocks` | `galleries` | – | content blocks |
 | GET | `galleries/boxes` | `galleries` | – | boxes / widgets |
-| POST | `twig/render` | `default` | – | render a Twig block |
-| POST | `galleries/twig/render` | `galleries` | – | render a Twig block in a gallery context |
 | GET | `language-strings` | `default` | – | translated UI strings, query `locale` |
 | GET | `translations` | `default` | – | alias of `language-strings`, query `locale` |
 | GET | `sitemap` | `sitemap` | – | sitemap data, query `type`, `language`, `page` |
@@ -416,7 +473,6 @@ the app uses:
 Known traps:
 
 - `accounts*` → **`default`** (not `customer`).
-- `twig/render` → **`default`**.
 - `contact` → **`email/contact`**.
 - `login-link` has **no CORS support** and must go through the server proxy.
 - A gateway-level `401` (bad bearer or failed session gate) carries **no CORS
