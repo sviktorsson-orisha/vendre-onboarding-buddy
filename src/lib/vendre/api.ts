@@ -74,7 +74,16 @@ export type VendreApi = {
   /** CMS page tree; the only source of `is_menu` for footer groups. */
   getPageTree: () => Promise<PageTreeResponse>;
   getCart: () => Promise<Cart>;
-  addToCart: (productId: string | number, quantity?: number) => Promise<void>;
+  /**
+   * `knownQuantity` is the quantity the caller already knows the cart holds for
+   * this product (from the live cart query cache); passing it avoids an extra
+   * cart read before the add.
+   */
+  addToCart: (
+    productId: string | number,
+    quantity?: number,
+    knownQuantity?: number,
+  ) => Promise<void>;
   updateQty: (line: CartLine, quantity: number) => Promise<void>;
   removeLine: (line: CartLine) => Promise<void>;
   getSessionContext: () => Promise<SessionContext>;
@@ -338,24 +347,25 @@ const liveApi: VendreApi = {
       pages: data?.pages ?? [],
     })),
   getCart: () => guarded(() => surfaceJson<Cart>("shopping-cart")),
-  addToCart: async (productId, quantity = 1) => {
+  addToCart: async (productId, quantity = 1, knownQuantity) => {
     // The store sets an absolute quantity, so adding a product that is already
-    // in the cart must carry existing + new, otherwise nothing changes.
+    // in the cart must carry existing + new, otherwise nothing changes. The
+    // caller normally knows the current quantity from the live cart query, so
+    // no extra read is needed; only fall back to reading when it does not.
     const id = Number(productId);
-    let existing = 0;
-    let attributes: unknown[] | undefined;
-    try {
-      const cart = await liveApi.getCart();
-      const line = (cart?.products ?? []).find(
-        (item) => Number(item.productId) === id && (item.attributes?.length ?? 0) === 0,
-      );
-      if (line) {
-        existing = line.quantity ?? 0;
-        attributes = line.attributes;
+    let existing = knownQuantity ?? 0;
+    if (knownQuantity == null) {
+      try {
+        const cart = await liveApi.getCart();
+        const line = (cart?.products ?? []).find(
+          (item) => Number(item.productId) === id && (item.attributes?.length ?? 0) === 0,
+        );
+        existing = line?.quantity ?? 0;
+      } catch {
+        existing = 0;
       }
-    } catch {
-      existing = 0;
     }
+
 
     await guarded(() =>
       surfaceJson("shopping-cart/products", {
@@ -363,7 +373,7 @@ const liveApi: VendreApi = {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          products: [{ id, quantity: existing + quantity, ...(attributes ? { attributes } : {}) }],
+          products: [{ id, quantity: existing + quantity }],
         }),
       }),
     );
@@ -1014,7 +1024,21 @@ export function useCartMutations() {
 
   const add = useMutation({
     mutationFn: ({ productId, quantity }: { productId: string | number; quantity?: number }) =>
-      run(() => api.addToCart(productId, quantity ?? 1)),
+      run(() => {
+        // The cart query is always live in the app, so the current quantity is
+        // read from its cache instead of costing an extra store round-trip.
+        const cached = queryClient.getQueryData<Cart>(cartKey);
+        const known = cached
+          ? (cached.products ?? [])
+              .filter(
+                (line) =>
+                  Number(line.productId) === Number(productId) &&
+                  (line.attributes?.length ?? 0) === 0,
+              )
+              .reduce((sum, line) => sum + (line.quantity ?? 0), 0)
+          : undefined;
+        return api.addToCart(productId, quantity ?? 1, known);
+      }),
   });
   const update = useMutation({
     mutationFn: ({ line, quantity }: { line: CartLine; quantity: number }) =>
