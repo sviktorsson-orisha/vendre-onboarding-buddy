@@ -206,12 +206,13 @@ function categoryQuery(query?: CategoryQuery) {
 }
 
 /**
- * Every product in a category. Surface caps a page at MAX_PAGE_SIZE, so the
- * pages are walked until a short one arrives (with a hard stop as a guard).
+ * Every product in a category. Surface only accepts the page sizes in
+ * ALLOWED_PAGE_SIZES, so the pages are walked with the largest allowed size
+ * until a short one arrives (with a hard stop as a guard).
  */
 async function allCategoryProducts(catId: number): Promise<Product[]> {
   const out: Product[] = [];
-  for (let page = 1; page <= 20; page += 1) {
+  for (let page = 1; page <= 100; page += 1) {
     const data = await liveApi.getCategory(catId, { limit: MAX_PAGE_SIZE, page });
     const list = data.product_list ?? [];
     out.push(...list);
