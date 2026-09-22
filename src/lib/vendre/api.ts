@@ -163,8 +163,18 @@ export async function guarded<T>(run: () => Promise<T>): Promise<T> {
   }
 }
 
-/** Surface rejects a page size above this. */
-export const MAX_PAGE_SIZE = 500;
+/**
+ * Surface validates `limit` against a fixed allow-list and rejects anything
+ * else with 400 FORM_INVALID_INPUT. 0 means "all products".
+ */
+export const ALLOWED_PAGE_SIZES = [12, 15, 20] as const;
+/** Largest page size the store accepts for a paged read. */
+export const MAX_PAGE_SIZE: number = 20;
+
+/** Rounds any requested page size up to the nearest value Surface accepts. */
+function allowedPageSize(limit: number): number {
+  return ALLOWED_PAGE_SIZES.find((size) => size >= limit) ?? MAX_PAGE_SIZE;
+}
 
 function positiveInt(value: unknown): number | null {
   const n = Number(value);
@@ -181,7 +191,7 @@ function categoryQuery(query?: CategoryQuery) {
   const page = positiveInt(query?.page);
   if (page) params.set("page", String(page));
   const limit = positiveInt(query?.limit);
-  if (limit) params.set("limit", String(Math.min(limit, MAX_PAGE_SIZE)));
+  if (limit) params.set("limit", String(allowedPageSize(limit)));
   if (query?.sort_by) params.set("sort_by", query.sort_by);
   // The store's own sort options use ASC/DESC; anything else is dropped.
   const order = String(query?.sort_order ?? "").toUpperCase();
@@ -196,12 +206,13 @@ function categoryQuery(query?: CategoryQuery) {
 }
 
 /**
- * Every product in a category. Surface caps a page at MAX_PAGE_SIZE, so the
- * pages are walked until a short one arrives (with a hard stop as a guard).
+ * Every product in a category. Surface only accepts the page sizes in
+ * ALLOWED_PAGE_SIZES, so the pages are walked with the largest allowed size
+ * until a short one arrives (with a hard stop as a guard).
  */
 async function allCategoryProducts(catId: number): Promise<Product[]> {
   const out: Product[] = [];
-  for (let page = 1; page <= 20; page += 1) {
+  for (let page = 1; page <= 100; page += 1) {
     const data = await liveApi.getCategory(catId, { limit: MAX_PAGE_SIZE, page });
     const list = data.product_list ?? [];
     out.push(...list);
@@ -1006,6 +1017,8 @@ export function useFeaturedProducts(count = 4) {
       const menus = await api.getMenus();
       const first = menus.find((item) => item.menu_type === "category" && !item.has_children);
       if (!first) return [];
+      // The request is rounded up to a page size the store accepts; the view
+      // still shows exactly `count` products.
       const category = await api.getCategory(first.id, { limit: count });
       return category.product_list.slice(0, count);
     },
