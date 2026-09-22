@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { formatAmount } from "@/lib/vendre/format";
 import type { Product } from "@/types/vendre";
 
 /**
@@ -26,7 +27,7 @@ const originalSize: Record<Size, string> = {
 
 function format(text: string | null | undefined, raw: number | null | undefined) {
   if (text) return text;
-  if (raw != null) return `${raw} kr`;
+  if (raw != null) return formatAmount(raw);
   return null;
 }
 
