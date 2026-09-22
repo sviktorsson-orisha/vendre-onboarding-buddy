@@ -13,6 +13,7 @@ import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useOnboarding } from "@/context/onboarding-context";
+import { formatAmount } from "@/lib/vendre/format";
 import {
   emptyCart,
   mockCategory,
