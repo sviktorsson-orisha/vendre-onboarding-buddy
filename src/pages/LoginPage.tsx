@@ -51,7 +51,7 @@ export default function LoginPage() {
     street_address2: "",
     postcode: "",
     city: "",
-    country: 203,
+    country_id: 203,
     customer_type: 0,
     personnummer: "",
     company: "",
@@ -367,15 +367,15 @@ export default function LoginPage() {
               </div>
               )}
 
-              {shown("country") && (
+              {shown("country_id") && (
               <div className="space-y-1.5">
-                <Label htmlFor="country">{t("account.country")}</Label>
+                <Label htmlFor="country_id">{t("account.country")}</Label>
                 <select
-                  id="country"
-                  required={needed("country")}
+                  id="country_id"
+                  required={needed("country_id")}
                   className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm"
-                  value={form.country}
-                  onChange={(event) => set("country", Number(event.target.value))}
+                  value={form.country_id}
+                  onChange={(event) => set("country_id", Number(event.target.value))}
                 >
                   {COUNTRY_OPTIONS.map((option) => (
                     <option key={option.id} value={option.id}>
@@ -383,7 +383,7 @@ export default function LoginPage() {
                     </option>
                   ))}
                 </select>
-                <FieldError message={registerFields["country"]} />
+                <FieldError message={registerFields["country_id"]} />
               </div>
               )}
 

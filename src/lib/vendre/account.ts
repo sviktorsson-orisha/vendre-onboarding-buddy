@@ -460,11 +460,8 @@ export const REGISTER_FIELDS = [
   "street_address2",
   "postcode",
   "city",
-  "country",
+  "country_id",
 ] as const;
-
-/** The store calls the country field `country_id`; our payload key is `country`. */
-const FIELD_ALIASES: Record<string, string> = { country_id: "country" };
 
 /** Optional fields that are only sent when the visitor filled them in. */
 const OPTIONAL_FIELDS = [
@@ -487,7 +484,7 @@ export const DEFAULT_REGISTER_CONSTRAINTS: RegisterConstraints = {
     "street_address",
     "postcode",
     "city",
-    "country",
+    "country_id",
     "consent_personal_data_policy",
   ],
   required: [
@@ -500,7 +497,7 @@ export const DEFAULT_REGISTER_CONSTRAINTS: RegisterConstraints = {
     "street_address",
     "postcode",
     "city",
-    "country",
+    "country_id",
     "consent_personal_data_policy",
   ],
   limits: {},
@@ -526,7 +523,7 @@ export function normalizeRegisterConstraints(payload: unknown): RegisterConstrai
   const limits: RegisterConstraints["limits"] = {};
 
   for (const [rawKey, rawRule] of Object.entries(payload)) {
-    const key = FIELD_ALIASES[rawKey] ?? rawKey;
+    const key = rawKey;
     if (!(REGISTER_FIELDS as readonly string[]).includes(key)) continue;
     if (!isBag(rawRule)) continue;
     const rule = rawRule as FormFieldRule;
@@ -568,8 +565,8 @@ export function buildRegisterBody(
     street_address: input.street_address.trim(),
     postcode: input.postcode.trim(),
     city: input.city.trim(),
-    // accounts/form names this field `country_id`; the store rejects `country`.
-    country_id: countryId(input.country),
+    // The store rejects `country`; the only accepted key is `country_id`.
+    country_id: countryId(input.country_id),
     // Customer type: 0 = private person, 1 = business.
     type: isBusiness ? 1 : 0,
     consent_personal_data_policy: Boolean(input.consent_personal_data_policy),
@@ -927,7 +924,7 @@ const demoAccountApi: AccountApi = {
       street_address: input.street_address,
       postcode: input.postcode,
       city: input.city,
-      country: String(input.country),
+      country: String(input.country_id),
     };
     demoAuthenticated = true;
     emitDemo();

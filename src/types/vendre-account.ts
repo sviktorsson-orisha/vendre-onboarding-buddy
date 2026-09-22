@@ -112,7 +112,7 @@ export type RegisterInput = {
   postcode: string;
   city: string;
   /** Numeric country id expected by the store (SE = 203). */
-  country: number;
+  country_id: number;
   /** Customer type: 0 = private person, 1 = business. */
   customer_type: 0 | 1;
   /** Personal ID number (business: organisation number) — same store field. */
