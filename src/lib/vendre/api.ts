@@ -163,8 +163,18 @@ export async function guarded<T>(run: () => Promise<T>): Promise<T> {
   }
 }
 
-/** Surface rejects a page size above this. */
-export const MAX_PAGE_SIZE = 500;
+/**
+ * Surface validates `limit` against a fixed allow-list and rejects anything
+ * else with 400 FORM_INVALID_INPUT. 0 means "all products".
+ */
+export const ALLOWED_PAGE_SIZES = [12, 15, 20] as const;
+/** Largest page size the store accepts for a paged read. */
+export const MAX_PAGE_SIZE = ALLOWED_PAGE_SIZES[ALLOWED_PAGE_SIZES.length - 1];
+
+/** Rounds any requested page size up to the nearest value Surface accepts. */
+function allowedPageSize(limit: number): number {
+  return ALLOWED_PAGE_SIZES.find((size) => size >= limit) ?? MAX_PAGE_SIZE;
+}
 
 function positiveInt(value: unknown): number | null {
   const n = Number(value);
@@ -181,7 +191,7 @@ function categoryQuery(query?: CategoryQuery) {
   const page = positiveInt(query?.page);
   if (page) params.set("page", String(page));
   const limit = positiveInt(query?.limit);
-  if (limit) params.set("limit", String(Math.min(limit, MAX_PAGE_SIZE)));
+  if (limit) params.set("limit", String(allowedPageSize(limit)));
   if (query?.sort_by) params.set("sort_by", query.sort_by);
   // The store's own sort options use ASC/DESC; anything else is dropped.
   const order = String(query?.sort_order ?? "").toUpperCase();
