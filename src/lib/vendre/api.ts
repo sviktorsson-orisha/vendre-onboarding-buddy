@@ -1087,30 +1087,10 @@ export function resolveImageUrl(path: string | null | undefined) {
 }
 
 export function formatPrice(product: Pick<Product, "price" | "price_raw">) {
-  return product.price ?? (product.price_raw != null ? `${product.price_raw} kr` : "—");
+  return product.price ?? (product.price_raw != null ? formatAmount(product.price_raw) : "—");
 }
 
-/**
- * Formats a raw amount when the store did not send a formatted string.
- * Floating point artefacts (8107.967999999999) must never reach the UI.
- */
-export function formatAmount(value: number, currency?: string | null) {
-  const rounded = Math.round(value * 100) / 100;
-  const decimals = Number.isInteger(rounded) ? 0 : 2;
-  try {
-    return new Intl.NumberFormat("sv-SE", {
-      style: "currency",
-      currency: currency || "SEK",
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-    }).format(rounded);
-  } catch {
-    return `${new Intl.NumberFormat("sv-SE", {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-    }).format(rounded)} kr`;
-  }
-}
+export { formatAmount };
 
 /**
  * Product search. Runs only from SEARCH_MIN_CHARS characters and shares the
