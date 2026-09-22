@@ -35,7 +35,9 @@ export function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
   // The total always comes from the store — never summed in the frontend.
   const cartTotal =
     cart?.cart_total_formatted ??
-    (cart?.cart_total != null ? `${cart.cart_total} kr` : "—");
+    (cart?.cart_total != null
+      ? formatAmount(cart.cart_total, session?.currency?.code)
+      : "—");
 
 
   const goToCheckout = async () => {
