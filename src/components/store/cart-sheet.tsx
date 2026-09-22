@@ -27,6 +27,7 @@ export function CartSheet({ open, onOpenChange }: { open: boolean; onOpenChange:
   const api = useVendreApi();
   const { isConfigured } = useOnboarding();
   const { data: cart, isLoading, refetch } = useCart();
+  const { data: session } = useSessionContext();
   const { update, remove } = useCartMutations();
   const [checkoutPending, setCheckoutPending] = useState(false);
   const lines = cart?.products ?? [];
