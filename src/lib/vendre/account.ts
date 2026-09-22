@@ -460,11 +460,8 @@ export const REGISTER_FIELDS = [
   "street_address2",
   "postcode",
   "city",
-  "country",
+  "country_id",
 ] as const;
-
-/** The store calls the country field `country_id`; our payload key is `country`. */
-const FIELD_ALIASES: Record<string, string> = { country_id: "country" };
 
 /** Optional fields that are only sent when the visitor filled them in. */
 const OPTIONAL_FIELDS = [
